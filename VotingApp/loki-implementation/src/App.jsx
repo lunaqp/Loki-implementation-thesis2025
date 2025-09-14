@@ -1,23 +1,63 @@
+import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
+import Welcome from "./Screens/Welcome";
+import FrontPage from "./Screens/FrontPage";
+import VoteCheck from "./Screens/VoteCheck";
+import CandidateSelection from "./Screens/CandidateSelection";
+import MemorableInformation from "./Screens/MemorableInformation";
+import Confirmation from "./Screens/Confirmation";
 import { useState, useEffect } from "react";
-import "./App.css";
 
 function App() {
-  const [currentTime, setCurrentTime] = useState(0);
+  const [electionId, setElectionId] = useState(0);
+  const [elections, setElections] = useState([]);
 
   useEffect(() => {
-    fetch("/api/time")
+    fetch("/api/election")
       .then((res) => res.json())
       .then((data) => {
-        setCurrentTime(data.time);
+        setElectionId(data.electionId);
       });
   }, []);
 
+  useEffect(() => {
+    fetch("/api/elections")
+      .then((res) => res.json())
+      .then((data) => {
+        const mapped = data.elections.map((e) => ({
+          id: e.electionId,
+          name: e.electionName,
+          // Candidates
+        }));
+        setElections(mapped);
+      });
+  }, []);
+
+  console.log(elections);
+
   return (
-    <>
-      <p>
-        The current time is {new Date(currentTime * 1000).toLocaleString()}.
-      </p>
-    </>
+    electionId && (
+      <Router>
+        <Routes>
+          <Route path="/" element={<FrontPage electionId={electionId} />} />
+
+          <Route path=":electionId/Welcome" element={<Welcome />} />
+          <Route path=":electionId/VoteCheck" element={<VoteCheck />} />
+          <Route
+            path=":electionId/CandidateSelection"
+            element={<CandidateSelection />}
+          />
+          <Route
+            path=":electionId/MemorableInformation"
+            element={<MemorableInformation />}
+          />
+          <Route path=":electionId/Confirmation" element={<Confirmation />} />
+          {/* <Route path=":electionId/PreviousVotes" element={<PreviousVotes />} />
+         
+         
+        */}
+        </Routes>
+      </Router>
+    )
   );
 }
 
