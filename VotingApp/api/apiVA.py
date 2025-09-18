@@ -1,7 +1,11 @@
 import time
 from flask import Flask
+from bulletin_routes import bp as bulletin_bp
+
 
 app = Flask(__name__)
+
+app.register_blueprint(bulletin_bp, url_prefix="/api")
 
 @app.route('/api/time')
 def get_current_time():
