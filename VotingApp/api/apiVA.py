@@ -1,7 +1,12 @@
+#To run -> npm run api
 import time
 from flask import Flask
+from bulletin_routes import bp as bulletin_bp #import blueprint from bulletin_routes.py
+
 
 app = Flask(__name__)
+
+app.register_blueprint(bulletin_bp, url_prefix="/api") #mount blueprint under /api, gives /api prefix -> /api/bulletin/hello
 
 @app.route('/api/time')
 def get_current_time():

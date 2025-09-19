@@ -10,6 +10,7 @@ import { useState, useEffect } from "react";
 function App() {
   const [electionId, setElectionId] = useState(0);
   const [elections, setElections] = useState([]);
+  const [message, setMessage] = useState("");
 
   useEffect(() => {
     fetch("/api/election")
@@ -32,11 +33,19 @@ function App() {
       });
   }, []);
 
+  useEffect(() => {
+    fetch("/api/bulletin/hello")
+      .then((res) => res.json())
+      .then((data) => setMessage(data.message))
+      .catch((err) => console.error("Error fetching hello:", err));
+  }, []);
+
   console.log(elections);
 
   return (
     electionId && (
       <Router>
+        {message && <div style={{ padding: 8 }}>{message}</div>}
         <Routes>
           <Route path="/" element={<FrontPage electionId={electionId} />} />
 
