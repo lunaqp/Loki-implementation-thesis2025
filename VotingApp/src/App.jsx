@@ -34,7 +34,7 @@ function App() {
   }, []);
 
   useEffect(() => {
-    fetch("/api/bulletin/hello")
+    fetch("/api/bulletin/hello") // How do we want to route? We should probably find a pattern/structure we can repeat throughout.
       .then((res) => res.json())
       .then((data) => setMessage(data.message))
       .catch((err) => console.error("Error fetching hello:", err));
