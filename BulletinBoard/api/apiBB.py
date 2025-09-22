@@ -2,7 +2,7 @@
 from flask import Flask, jsonify
 import sys
 sys.path.append("..")
-from database.queries import *
+import database.queries as db
 
 app = Flask(__name__)
 
@@ -11,9 +11,9 @@ app = Flask(__name__)
 def hello():
     return jsonify({"message": "Hello World from BulletinBoard!"})
 
-@app.get("/bulletin/candidates")
+@app.get("/candidates")
 def candidates():
-    candidates = fetch_candidates_for_election(0)
+    candidates = db.fetch_candidates_for_election(0)
     candidates_dict = [{"id": cid, "name": name} for cid, name in candidates]
     print(candidates_dict)
 

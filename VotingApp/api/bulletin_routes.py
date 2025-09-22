@@ -17,3 +17,12 @@ def get_hello():
         return jsonify(r.json()) #forwared JSON to front end
     except requests.exceptions.RequestException as e: #catch network errors
         return jsonify({"error": str(e)}), 500 #return an error message
+
+@bp.get("/bulletin/candidates") #define route in VotingApp
+def get_candidates():
+    try:
+        r = requests.get(f"{BULLETIN_URL}/candidates", timeout=5) #Make GET call to BB /candidates endpoint
+        r.raise_for_status()
+        return jsonify(r.json()) #forwared JSON to front end
+    except requests.exceptions.RequestException as e: #catch network errors
+        return jsonify({"error": str(str(e))}), 500 #return an error message

@@ -5,19 +5,23 @@ import PopUp from "../Components/PopUp";
 import ScreenTemplate from "../Components/ScreenTemplate";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 
-const CandidateSelection = () => {
+const CandidateSelection = ({ candidates }) => {
   const location = useLocation();
   const { electionId } = useParams();
   const navigate = useNavigate();
   const nextRoute = `/${electionId}/MemorableInformation`;
   const prevRoute = location.state?.from || `/${electionId}/PreviousVotes`;
 
-  const party1Candidates = [
-    "Chandler Bing",
-    "Monica Geller",
-    "Phoebe Buffay",
-    "Joey Tribbiani",
-  ];
+  const party1Candidates =
+    candidates && candidates.map((candidate) => candidate.name);
+
+  // const party1Candidates = [
+  //   "Chandler Bing",
+  //   "Monica Geller",
+  //   "Phoebe Buffay",
+  //   "Joey Tribbiani",
+  // ];
+
   const party2Candidates = [
     "Sheldon Cooper",
     "Amy Farrah Fowler",
@@ -48,70 +52,72 @@ const CandidateSelection = () => {
   };
 
   return (
-    <PageTemplate progress={4} adjustableHeight={true}>
-      <ScreenTemplate
-        nextRoute={null}
-        onPrimaryClick={handleNextClick}
-        prevRoute={prevRoute}
-        primaryButtonText="Cast vote"
-        adjustableHeight={true}
-        buttonUnselectable={!selectedCandidate}
-      >
-        <ContentWrapper>
-          <Wrapper>
-            <Title>Choose one candidate</Title>
-            <Parties>Party 1: "Friends"</Parties>
-            {party1Candidates.map((candidate) => {
-              return (
-                <CandidateContainer>
-                  <StyledInput
-                    type="radio"
-                    id={`${candidate}`}
-                    name="candidate"
-                    value={`${candidate}`}
-                    onChange={handleChange}
-                    checked={selectedCandidate === `${candidate}`}
-                  />
-                  <StyledLabel htmlFor={candidate}>{candidate}</StyledLabel>
-                </CandidateContainer>
-              );
-            })}
-            <Parties>Party 2: "Big Bang Theory"</Parties>
-            {party2Candidates.map((candidate) => {
-              return (
-                <CandidateContainer>
-                  <StyledInput
-                    type="radio"
-                    id={`${candidate}`}
-                    name="candidate"
-                    value={`${candidate}`}
-                    onChange={handleChange}
-                    checked={selectedCandidate === `${candidate}`}
-                  />
-                  <StyledLabel htmlFor={candidate}>{candidate}</StyledLabel>
-                </CandidateContainer>
-              );
-            })}
-          </Wrapper>
-        </ContentWrapper>
-      </ScreenTemplate>
-      {showPopUp && (
-        <PopUp
-          title="Confirmation"
-          message={
-            <>
-              You are now voting for <strong>{selectedCandidate}</strong>. If
-              this is the intended candidate click “Cast Vote”. If you want to
-              change your vote choose “Change Vote”
-            </>
-          }
-          confirm={handleConfirm}
-          cancel={handleCancel}
-          nextButtonText="Cast vote"
-          backButtonText="Change vote"
-        />
-      )}
-    </PageTemplate>
+    candidates && (
+      <PageTemplate progress={4} adjustableHeight={true}>
+        <ScreenTemplate
+          nextRoute={null}
+          onPrimaryClick={handleNextClick}
+          prevRoute={prevRoute}
+          primaryButtonText="Cast vote"
+          adjustableHeight={true}
+          buttonUnselectable={!selectedCandidate}
+        >
+          <ContentWrapper>
+            <Wrapper>
+              <Title>Choose one candidate</Title>
+              <Parties>Party 1: "Friends"</Parties>
+              {party1Candidates.map((candidate) => {
+                return (
+                  <CandidateContainer>
+                    <StyledInput
+                      type="radio"
+                      id={`${candidate}`}
+                      name="candidate"
+                      value={`${candidate}`}
+                      onChange={handleChange}
+                      checked={selectedCandidate === `${candidate}`}
+                    />
+                    <StyledLabel htmlFor={candidate}>{candidate}</StyledLabel>
+                  </CandidateContainer>
+                );
+              })}
+              <Parties>Party 2: "Big Bang Theory"</Parties>
+              {party2Candidates.map((candidate) => {
+                return (
+                  <CandidateContainer>
+                    <StyledInput
+                      type="radio"
+                      id={`${candidate}`}
+                      name="candidate"
+                      value={`${candidate}`}
+                      onChange={handleChange}
+                      checked={selectedCandidate === `${candidate}`}
+                    />
+                    <StyledLabel htmlFor={candidate}>{candidate}</StyledLabel>
+                  </CandidateContainer>
+                );
+              })}
+            </Wrapper>
+          </ContentWrapper>
+        </ScreenTemplate>
+        {showPopUp && (
+          <PopUp
+            title="Confirmation"
+            message={
+              <>
+                You are now voting for <strong>{selectedCandidate}</strong>. If
+                this is the intended candidate click “Cast Vote”. If you want to
+                change your vote choose “Change Vote”
+              </>
+            }
+            confirm={handleConfirm}
+            cancel={handleCancel}
+            nextButtonText="Cast vote"
+            backButtonText="Change vote"
+          />
+        )}
+      </PageTemplate>
+    )
   );
 };
 

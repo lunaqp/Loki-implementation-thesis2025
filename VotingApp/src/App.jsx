@@ -42,6 +42,19 @@ function App() {
 
   console.log(elections);
 
+  // Fetching candidates from BB for later use (passed as prop in candidateseletion).
+  // TODO: figure out how to handle this global information that should be available throughout the app without passing around props.
+  const [candidates, setCandidates] = useState();
+
+  useEffect(() => {
+    fetch("/api/bulletin/candidates")
+      .then((res) => res.json())
+      .then((data) => {
+        setCandidates(data.candidates);
+      })
+      .catch((err) => console.error("Error fetching candidates:", err));
+  }, []);
+
   return (
     electionId && (
       <Router>
@@ -53,7 +66,7 @@ function App() {
           <Route path=":electionId/VoteCheck" element={<VoteCheck />} />
           <Route
             path=":electionId/CandidateSelection"
-            element={<CandidateSelection />}
+            element={<CandidateSelection candidates={candidates} />}
           />
           <Route
             path=":electionId/MemorableInformation"
