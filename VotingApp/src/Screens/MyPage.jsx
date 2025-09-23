@@ -1,8 +1,10 @@
 import styled from "styled-components";
 import { useNavigate } from "react-router-dom";
+import { useState } from "react";
 
-const FrontPage = ({ electionId }) => {
+const MyPage = ({ electionId }) => {
   const navigate = useNavigate();
+  const [showPopup, setShowPopup] = useState(false);
 
   console.log(electionId);
   return (
@@ -24,7 +26,7 @@ const FrontPage = ({ electionId }) => {
               >
                 Vote
               </button>
-              <button>Verify</button>
+              <button onClick={() => setShowPopup(true)}>Verify</button>
             </ButtonGroup>
           </ElectionBox>
           <ElectionBox>
@@ -35,16 +37,27 @@ const FrontPage = ({ electionId }) => {
               >
                 Vote
               </button>
-              <button>Verify</button>
+              <button onClick={() => setShowPopup(true)}>Verify</button>
             </ButtonGroup>
           </ElectionBox>
         </ElectionRow>
       </BodyContainer>
+      {showPopup && (
+        <PopupOverlay>
+          <PopupBox>
+            <PopupHeader>
+              <h2>Verify Vote</h2>
+              <CloseButton onClick={() => setShowPopup(false)}>×</CloseButton>
+            </PopupHeader>
+            <PopupContent>Your vote has been included!</PopupContent>
+          </PopupBox>
+        </PopupOverlay>
+      )}
     </Page>
   );
 };
 
-export default FrontPage;
+export default MyPage;
 
 const Page = styled.div`
   display: flex;
@@ -139,5 +152,63 @@ const LogoutButton = styled.button`
   &:hover {
     background: #374151;
     color: white;
+  }
+`;
+
+const PopupOverlay = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 3;
+`;
+
+const PopupBox = styled.div`
+  width: 500px;
+  height: 300px;
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  text-align: center;
+`;
+
+const PopupHeader = styled.div`
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+  font-size: 25px;
+
+  h2 {
+    margin: 0px;
+    text-align: center;
+  }
+`;
+
+const PopupContent = styled.p`
+  margin-top: 26px;
+  font-size: 20px;
+  text-align: center;
+`;
+
+const CloseButton = styled.button`
+  position: absolute;
+  right: 0;
+  top: 0;
+  background: none;
+  border: none;
+  font-size: 30px;
+  font-weight: bold;
+  cursor: pointer;
+  color: #333;
+
+  &:hover {
+    color: red;
   }
 `;
