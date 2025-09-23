@@ -23,7 +23,7 @@ const LoginPage = () => {
       return;
     }
 
-    navigate("/");
+    navigate("/Mypage");
   };
 
   return (
@@ -77,7 +77,7 @@ const PageWrapper = styled.div`
   justify-content: center;
 `;
 
-const LoginBox = styled.login`
+const LoginBox = styled.form`
   width: 420px;
   display: flex;
   flex-direction: column;
