@@ -25,12 +25,14 @@ CREATE TABLE Candidates (
 CREATE TABLE CandidateRunsInElection (
     CandidateID INT REFERENCES Candidates(ID),
     ElectionID INT REFERENCES Elections(ID),
-    PRIMARY KEY (CandidateID, ElectionID)
+    PRIMARY KEY (CandidateID, ElectionID),
+    RESULT INT
 );
 
 CREATE TABLE Voters (
     ID INT PRIMARY KEY,
     Name VARCHAR(50) NOT NULL
+    PublicKey INT
     -- password
 );
 
