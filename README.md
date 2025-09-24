@@ -49,9 +49,11 @@ Setting up database for the Bulletin Board:
 1. Install postgres locally.
 2. Enter postgres environment:
    - psql -U postgres
-3. Create database named "BB":
-   - create database BB;
+3. Create database named "bb":
+   - create database bb;
 4. Create user for the database:
    - create user bb with encrypted password 'BBpass';
 5. Give created user ownership of the database:
    - ALTER DATABASE bb OWNER TO bb;
+6. Navigate to BulletinBoard/database and run the following command:
+   - python dbsetup.py

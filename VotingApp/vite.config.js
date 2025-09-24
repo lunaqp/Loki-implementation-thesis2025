@@ -7,7 +7,7 @@ export default defineConfig({
   server: {
     proxy: {
       "/api": "http://localhost:5000",
-      "/bulletin": "http://localhost:5001",
+      // "/bulletin": "http://localhost:5001",
     },
   },
 });

@@ -16,7 +16,8 @@ INSERT INTO CandidateRunsInElection (CandidateID, ElectionID)
 VALUES
     (0, 0),
     (1, 0),
-    (0, 1);
+    (0, 1),
+    (3, 0);
 
 INSERT INTO Voters (ID, Name)
 VALUES
