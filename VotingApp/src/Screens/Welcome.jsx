@@ -6,7 +6,7 @@ import { useParams } from "react-router-dom";
 const Welcome = () => {
   const { electionId } = useParams();
   const nextRoute = `/${electionId}/VoteCheck`;
-  const prevRoute = "/";
+  const prevRoute = "/Mypage";
 
   return (
     <PageTemplate progress={1}>

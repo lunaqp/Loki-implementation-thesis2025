@@ -1,10 +1,11 @@
 import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
 import Welcome from "./Screens/Welcome";
-import FrontPage from "./Screens/FrontPage";
+import MyPage from "./Screens/MyPage";
 import VoteCheck from "./Screens/VoteCheck";
 import CandidateSelection from "./Screens/CandidateSelection";
 import MemorableInformation from "./Screens/MemorableInformation";
 import Confirmation from "./Screens/Confirmation";
+import LoginPage from "./Screens/Login";
 import { useState, useEffect } from "react";
 
 function App() {
@@ -47,7 +48,9 @@ function App() {
       <Router>
         {message && <div style={{ padding: 8 }}>{message}</div>}
         <Routes>
-          <Route path="/" element={<FrontPage electionId={electionId} />} />
+          <Route path="/" element={<LoginPage />} />
+
+          <Route path="/Mypage" element={<MyPage electionId={electionId} />} />
 
           <Route path=":electionId/Welcome" element={<Welcome />} />
           <Route path=":electionId/VoteCheck" element={<VoteCheck />} />
