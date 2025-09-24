@@ -3,7 +3,7 @@ import PageTemplate from "../Components/PageTemplate";
 import ScreenTemplate from "../Components/ScreenTemplate";
 
 const Confirmation = () => {
-  const nextRoute = "/";
+  const nextRoute = "/Mypage";
 
   return (
     <PageTemplate progress={6}>
