@@ -31,7 +31,7 @@ CREATE TABLE CandidateRunsInElection (
 
 CREATE TABLE Voters (
     ID INT PRIMARY KEY,
-    Name VARCHAR(50) NOT NULL
+    Name VARCHAR(50) NOT NULL,
     PublicKey INT
     -- password
 );
@@ -40,8 +40,8 @@ CREATE TABLE VoterParticipatesInElection (
     VoterID INT REFERENCES Voters(ID),
     ElectionID INT REFERENCES Elections(ID),
     PRIMARY KEY (VoterID, ElectionID),
-    PublicKey INT NOT NULL, -- What type should the keys be stored as? BYTEA?
-    SecretKey INT NOT NULL -- Type? + Security considerations for storing this data?
+    PublicKey INT, -- What type should the keys be stored as? BYTEA?
+    SecretKey INT -- Type? + Security considerations for storing this data?
 );
 
 CREATE TYPE ct_tuple AS (
