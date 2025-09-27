@@ -1,27 +1,18 @@
 #To run -> npm run api
-import time
-from flask import Flask
-from bulletin_routes import bp as bulletin_bp #import blueprint from bulletin_routes.py
+from fastapi import FastAPI
+import os
+from bulletin_routes import router as bulletin_router
 
+app = FastAPI()
+DATABASE_URL = os.getenv("DATABASE_URL")
 
-app = Flask(__name__)
+@app.get("/health")
+def health():
+    return{"ok": True}
 
-app.register_blueprint(bulletin_bp, url_prefix="/api") #mount blueprint under /api, gives /api prefix -> /api/bulletin/hello
+# Register FastAPI router
+app.include_router(bulletin_router)
 
-@app.route('/api/time')
-def get_current_time():
-    return {'time': time.time()}
-
-@app.route('/api/election')
-def get_electionId():
-    return {'electionId': 123}
-
-@app.route('/api/elections')
-def get_elections():
-    return {'electionNo': 2,
-            'elections': [
-                {'electionId': 0,
-                 'electionName': 'Student Council President', 'Candidates': ['Eric', 'Jenna', 'Thomas', 'Cindy']},
-                                 {'electionId': 1,
-                 'electionName': 'Student Council Treasurer'},
-            ]}
+@app.get("/api/election")
+def get_election_id():
+    return {"electionId": 123}
