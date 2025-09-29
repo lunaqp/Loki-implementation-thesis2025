@@ -31,7 +31,7 @@ CREATE TABLE CandidateRunsInElection (
 
 CREATE TABLE Voters (
     ID INT PRIMARY KEY,
-    Name VARCHAR(50) NOT NULL
+    Name VARCHAR(50) NOT NULL,
     PublicKey INT
     -- password
 );

@@ -15,13 +15,6 @@ const CandidateSelection = ({ candidates }) => {
   const party1Candidates =
     candidates && candidates.map((candidate) => candidate.name);
 
-  // const party1Candidates = [
-  //   "Chandler Bing",
-  //   "Monica Geller",
-  //   "Phoebe Buffay",
-  //   "Joey Tribbiani",
-  // ];
-
   const party2Candidates = [
     "Sheldon Cooper",
     "Amy Farrah Fowler",
