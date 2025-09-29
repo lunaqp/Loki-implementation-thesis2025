@@ -1,7 +1,14 @@
 import psycopg
+import os
+
+DBNAME = os.getenv("POSTGRES_DB", "postgres")
+DBUSER = os.getenv("POSTGRES_USER", "postgres")
+DBPASSWORD = os.getenv("POSTGRES_PASSWORD", "appdb")
+DBHOST = os.getenv("POSTGRES_HOST", "db")
+DBPORT = os.getenv("POSTGRES_PORT", "5432")
 
 # After having created a postgres database and connected a new user to it, establish connection with the relevant info inserted below:
-conn = psycopg.connect(dbname="bb", user="bb", password="BBpass")
+conn = psycopg.connect(dbname=DBNAME, user=DBUSER, password=DBPASSWORD, host=DBHOST, port=DBPORT)
 
 # Open a cursor to perform database operations
 cur = conn.cursor()
@@ -19,8 +26,6 @@ def fetch_candidates_for_election(election_id): # Should cursor be given as para
     records = cur.fetchall()
     return records
 
-#print(fetch_candidates_for_election(cur,0))
-
 # Query for fetching all election data
 def fetch_all_elections(cur):
     cur.execute("""
@@ -29,8 +34,6 @@ def fetch_all_elections(cur):
                 """)
     records = cur.fetchall()
     return records
-
-#print(fetch_all_elections(cur))
 
 # Query for fetching all voters participating in a given election
 def fetch_voters_for_election(cur, election_id):
@@ -43,8 +46,6 @@ def fetch_voters_for_election(cur, election_id):
     records = cur.fetchall()
     return records
     
-# print(fetch_voters_for_election(cur,0))
-
 # Fetches the CBR for a given voter in a given election sorted by most recent votes at the top.
 def fetch_CBR_for_voter_in_election(cur, voter_id, election_id): # We currently also gets the voters public and private keys. Do we want to move this to the Voter table?
     cur.execute("""
@@ -60,8 +61,6 @@ def fetch_CBR_for_voter_in_election(cur, voter_id, election_id): # We currently 
     records = cur.fetchall()
     return records
 
-#print(fetch_CBR_for_voter_in_election(cur, 2, 0))
-
 # Fetch image filename for specific ballot
 def fetch_imageFilename_for_ballot(cur, ballot_id):
     cur.execute("""
@@ -71,6 +70,3 @@ def fetch_imageFilename_for_ballot(cur, ballot_id):
                 """, (ballot_id,))
     records = cur.fetchall()
     return records
-
-#print(fetch_imageFilename_for_ballot(cur, 2))
-

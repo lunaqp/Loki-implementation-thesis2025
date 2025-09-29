@@ -1,28 +1,31 @@
-from flask import Blueprint, jsonify #blueprint is used to group routes
 import requests #requests is the HTTP client used to call BB/request GET
-import os # 
+import os 
+from fastapi import APIRouter, HTTPException
 
-bp = Blueprint("bulletin", __name__) #creates blueprint
+# Equivalent of Flask Blueprint
+router = APIRouter(
+    prefix="/api/bulletin",  # same as url_prefix in Flask
+    tags=["bulletin"]
+)
 
 #This reads BB URL from the env
-BULLETIN_URL = os.getenv("BULLETIN_URL", "http://localhost:5001")
+BB_API_URL = os.environ.get("BB_API_URL", "http://bb_api:8000") # Docker container addresses and envrionment variables defined in docker-compose.yml
 
-@bp.get("/bulletin/hello") #define route in VotingApp
-
-#handles the proxy call to BB
-def get_hello():
+@router.get("/hello")
+def fetch_from_bb():
     try:
-        r = requests.get(f"{BULLETIN_URL}/hello", timeout=5) #Make GET call to BB /hello endpoint
-        r.raise_for_status()
-        return jsonify(r.json()) #forwared JSON to front end
-    except requests.exceptions.RequestException as e: #catch network errors
-        return jsonify({"error": str(e)}), 500 #return an error message
+        resp = requests.get(f"{BB_API_URL}/hello")
+        resp.raise_for_status()
+        return resp.json()
+    except requests.RequestException as e:
+        raise HTTPException(status_code=500, detail=f"Error fetching from BB: {str(e)}")
 
-@bp.get("/bulletin/candidates") #define route in VotingApp
+@router.get("/candidates") #define route in VotingApp
 def get_candidates():
     try:
-        r = requests.get(f"{BULLETIN_URL}/candidates", timeout=5) #Make GET call to BB /candidates endpoint
-        r.raise_for_status()
-        return jsonify(r.json()) #forwared JSON to front end
+        resp = requests.get(f"{BB_API_URL}/candidates", timeout=5) #Make GET call to BB /candidates endpoint
+        resp.raise_for_status()
+        return resp.json() #forwared JSON to front end
     except requests.exceptions.RequestException as e: #catch network errors
-        return jsonify({"error": str(str(e))}), 500 #return an error message
+        raise HTTPException(status_code=500, detail=str(e))
+        

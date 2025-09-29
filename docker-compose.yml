@@ -1,0 +1,85 @@
+services:
+  db:
+    image: postgres:16
+    container_name: db
+    env_file:
+      - ./docker/env/db.env
+    volumes:
+      - db_data:/var/lib/postgresql/db_data # add data dir to ensure data persists at container re-creation
+      - ./docker/init-db:/docker-entrypoint-initdb.d # For adding initialisation scripts.
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    # networks:
+    #   - postgres-db-network
+
+  adminer:
+    image: adminer
+    restart: always
+    ports:
+      - 8080:8080
+
+  bb_api:
+    build:
+      context: ./BulletinBoard/api
+      dockerfile: Dockerfile
+    env_file:
+      - ./docker/env/db.env
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/appdb
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8001:8000"
+
+  ra_api:
+    build:
+      context: ./RegistrationAuthority/api
+      dockerfile: Dockerfile
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/appdb
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8002:8000"
+
+  va_api:
+    build:
+      context: ./VotingApp/api
+      dockerfile: Dockerfile
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/appdb
+      BB_API_URL: http://bb_api:8000
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8003:8000"
+
+  # React frontend
+  va_web:
+    build:
+      context: ./VotingApp/web
+      dockerfile: Dockerfile
+    environment:
+      VITE_API_VOTINGAPP: http://va_api:8000
+      VITE_API_BULLETINBOARD: http://bb_api:8000
+      VITE_API_REGISTRATIONAUTHORITY: http://ra_api:8000
+    depends_on:
+      - va_api
+      - bb_api
+      - ra_api
+    ports:
+      - "5173:80"
+
+volumes:
+  db_data:
+# networks:
+#   postgres-db-network:
+#     driver: bridge
