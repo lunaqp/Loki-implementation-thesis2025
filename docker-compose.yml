@@ -44,6 +44,7 @@ services:
     environment:
       DATA_DIR: /app/data
       DATABASE_URL: postgresql://postgres:postgres@db:5432/appdb
+      VOTER_SK_ENCRYPTION_KEY: K2QWtYSxwTUzCPF7w8uWWB_QwMFReMtAFHd3bq5tJqQ=
     depends_on:
       db:
         condition: service_healthy
@@ -59,6 +60,7 @@ services:
     environment:
       DATABASE_URL: postgresql://postgres:postgres@db:5432/appdb
       BB_API_URL: http://bb_api:8000
+      VOTER_SK_DECRYPTION_KEY: K2QWtYSxwTUzCPF7w8uWWB_QwMFReMtAFHd3bq5tJqQ=
     depends_on:
       db:
         condition: service_healthy
