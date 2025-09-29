@@ -1,16 +1,24 @@
 from fastapi import FastAPI
 import os
-from keygen import g, order
-from zksk import Secret, DLRep
+from keygen import save_globalinfo_to_db, keygen, save_keys_to_db
 
 app = FastAPI()
-DATABASE_URL = os.getenv("DATABASE_URL")
 
 @app.get("/health")
 def health():
     return{"ok": True}
 
-print(f"g: {g}")
-print(f"order: {order}")
-one = Secret(value=1)
-print(f"zksk one: {one}")
+save_globalinfo_to_db()
+
+# Temporary for testing purposes.
+voter_list = {
+  "voters": [
+    { "id": 0, "name": "Emma" },
+    { "id": 1, "name": "Thomas" },
+    { "id": 2, "name": "James" },
+    { "id": 3, "name": "Karen" }
+  ]
+}
+
+voterinfo = keygen(voter_list, 0)
+save_keys_to_db(voterinfo)

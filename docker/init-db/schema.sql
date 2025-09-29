@@ -37,11 +37,11 @@ CREATE TABLE Voters (
 );
 
 CREATE TABLE VoterParticipatesInElection (
-    VoterID INT REFERENCES Voters(ID),
     ElectionID INT REFERENCES Elections(ID),
+    VoterID INT REFERENCES Voters(ID),
     PRIMARY KEY (VoterID, ElectionID),
-    PublicKey INT NOT NULL, -- What type should the keys be stored as? BYTEA?
-    SecretKey INT NOT NULL -- Type? + Security considerations for storing this data?
+    PublicKey TEXT NOT NULL, -- What type should the keys be stored as? BYTEA?
+    SecretKey BYTEA NOT NULL -- Type? + Security considerations for storing this data?
 );
 
 CREATE TYPE ct_tuple AS (
@@ -77,9 +77,9 @@ CREATE TABLE VotingServer (
 
 CREATE TABLE GlobalInfo ( -- Probably not ints.
     ID INT PRIMARY KEY,
-    PublicKeyTallier INT NOT NULL,
-    PublicKeyVotingServer INT NOT NULL,
-    Generator INT NOT NULL,
-    OrderP INT NOT NULL
+    PublicKeyTallier INT,
+    PublicKeyVotingServer INT,
+    Generator TEXT,
+    OrderP NUMERIC
 );
 
