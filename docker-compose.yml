@@ -42,12 +42,15 @@ services:
       context: ./RegistrationAuthority/api
       dockerfile: Dockerfile
     environment:
+      DATA_DIR: /app/data
       DATABASE_URL: postgresql://postgres:postgres@db:5432/appdb
     depends_on:
       db:
         condition: service_healthy
     ports:
       - "8002:8000"
+    volumes:
+      - ./RegistrationAuthority/api/electionData:/app/data:ro
 
   va_api:
     build:

@@ -1,0 +1,18 @@
+{
+  "election": {
+    "id": 456,
+    "name": "Analog President",
+    "start": "2025-09-26",
+    "end": "2025-09-27"
+  },
+  "candidates": [
+    { "id": 4, "name": "Anna" },
+    { "id": 5, "name": "Bobby" },
+    { "id": 6, "name": "Charlie" }
+  ],
+  "voters": [
+    { "id": 104, "name": "John Doe" },
+    { "id": 105, "name": "Jane Doe" },
+    { "id": 106, "name": "Julian Doe" }
+  ]
+}
