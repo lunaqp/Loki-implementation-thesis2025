@@ -42,6 +42,7 @@ services:
       context: ./RegistrationAuthority/api
       dockerfile: Dockerfile
     environment:
+      DATA_DIR: /app/data
       DATABASE_URL: postgresql://postgres:postgres@db:5432/appdb
       VOTER_SK_ENCRYPTION_KEY: K2QWtYSxwTUzCPF7w8uWWB_QwMFReMtAFHd3bq5tJqQ=
     depends_on:
@@ -49,6 +50,8 @@ services:
         condition: service_healthy
     ports:
       - "8002:8000"
+    volumes:
+      - ./RegistrationAuthority/api/electionData:/app/data:ro
 
   va_api:
     build:
