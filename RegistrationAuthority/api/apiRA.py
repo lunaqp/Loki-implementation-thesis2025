@@ -1,15 +1,14 @@
 import os
 from fastapi import FastAPI, HTTPException, Query
 import json
-from fetchNewElection import (DATA_DIR, NewElectionData, load_election_into_db, voter_id_list, election_id)
+from fetchNewElection import DATA_DIR, NewElectionData, load_election_into_db
 from keygen import save_globalinfo_to_db, keygen, save_keys_to_db
-import psycopg
+
 app = FastAPI()
 
 @app.get("/health")
 def health():
     return {"ok": True}
-
 
 # Read the new election from the json file. using fastapi
 # POST endpoint, reads filename from query string ex. name=election1.json
@@ -25,8 +24,10 @@ def load_election_from_file(name: str = Query(..., description="Filename inside 
 
         payload = NewElectionData.model_validate(data) #pyladic validation, converts raw dict into typed NewElectionData
         load_election_into_db(payload) #calls loader to write into the DB, returns small succes msg
-        voterinfo = keygen(voter_id_list, election_id) # Generate keys for voters
-        save_keys_to_db(voterinfo) # save keys to database
+        
+        voter_id_list = [voter.id for voter in payload.voters ]
+        election_id = payload.election.id
+        save_keys_to_db(keygen(voter_id_list, election_id)) # Generate and save voter keys to database
         return {"status": "loaded", "election_id": payload.election.id, "file": name}
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
