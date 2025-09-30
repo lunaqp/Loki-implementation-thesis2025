@@ -83,6 +83,34 @@ services:
     ports:
       - "5173:80"
 
+  vs_api:
+    build:
+      context: ./VotingServer/api
+      dockerfile: Dockerfile
+    env_file:
+      - ./docker/env/db.env
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/appdb
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8004:8000"
+
+  ts_api:
+    build:
+      context: ./TallyingServer/api
+      dockerfile: Dockerfile
+    env_file:
+      - ./docker/env/db.env
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/appdb
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8005:8000"
+
 volumes:
   db_data:
 # networks:
