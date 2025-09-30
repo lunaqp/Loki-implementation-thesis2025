@@ -21,9 +21,8 @@ def generate_group_order():
 g, order = generate_group_order()
 
 def save_globalinfo_to_db():
-    # Connect to db
-    # print(f"g: {g}")
-    # print(f"order: {order}")
+    print(f"g: {g}")
+    print(f"order: {order}")
     conn = psycopg.connect(dbname=DBNAME, user=DBUSER, password=DBPASSWORD, host=DBHOST, port=DBPORT)
     cur = conn.cursor()
     cur.execute("""
@@ -47,8 +46,7 @@ voter_list = {
 #Alternative:
 def keygen(voter_list, election_id):
     voter_info = []
-    for voter in voter_list["voters"]:
-        voter_id = voter["id"]
+    for id in voter_list:
         secret_key = order.random() 
         print(f"secret key type: {type(secret_key)}") # type = petlib.bn.Bn
         public_key = secret_key * g
@@ -56,7 +54,7 @@ def keygen(voter_list, election_id):
         print(f"sk: {secret_key}")
         enc_secret_key = encrypt_key(secret_key)
         print(f"encrypted sk: {enc_secret_key}")
-        voter_info.append([election_id, voter_id, public_key, enc_secret_key])
+        voter_info.append([election_id, id, public_key, enc_secret_key])
     return voter_info
 
 # Alternative
@@ -79,6 +77,7 @@ def encrypt_key(secret_key):
     encrypted_secret_key = cipher.encrypt(str(secret_key).encode()) # Fernet needs byte objects or strings.
     return encrypted_secret_key
 
+# Only for testing if decryption worked - might be relevant in VotingApp
 # def decrypt_key():
 #     conn = psycopg.connect(dbname=DBNAME, user=DBUSER, password=DBPASSWORD, host=DBHOST, port=DBPORT)
 #     cur = conn.cursor()

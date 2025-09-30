@@ -21,6 +21,8 @@ CONNECTION_INFO = f"dbname={DB_NAME} user={DB_USER} password={DB_PASS} host={DB_
 
 DATA_DIR = os.getenv("DATA_DIR", "/app/data") #this is the electionData dir
 
+print("print fra fetchNewElection.py")
+
 #pydandic models: when data is parsed to this model, it make automatic input validation and raises errors if fiels are missing or wrong
 #pydandic: converts string "123" into int.parsing dates.
 #Declares shape and type of the data object. ex. candidates: id, name
@@ -69,12 +71,16 @@ VALUES (%s, %s)
 ON CONFLICT (ID) DO NOTHING;
 """
 
+voter_id_list = []
+election_id = None
 
 #Load data to db
 def load_election_into_db(payload: NewElectionData, connection_info: str = CONNECTION_INFO) -> None:
 
     #Writes the election, candidates, voters and relations to the DB.
     eid = payload.election.id
+    global election_id
+    election_id = eid
 
     with psycopg.connect(connection_info) as conn:
         with conn.cursor() as cur:
@@ -90,6 +96,7 @@ def load_election_into_db(payload: NewElectionData, connection_info: str = CONNE
             # Insert Voters + relation (no keys yet)
             for v in payload.voters:
                 cur.execute(SQL_INSERT_VOTER, (v.id, v.name))
+                voter_id_list.append(v.id)
 
     
 #This is to load into DB directly not via fastapi    
