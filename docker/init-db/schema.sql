@@ -83,3 +83,6 @@ CREATE TABLE GlobalInfo ( -- Probably not ints.
     OrderP NUMERIC
 );
 
+INSERT INTO GlobalInfo (ID, PublicKeyTallier, PublicKeyVotingServer, Generator, OrderP) VALUES
+    (0, null, null, null, null)
+

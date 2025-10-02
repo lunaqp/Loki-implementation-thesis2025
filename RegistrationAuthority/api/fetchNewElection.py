@@ -21,8 +21,6 @@ CONNECTION_INFO = f"dbname={DB_NAME} user={DB_USER} password={DB_PASS} host={DB_
 
 DATA_DIR = os.getenv("DATA_DIR", "/app/data") #this is the electionData dir
 
-print("print fra fetchNewElection.py")
-
 #pydandic models: when data is parsed to this model, it make automatic input validation and raises errors if fiels are missing or wrong
 #pydandic: converts string "123" into int.parsing dates.
 #Declares shape and type of the data object. ex. candidates: id, name

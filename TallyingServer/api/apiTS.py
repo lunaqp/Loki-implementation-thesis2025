@@ -6,6 +6,10 @@ import psycopg
 
 app = FastAPI()
 
+@app.get("/ts_resp")
+async def ts_resp():
+    return {"service": "TS", "result": "Processed by TS"}
+
 DATABASE_URL = os.getenv("DATABASE_URL")
 
 DBNAME = os.getenv("POSTGRES_DB", "appdb")
@@ -20,19 +24,18 @@ def get_order():
     with psycopg.connect(CONNECTION_INFO) as conn:
         with conn.cursor() as cur:
             cur.execute("""
-                SELECT OrderP, Generator
+                SELECT Generator, OrderP
                 FROM GlobalInfo
+                WHERE ID = 0
             """)
             row = cur.fetchone()
-            Generator, OrderP = row
+            cur.close()
+            conn.close()
+            (Generator, OrderP) = row
             return Generator, OrderP
 
-        conn.commit()
-        cur.close()
-        conn.close()
+#Generator, OrderP = get_order()
 
-Generator, OrderP = get_order()
-    
 
 def keygen():
     secret_key = OrderP.random() 
@@ -56,4 +59,4 @@ def send_pk_to_DB():
         cur.close()
         conn.close()
 
-secret_key, public_key = keygen()
+#secret_key, public_key = keygen()

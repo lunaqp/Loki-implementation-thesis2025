@@ -2,6 +2,7 @@ from petlib.ec import EcGroup
 import psycopg
 import os
 from cryptography.fernet import Fernet
+import httpx
 
 DATABASE_URL = os.getenv("DATABASE_URL")
 
@@ -33,6 +34,16 @@ def save_globalinfo_to_db():
     conn.commit()
     cur.close()
     conn.close()
+
+# Notify TallyingServer and VotingServer of g and order being saved to database.
+async def notify_ts_and_vs():
+    async with httpx.AsyncClient() as client:
+        # Call TallyingServer:
+        resp_TS = await client.get("http://ts_api:8000/ts_resp")
+        # Call VotingServer:
+        resp_VS = await client.get("http://vs_api:8000/vs_resp")
+    return resp_TS.json(), resp_VS.json()
+
 
 voter_list = {
   "voters": [

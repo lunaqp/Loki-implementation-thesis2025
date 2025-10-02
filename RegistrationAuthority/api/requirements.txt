@@ -7,3 +7,4 @@ attrs
 https://github.com/caro3801/bplib/archive/refs/heads/fix/OpenSSL.tar.gz # petlib with a OpenSSL fix so it works with the zksk library
 zksk
 cryptography
+httpx
