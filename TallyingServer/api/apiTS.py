@@ -1,14 +1,9 @@
 from fastapi import FastAPI
 import os
 import psycopg
-
-# is not running because everything is running at the same time and apiRA has not yet posted order to DB when we try to get it here. 
-
-app = FastAPI()
-
-@app.get("/ts_resp")
-async def ts_resp():
-    return {"service": "TS", "result": "Processed by TS"}
+import asyncio
+from petlib.bn import Bn # For casting database values to petlib big integer types.
+from petlib.ec import EcGroup, EcPt, EcGroup
 
 DATABASE_URL = os.getenv("DATABASE_URL")
 
@@ -20,47 +15,56 @@ DBPORT = os.getenv("POSTGRES_PORT", "5432")
 
 CONNECTION_INFO = f"dbname={DBNAME} user={DBUSER} password={DBPASSWORD} host={DBHOST} port={DBPORT}"
 
+app = FastAPI()
+
+# Triggered by RA when RA has created group, generator, and order.
+@app.get("/ts_resp")
+async def ts_resp():
+    asyncio.create_task(send_pk_to_DB()) # Calling send_pk_to_DB implicitly fetches group, g, and order from db and generates keys.
+    return {"service": "TS", "result": "TS fetched g and order from db + created keymaterial and saved to db"}
+
 @app.get("/health")
 def health():
     return {"ok": True}
 
-def get_order():
+async def get_order():
     with psycopg.connect(CONNECTION_INFO) as conn:
         with conn.cursor() as cur:
             cur.execute("""
-                SELECT Generator, OrderP
+                SELECT GroupCurve, Generator, OrderP
                 FROM GlobalInfo
                 WHERE ID = 0
             """)
             row = cur.fetchone()
-            cur.close()
-            conn.close()
-            (Generator, OrderP) = row
-            return Generator, OrderP
+            (group, generator, order) = row
+            # Convert database values to Petlib types:
+            GROUP = EcGroup(group)
+            GENERATOR = EcPt.from_binary(generator, GROUP)
+            ORDER = Bn.from_binary(order)
+            print(f"generator: {GENERATOR}")
+            print(f"order: {ORDER}")
+            print(f"group: {GROUP}")
+            return GROUP, GENERATOR, ORDER
+        cur.close()
+        conn.close()
 
-#Generator, OrderP = get_order()
-
-
-def keygen():
-    secret_key = OrderP.random() 
-    print(f"secret key type: {type(secret_key)}") # type = petlib.bn.Bn
-    public_key = secret_key * Generator
-    print(f"pk: {public_key}")
-    print(f"sk: {secret_key}")
+async def keygen():
+    _, GENERATOR, ORDER = await get_order()
+    secret_key = ORDER.random() 
+    public_key = secret_key * GENERATOR
 
     return secret_key, public_key
 
-def send_pk_to_DB():
+async def send_pk_to_DB():
+    _, public_key = await keygen() 
     with psycopg.connect(CONNECTION_INFO) as conn:
         with conn.cursor() as cur:
             cur.execute("""
                 UPDATE GlobalInfo
-                SET PublicKeyTallier = %s
+                SET PublicKeyTallyingServer = %s
                 WHERE ID = 0
-            """), (str(public_key))
-
+            """, (public_key.export(),))
         conn.commit()
         cur.close()
         conn.close()
-
-#secret_key, public_key = keygen()
+    # NOTE: We need to store secret key somehow.

@@ -40,7 +40,7 @@ CREATE TABLE VoterParticipatesInElection (
     ElectionID INT REFERENCES Elections(ID),
     VoterID INT REFERENCES Voters(ID),
     PRIMARY KEY (VoterID, ElectionID),
-    PublicKey TEXT NOT NULL, -- What type should the keys be stored as? BYTEA?
+    PublicKey BYTEA NOT NULL,
     SecretKey BYTEA NOT NULL -- Type? + Security considerations for storing this data?
 );
 
@@ -77,13 +77,13 @@ CREATE TABLE VotingServer (
 
 CREATE TABLE GlobalInfo ( -- Probably not ints.
     ID INT PRIMARY KEY,
-    PublicKeyTallier BYTEA,
+    PublicKeyTallyingServer BYTEA,
     PublicKeyVotingServer BYTEA,
     GroupCurve INT,
     Generator BYTEA,
     OrderP BYTEA
 );
 
-INSERT INTO GlobalInfo (ID, PublicKeyTallier, PublicKeyVotingServer, Generator, OrderP) VALUES
+INSERT INTO GlobalInfo (ID, PublicKeyTallyingServer, PublicKeyVotingServer, Generator, OrderP) VALUES
     (0, null, null, null, null)
 

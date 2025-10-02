@@ -21,10 +21,11 @@ CONNECTION_INFO = f"dbname={DBNAME} user={DBUSER} password={DBPASSWORD} host={DB
 def health():
     return {"ok": True}
 
+# Triggered by RA when RA has created group, generator, and order.
 @app.get("/vs_resp")
 async def vs_resp():
     asyncio.create_task(send_pk_to_DB()) # Calling send_pk_to_DB implicitly fetches group, g, and order from db and generates keys.
-    return {"service": "VS", "result": "Fetched g and order from db"}
+    return {"service": "VS", "result": "TS fetched g and order from db + created keymaterial and saved to db"}
 
 async def get_order():
     with psycopg.connect(CONNECTION_INFO) as conn:
@@ -38,7 +39,7 @@ async def get_order():
             (group, generator, order) = row
             # Convert database values to Petlib types:
             GROUP = EcGroup(group)
-            GENERATOR = EcPt.from_binary(generator, GROUP) # For doing calculations
+            GENERATOR = EcPt.from_binary(generator, GROUP)
             ORDER = Bn.from_binary(order)
             print(f"generator: {GENERATOR}")
             print(f"order: {ORDER}")

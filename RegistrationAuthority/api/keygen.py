@@ -66,13 +66,13 @@ def save_keys_to_db(voter_info):
         cur.execute("""
                     INSERT INTO VoterParticipatesInElection (ElectionID, VoterID, PublicKey, SecretKey)
                     VALUES (%s, %s, %s, %s)
-                    """, (election_id, voter_id, str(public_key), enc_secret_key))
+                    """, (election_id, voter_id, public_key.export(), enc_secret_key))
     conn.commit()
     cur.close()
     conn.close()
 
 def encrypt_key(secret_key):
-    ENCRYPTION_KEY = os.getenv("VOTER_SK_ENCRYPTION_KEY") # Symmetric key - saved in docker-compose.yml
+    ENCRYPTION_KEY = os.getenv("VOTER_SK_ENCRYPTION_KEY") # Symmetric key - saved in docker-compose.yml. NOTE: Should be moved outside of repository.
     cipher = Fernet(ENCRYPTION_KEY)
     # encrypt() returns: A URL-safe base64-encoded secure message that cannot be read or altered without the key. This is referred to as a “Fernet token”.
     encrypted_secret_key = cipher.encrypt(str(secret_key).encode()) # Fernet needs byte objects or strings.
