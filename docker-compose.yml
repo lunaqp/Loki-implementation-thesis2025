@@ -48,6 +48,10 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      vs_api:
+        condition: service_healthy
+      ts_api:
+        condition: service_healthy
     ports:
       - "8002:8000"
     volumes:
@@ -94,6 +98,12 @@ services:
     depends_on:
       db:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
     ports:
       - "8004:8000"
 
@@ -108,6 +118,12 @@ services:
     depends_on:
       db:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
     ports:
       - "8005:8000"
 

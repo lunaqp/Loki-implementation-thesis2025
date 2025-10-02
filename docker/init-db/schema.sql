@@ -77,10 +77,11 @@ CREATE TABLE VotingServer (
 
 CREATE TABLE GlobalInfo ( -- Probably not ints.
     ID INT PRIMARY KEY,
-    PublicKeyTallier INT,
-    PublicKeyVotingServer INT,
-    Generator TEXT,
-    OrderP NUMERIC
+    PublicKeyTallier BYTEA,
+    PublicKeyVotingServer BYTEA,
+    GroupCurve INT,
+    Generator BYTEA,
+    OrderP BYTEA
 );
 
 INSERT INTO GlobalInfo (ID, PublicKeyTallier, PublicKeyVotingServer, Generator, OrderP) VALUES

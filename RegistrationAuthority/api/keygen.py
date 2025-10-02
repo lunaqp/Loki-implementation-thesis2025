@@ -14,23 +14,24 @@ DBPORT = os.getenv("POSTGRES_PORT", "5432")
 
 def generate_group_order():
     # Using the petlib library group operations to generate group and group values
-    group = EcGroup()
-    g = group.generator()
-    order = group.order()
-    return g, order
+    GROUP = EcGroup()
+    GENERATOR = GROUP.generator()
+    ORDER = GROUP.order()
+    return GROUP, GENERATOR, ORDER
 
-g, order = generate_group_order()
+GROUP, GENERATOR, ORDER = generate_group_order()
+print(f"generator: {GENERATOR}")
+print(f"order: {ORDER}")
+print(f"group: {GROUP}")
 
 def save_globalinfo_to_db():
-    print(f"g: {g}")
-    print(f"order: {order}")
     conn = psycopg.connect(dbname=DBNAME, user=DBUSER, password=DBPASSWORD, host=DBHOST, port=DBPORT)
     cur = conn.cursor()
     cur.execute("""
                 UPDATE GlobalInfo
-                SET Generator = %s, OrderP = %s
+                SET GroupCurve = %s, Generator = %s, OrderP = %s
                 WHERE ID = 0
-                """, (str(g), int(order)))
+                """, (GROUP.nid(), GENERATOR.export(), ORDER.binary()))
     conn.commit()
     cur.close()
     conn.close()
@@ -44,23 +45,12 @@ async def notify_ts_and_vs():
         resp_VS = await client.get("http://vs_api:8000/vs_resp")
     return resp_TS.json(), resp_VS.json()
 
-
-voter_list = {
-  "voters": [
-    { "id": 0, "name": "Emma" },
-    { "id": 1, "name": "Thomas" },
-    { "id": 2, "name": "James" },
-    { "id": 3, "name": "Karen" }
-  ]
-}
-
-#Alternative:
+# Generate private and public keys for each voter
 def keygen(voter_list, election_id):
     voter_info = []
     for id in voter_list:
-        secret_key = order.random() 
-        print(f"secret key type: {type(secret_key)}") # type = petlib.bn.Bn
-        public_key = secret_key * g
+        secret_key = ORDER.random() 
+        public_key = secret_key * GENERATOR
         print(f"pk: {public_key}")
         print(f"sk: {secret_key}")
         enc_secret_key = encrypt_key(secret_key)
@@ -68,7 +58,7 @@ def keygen(voter_list, election_id):
         voter_info.append([election_id, id, public_key, enc_secret_key])
     return voter_info
 
-# Alternative
+# Save keymaterial to database for each voter
 def save_keys_to_db(voter_info):
     conn = psycopg.connect(dbname=DBNAME, user=DBUSER, password=DBPASSWORD, host=DBHOST, port=DBPORT)
     cur = conn.cursor()

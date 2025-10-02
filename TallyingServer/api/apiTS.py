@@ -20,6 +20,10 @@ DBPORT = os.getenv("POSTGRES_PORT", "5432")
 
 CONNECTION_INFO = f"dbname={DBNAME} user={DBUSER} password={DBPASSWORD} host={DBHOST} port={DBPORT}"
 
+@app.get("/health")
+def health():
+    return {"ok": True}
+
 def get_order():
     with psycopg.connect(CONNECTION_INFO) as conn:
         with conn.cursor() as cur:

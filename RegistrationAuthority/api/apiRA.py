@@ -10,42 +10,17 @@ from contextlib import asynccontextmanager
 # Defining startup functionality before the application starts:
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # Saving group, generator and order to database
     save_globalinfo_to_db()
     # Notify TallyingServer and VotingServer that g and order has been generated to trigger their own keygeneration.
-    resp_TS, resp_VS = await notify_ts_and_vs()
+    await notify_ts_and_vs()
     yield # yielding control back to FastApi
 
 app = FastAPI(lifespan=lifespan)
 
-# @app.get("/triggerkeygen")
-# async def triggerkeygen():
-#     resp_TS, resp_VS = await notify_ts_and_vs()
-#     return {
-#         "db_update": "success",
-#         "tallying_server": resp_TS,
-#         "voting_server": resp_VS
-#     }
-        
-
-#app = FastAPI()
-
 @app.get("/health")
 def health():
     return {"ok": True}
-
-# save_globalinfo_to_db()
-
-# @app.get("/triggerkeygen")
-# async def triggerkeygen():
-    
-#     # Notify TallyingServer and VotingServer that g and order has been generated to trigger their own keygeneration.
-#     resp_TS, resp_VS = await notify_ts_and_vs()
-
-#     return {
-#         "db_update": "success",
-#         "tallying_server": resp_TS,
-#         "voting_server": resp_VS
-#     }
 
 # Read the new election from the json file. using fastapi
 # POST endpoint, reads filename from query string ex. name=election1.json
