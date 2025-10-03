@@ -69,16 +69,11 @@ VALUES (%s, %s)
 ON CONFLICT (ID) DO NOTHING;
 """
 
-voter_id_list = []
-election_id = None
-
 #Load data to db
 def load_election_into_db(payload: NewElectionData, connection_info: str = CONNECTION_INFO) -> None:
 
     #Writes the election, candidates, voters and relations to the DB.
     eid = payload.election.id
-    global election_id
-    election_id = eid
 
     with psycopg.connect(connection_info) as conn:
         with conn.cursor() as cur:
@@ -94,7 +89,6 @@ def load_election_into_db(payload: NewElectionData, connection_info: str = CONNE
             # Insert Voters + relation (no keys yet)
             for v in payload.voters:
                 cur.execute(SQL_INSERT_VOTER, (v.id, v.name))
-                voter_id_list.append(v.id)
 
     
 #This is to load into DB directly not via fastapi    
