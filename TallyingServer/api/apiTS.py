@@ -1,9 +1,10 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 import os
 import psycopg
 import asyncio
 from petlib.bn import Bn # For casting database values to petlib big integer types.
 from petlib.ec import EcGroup, EcPt, EcGroup
+import httpx
 
 DATABASE_URL = os.getenv("DATABASE_URL")
 
@@ -68,3 +69,13 @@ async def send_pk_to_DB():
         cur.close()
         conn.close()
     # NOTE: We need to store secret key somehow.
+
+    # Notify Registration Authority of key creation:
+    async with httpx.AsyncClient() as client:
+        try:
+            resp = await client.post("http://ra_api:8000/key_ready", json={
+                "service": "TS",
+                "status": "ok"})
+            print("Notification sent to RA:", resp.status_code, resp.text)
+        except Exception as e:
+            raise HTTPException(status_code=502, detail=f"Unable to send keys to RA: {e}")
