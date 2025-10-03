@@ -1,9 +1,9 @@
 import os
 from fastapi import FastAPI, HTTPException, Query
 import json
-from fetchNewElection import DATA_DIR, NewElectionData, load_election_into_db, voter_id_list, election_id
+from fetchNewElection import DATA_DIR, NewElectionData, load_election_into_db #, voter_id_list, election_id
 from keygen import save_globalinfo_to_db, keygen, save_keys_to_db, notify_ts_and_vs
-from generateB0 import generate_ballot0
+#from generateB0 import generate_ballot0
 import psycopg
 import httpx
 from contextlib import asynccontextmanager
@@ -21,8 +21,6 @@ app = FastAPI(lifespan=lifespan)
 
 # Track which services have reported
 received_keys = {"VS": False, "TS": False}
-
-app = FastAPI()
 
 @app.get("/health")
 def health():
