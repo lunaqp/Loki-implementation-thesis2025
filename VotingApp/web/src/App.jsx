@@ -6,6 +6,7 @@ import CandidateSelection from "./Screens/CandidateSelection";
 import MemorableInformation from "./Screens/MemorableInformation";
 import Confirmation from "./Screens/Confirmation";
 import LoginPage from "./Screens/Login";
+import PreviousVotes from "./Screens/PreviousVotes";
 import { useState, useEffect } from "react";
 
 function App() {
@@ -59,7 +60,7 @@ function App() {
             element={<MemorableInformation />}
           />
           <Route path=":electionId/Confirmation" element={<Confirmation />} />
-          {/* <Route path=":electionId/PreviousVotes" element={<PreviousVotes />} /> */}
+          <Route path=":electionId/PreviousVotes" element={<PreviousVotes />} />
         </Routes>
       </Router>
     )
