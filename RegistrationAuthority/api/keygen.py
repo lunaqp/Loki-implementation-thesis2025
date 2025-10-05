@@ -3,14 +3,7 @@ import psycopg
 import os
 from cryptography.fernet import Fernet
 import httpx
-
-DATABASE_URL = os.getenv("DATABASE_URL")
-
-DBNAME = os.getenv("POSTGRES_DB", "appdb")
-DBUSER = os.getenv("POSTGRES_USER", "postgres")
-DBPASSWORD = os.getenv("POSTGRES_PASSWORD", "postgres")
-DBHOST = os.getenv("POSTGRES_HOST", "db")
-DBPORT = os.getenv("POSTGRES_PORT", "5432")
+from fetchNewElection import CONNECTION_INFO
 
 def generate_group_order():
     # Using the petlib library group operations to generate group and group values
@@ -25,7 +18,7 @@ print(f"order: {ORDER}")
 print(f"group: {GROUP}")
 
 def save_globalinfo_to_db():
-    conn = psycopg.connect(dbname=DBNAME, user=DBUSER, password=DBPASSWORD, host=DBHOST, port=DBPORT)
+    conn = psycopg.connect(CONNECTION_INFO)
     cur = conn.cursor()
     cur.execute("""
                 UPDATE GlobalInfo
@@ -43,6 +36,7 @@ async def notify_ts_and_vs():
         resp_TS = await client.get("http://ts_api:8000/ts_resp")
         # Call VotingServer:
         resp_VS = await client.get("http://vs_api:8000/vs_resp")
+
     return resp_TS.json(), resp_VS.json()
 
 # Generate private and public keys for each voter
@@ -51,16 +45,14 @@ def keygen(voter_list, election_id):
     for id in voter_list:
         secret_key = ORDER.random() 
         public_key = secret_key * GENERATOR
-        print(f"pk: {public_key}")
-        print(f"sk: {secret_key}")
         enc_secret_key = encrypt_key(secret_key)
-        print(f"encrypted sk: {enc_secret_key}")
         voter_info.append([election_id, id, public_key, enc_secret_key])
+
     return voter_info
 
 # Save keymaterial to database for each voter
 def save_keys_to_db(voter_info):
-    conn = psycopg.connect(dbname=DBNAME, user=DBUSER, password=DBPASSWORD, host=DBHOST, port=DBPORT)
+    conn = psycopg.connect(CONNECTION_INFO)
     cur = conn.cursor()
     for (election_id, voter_id, public_key, enc_secret_key) in voter_info:
         cur.execute("""
@@ -74,8 +66,9 @@ def save_keys_to_db(voter_info):
 def encrypt_key(secret_key):
     ENCRYPTION_KEY = os.getenv("VOTER_SK_ENCRYPTION_KEY") # Symmetric key - saved in docker-compose.yml. NOTE: Should be moved outside of repository.
     cipher = Fernet(ENCRYPTION_KEY)
-    # encrypt() returns: A URL-safe base64-encoded secure message that cannot be read or altered without the key. This is referred to as a “Fernet token”.
+    # the encrypt() function returns a URL-safe base64-encoded secure message that cannot be read or altered without the key - a “Fernet token”.
     encrypted_secret_key = cipher.encrypt(str(secret_key).encode()) # Fernet needs byte objects or strings.
+    
     return encrypted_secret_key
 
 # Only for testing if decryption worked - might be relevant in VotingApp

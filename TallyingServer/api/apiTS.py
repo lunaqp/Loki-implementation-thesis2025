@@ -53,7 +53,7 @@ async def keygen():
     _, GENERATOR, ORDER = await get_order()
     secret_key = ORDER.random() 
     public_key = secret_key * GENERATOR
-    print(f"pk_ts: {public_key}")
+    print("TS public and private key generated")
 
     return secret_key, public_key
 

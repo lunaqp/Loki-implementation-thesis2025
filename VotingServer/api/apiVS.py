@@ -5,6 +5,7 @@ import asyncio
 from petlib.bn import Bn # For casting database values to petlib big integer types.
 from petlib.ec import EcGroup, EcPt, EcGroup
 import httpx
+from models import BallotPayload
 
 app = FastAPI()
 
@@ -53,7 +54,7 @@ async def keygen():
     _, GENERATOR, ORDER = await get_order()
     secret_key = ORDER.random() 
     public_key = secret_key * GENERATOR
-    print(f"pk_vs: {public_key}")
+    print("VS public and private key generated")
 
     return secret_key, public_key
 
@@ -80,3 +81,9 @@ async def send_pk_to_DB():
             print("Notification sent to RA:", resp.status_code, resp.text) # Should error handling be based on response code as well as exceptions?
         except Exception as e:
             raise HTTPException(status_code=502, detail=f"Unable to send keys to RA: {e}")
+
+@app.post("/ballot0list")
+async def receive_ballotlist(payload: BallotPayload):
+    print(f"Received election {payload.electionid}, {len(payload.ballot0list)} ballots")
+    # NOTE: Validate ballots before sending to CBR via BB.
+    return {"status": "ok"}
