@@ -86,4 +86,18 @@ async def send_pk_to_DB():
 async def receive_ballotlist(payload: BallotPayload):
     print(f"Received election {payload.electionid}, {len(payload.ballot0list)} ballots")
     # NOTE: Validate ballots before sending to CBR via BB.
+    # for each ballot in payload.ballot0list
+        # if validate(Ballot) aappend(Ballot)
+        # else print("failed to validate ballot, will not append")
     return {"status": "ok"}
+
+# validate(Ballot, pk_vs, pk_ts, voters, candidates, Lid):
+    # Check that ballot is not already on bb
+    # Verify proof
+
+# append(Ballot, timestamp, )
+    validate(ballot) 
+
+# generateEpochs()
+
+# obfuscate()

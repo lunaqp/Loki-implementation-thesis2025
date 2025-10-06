@@ -17,6 +17,7 @@ def generate_ballot0(voter_id, public_key_voter, candidates):
 
     return ballot0
 
+# Fetch public keys from Tallying Server and Voting Server
 def fetch_public_keys():
     conn = psycopg.connect(CONNECTION_INFO)
     cur = conn.cursor()
@@ -41,6 +42,7 @@ def enc(g, pk, m, r):
     
     return (c0, c1)
 
+# Serialising ballot 0 list into pydantic objects for transferring to VS
 def serialise(ballot_list):
     serialised_ballot_list = []
     for ballot in ballot_list:
