@@ -7,33 +7,33 @@ import psycopg
 app = FastAPI()
 DATABASE_URL = os.getenv("DATABASE_URL")
 
-# Loading testdata into database (temporary)
-DBNAME = os.getenv("POSTGRES_DB", "appdb")
-DBUSER = os.getenv("POSTGRES_USER", "postgres")
-DBPASSWORD = os.getenv("POSTGRES_PASSWORD", "postgres")
-DBHOST = os.getenv("POSTGRES_HOST", "db")
-DBPORT = os.getenv("POSTGRES_PORT", "5432")
+# # Loading testdata into database (temporary)
+# DBNAME = os.getenv("POSTGRES_DB", "appdb")
+# DBUSER = os.getenv("POSTGRES_USER", "postgres")
+# DBPASSWORD = os.getenv("POSTGRES_PASSWORD", "postgres")
+# DBHOST = os.getenv("POSTGRES_HOST", "db")
+# DBPORT = os.getenv("POSTGRES_PORT", "5432")
 
-# After having created a postgres database, establish connection with the relevant info:
-conn = psycopg.connect(dbname=DBNAME, user=DBUSER, password=DBPASSWORD, host=DBHOST, port=DBPORT)
+# # After having created a postgres database, establish connection with the relevant info:
+# conn = psycopg.connect(dbname=DBNAME, user=DBUSER, password=DBPASSWORD, host=DBHOST, port=DBPORT)
 
-# Open a cursor to perform database operations
-cur = conn.cursor()
+# # Open a cursor to perform database operations
+# cur = conn.cursor()
 
-cur.execute("SELECT COUNT(*) FROM Elections;")
-row_count = cur.fetchone()[0]
+# cur.execute("SELECT COUNT(*) FROM Elections;")
+# row_count = cur.fetchone()[0]
 
-if row_count == 0:
-    print("Database is empty, inserting test values...")
-    with open("testvalues.sql", "r") as f:
-        sql = f.read()
-    cur.execute(sql)
-    conn.commit()
-else:
-    print(f"Database already has data, skipping insertion.")
+# if row_count == 0:
+#     print("Database is empty, inserting test values...")
+#     with open("testvalues.sql", "r") as f:
+#         sql = f.read()
+#     cur.execute(sql)
+#     conn.commit()
+# else:
+#     print(f"Database already has data, skipping insertion.")
 
-cur.close()
-conn.close()
+# cur.close()
+# conn.close()
 
 @app.get("/health")
 def health():
