@@ -32,16 +32,6 @@ const PageTemplate = ({
    * @param {ReactNote} props.children - The content to display inside the <Screen> element (this can include any React components or JSX).
    * @returns {JSX.Element} A styled <Screen> component containing the children passed to it.
    */
-  const Screen = ({ children }) => {
-    return (
-      <StyledScreen
-        columnLayout={columnLayout}
-        $adjustableHeight={adjustableHeight}
-      >
-        {children}
-      </StyledScreen>
-    );
-  };
 
   return (
     <Page>
@@ -52,7 +42,12 @@ const PageTemplate = ({
       </Header>
       <BodyContainer>
         <ProgressBar array={steps} filled={progress} />
-        <Screen>{children}</Screen>
+        <StyledScreen
+          columnLayout={columnLayout}
+          $adjustableHeight={adjustableHeight}
+        >
+          {children}
+        </StyledScreen>
       </BodyContainer>
     </Page>
   );
@@ -94,6 +89,7 @@ const BodyContainer = styled.div`
   align-items: center;
   width: 1200px;
   gap: 20px;
+  padding-bottom: 60px;
 `;
 const StyledScreen = styled.div`
   width: 1200px;
