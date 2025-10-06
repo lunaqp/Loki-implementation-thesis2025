@@ -40,20 +40,20 @@ CREATE TABLE VoterParticipatesInElection (
     ElectionID INT REFERENCES Elections(ID),
     VoterID INT REFERENCES Voters(ID),
     PRIMARY KEY (VoterID, ElectionID),
-    PublicKey TEXT NOT NULL, -- What type should the keys be stored as? BYTEA?
-    SecretKey BYTEA NOT NULL -- Type? + Security considerations for storing this data?
+    PublicKey BYTEA NOT NULL,
+    SecretKey BYTEA NOT NULL -- Currently saved encrypted with a symmetric key.
 );
 
 CREATE TYPE ct_tuple AS (
-    c1 NUMERIC, -- what type to use? Numeric/BYTEA/BIGINT instead of int?
-    c2 NUMERIC
+    c1 BYTEA, 
+    c2 BYTEA
 );
 
 CREATE TABLE Ballots (
     ID INT PRIMARY KEY,
-    CtCandidate ct_tuple NOT NULL,
+    CtCandidate ct_tuple ARRAY NOT NULL,
     CtVoterList ct_tuple NOT NULL,
-    CtVotingServerList ct_tuple NOT NULL, -- Should not be stored here - sensitive information.
+    CtVotingServerList ct_tuple NOT NULL,
     Valid BOOLEAN NOT NULL
 );
 
@@ -77,9 +77,13 @@ CREATE TABLE VotingServer (
 
 CREATE TABLE GlobalInfo ( -- Probably not ints.
     ID INT PRIMARY KEY,
-    PublicKeyTallier INT,
-    PublicKeyVotingServer INT,
-    Generator TEXT,
-    OrderP NUMERIC
+    PublicKeyTallyingServer BYTEA,
+    PublicKeyVotingServer BYTEA,
+    GroupCurve INT,
+    Generator BYTEA,
+    OrderP BYTEA
 );
+
+INSERT INTO GlobalInfo (ID, PublicKeyTallyingServer, PublicKeyVotingServer, Generator, OrderP) VALUES
+    (0, null, null, null, null)
 
