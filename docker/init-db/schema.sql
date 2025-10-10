@@ -54,6 +54,7 @@ CREATE TABLE Ballots (
     CtCandidate ct_tuple ARRAY NOT NULL,
     CtVoterList ct_tuple NOT NULL,
     CtVotingServerList ct_tuple NOT NULL,
+    BallotHash TEXT NOT NULL,
     Valid BOOLEAN NOT NULL
 );
 
@@ -83,6 +84,24 @@ CREATE TABLE GlobalInfo ( -- Probably not ints.
     Generator BYTEA,
     OrderP BYTEA
 );
+
+-- INSERT INTO Ballots ( 
+--     ID, 
+--     CtCandidate,
+--     CtVoterList,
+--     CtVotingServerList,
+--     Valid
+-- )
+-- VALUES (
+--     1,
+--     ARRAY[
+--         ROW(E'\\xDEAFDECA', E'\\xDEEEDECA')::ct_tuple,
+--         ROW(E'\\xDEAADECA', E'\\xDEFFDECA')::ct_tuple
+--     ],
+--     ROW(E'\\xDEAFDECA', E'\\xDEEEDECA')::ct_tuple,
+--     ROW(E'\\xDEAADECA', E'\\xDEFFDECA')::ct_tuple,
+--     TRUE
+-- );
 
 INSERT INTO GlobalInfo (ID, PublicKeyTallyingServer, PublicKeyVotingServer, Generator, OrderP) VALUES
     (0, null, null, null, null)

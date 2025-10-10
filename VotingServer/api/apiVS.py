@@ -6,6 +6,8 @@ from petlib.bn import Bn # For casting database values to petlib big integer typ
 from petlib.ec import EcGroup, EcPt, EcGroup
 import httpx
 from models import BallotPayload
+from ValidateBallot import validateBallot
+
 
 app = FastAPI()
 
@@ -85,6 +87,14 @@ async def send_pk_to_DB():
 @app.post("/ballot0list")
 async def receive_ballotlist(payload: BallotPayload):
     print(f"Received election {payload.electionid}, {len(payload.ballot0list)} ballots")
+
+        
+    
+    for ballot in payload.ballot0list:
+        if validateBallot(ballot, payload.electionid):
+            print("ballot validated")
+        else:
+            print("ballot not valid")
     # NOTE: Validate ballots before sending to CBR via BB.
     # for each ballot in payload.ballot0list
         # if validate(Ballot) aappend(Ballot)

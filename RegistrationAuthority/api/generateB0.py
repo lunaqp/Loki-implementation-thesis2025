@@ -3,6 +3,7 @@ import psycopg
 from fetchNewElection import CONNECTION_INFO
 from petlib.ec import EcPt
 from models import Ballot
+import hashlib
 
 def generate_ballot0(voter_id, public_key_voter, candidates): 
     # Build ctbar (ctbar = (ctv, ctlv, ctlid, proof))
@@ -14,6 +15,9 @@ def generate_ballot0(voter_id, public_key_voter, candidates):
     ctlid = ctl0 # ctlid is identical to ctlv for ballot 0 since it sets "ctl0 = ctlid = enc(pk_vs, 0, r)".
     # Build ballot (Ballot = (id, upk, ct_bar))
     ballot0 = (voter_id, public_key_voter, ct0, ctl0, ctlid, r0)
+
+    # hashed_ballot = "Hash:" + str(hash(ballot0))
+    # print(hashed_ballot)
 
     return ballot0
 
@@ -61,6 +65,8 @@ def serialise(ballot_list):
             ctlid = ctlid,
             proof = proof
         )
+        hashed_ballot = hashlib.sha256(pyBallot.model_dump_json().encode("utf-8")).hexdigest()
+        print(hashed_ballot)
         serialised_ballot_list.append(pyBallot) 
 
     return serialised_ballot_list
