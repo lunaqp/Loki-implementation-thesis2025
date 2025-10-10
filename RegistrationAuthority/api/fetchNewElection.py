@@ -1,6 +1,6 @@
 from __future__ import annotations
 import os, json, argparse
-from datetime import date
+from datetime import date, datetime
 from typing import List 
 import psycopg
 from pydantic import BaseModel #base for requests/respone data models
@@ -35,8 +35,8 @@ class Voter(BaseModel):
 class Election(BaseModel):
     id: int
     name: str
-    start: date #should be ISO format
-    end: date
+    start: datetime #should be ISO format
+    end: datetime
 
 #Defines whole request loader expects
 class NewElectionData(BaseModel):

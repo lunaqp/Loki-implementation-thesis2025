@@ -13,8 +13,8 @@ DROP TYPE IF EXISTS ct_tuple CASCADE;
 CREATE TABLE Elections (
     ID INT PRIMARY KEY,
     Name VARCHAR(50) NOT NULL,
-    ElectionStart DATE NOT NULL,
-    ElectionEnd DATE NOT NULL
+    ElectionStart TIMESTAMPTZ NOT NULL,
+    ElectionEnd TIMESTAMPTZ NOT NULL
 );
 
 CREATE TABLE Candidates (
