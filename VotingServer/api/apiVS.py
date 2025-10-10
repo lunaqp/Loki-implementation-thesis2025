@@ -8,6 +8,7 @@ import httpx
 from models import BallotPayload
 from ValidateBallot import validateBallot
 
+from epochGeneration import generate_timestamps
 
 app = FastAPI()
 
@@ -99,6 +100,7 @@ async def receive_ballotlist(payload: BallotPayload):
     # for each ballot in payload.ballot0list
         # if validate(Ballot) aappend(Ballot)
         # else print("failed to validate ballot, will not append")
+    generate_timestamps(123)
     return {"status": "ok"}
 
 # validate(Ballot, pk_vs, pk_ts, voters, candidates, Lid):
