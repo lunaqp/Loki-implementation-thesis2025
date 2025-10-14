@@ -57,6 +57,17 @@ async def keygen():
 
     return secret_key, public_key
 
+# async def send_publickey_to_bb(KEY):
+#     _, public_key = await keygen() 
+#     async with httpx.AsyncClient() as client:
+#         try:
+#             resp = await client.post("http://ra_api:8000/key_ready", json={
+#                 "service": "TS",
+#                 "status": "ok"})
+#             print("Notification sent to RA:", resp.status_code, resp.text)
+#         except Exception as e:
+#             raise HTTPException(status_code=502, detail=f"Unable to send keys to RA: {e}")
+
 async def send_pk_to_DB():
     _, public_key = await keygen() 
     with psycopg.connect(CONNECTION_INFO) as conn:

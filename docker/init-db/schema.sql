@@ -104,5 +104,5 @@ CREATE TABLE GlobalInfo ( -- Probably not ints.
 -- );
 
 INSERT INTO GlobalInfo (ID, PublicKeyTallyingServer, PublicKeyVotingServer, Generator, OrderP) VALUES
-    (0, null, null, null, null)
+    (0, null, null, null, null);
 

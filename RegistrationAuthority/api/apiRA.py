@@ -2,19 +2,18 @@ import os
 from fastapi import FastAPI, HTTPException, Query
 import json
 from fetchNewElection import DATA_DIR, NewElectionData, load_election_into_db
-from keygen import save_globalinfo_to_db, keygen, save_keys_to_db, notify_ts_and_vs
+from keygen import keygen, save_keys_to_db, GROUP, ORDER, GENERATOR
 from generateB0 import generate_ballot0, serialise
 from contextlib import asynccontextmanager
 import requests
-from models import BallotPayload
+from models import BallotPayload, ElGamalParams
+import httpx
+import base64
 
 # Defining startup functionality before the application starts:
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Saving group, generator and order to database
-    save_globalinfo_to_db()
-    # Notify TallyingServer and VotingServer that g and order has been generated to trigger their own keygeneration.
-    await notify_ts_and_vs()
+    await send_params_to_bb()
     yield # yielding control back to FastApi
 
 app = FastAPI(lifespan=lifespan)
@@ -28,6 +27,26 @@ pending_generation = None
 @app.get("/health")
 def health():
     return {"ok": True}
+
+# @app.post("/send-params")
+async def send_params_to_bb():
+    print("sending elgamal params to BB...")
+    
+    params = ElGamalParams(
+        group = GROUP.nid(),
+        generator = base64.b64encode(GENERATOR.export()).decode(),
+        order = base64.b64encode(ORDER.binary()).decode()
+    )
+
+    async with httpx.AsyncClient() as client:
+        response = await client.post("http://bb_api:8000/receive-params", json=params.model_dump())
+
+    try:
+        response_data = response.json() if response.content else None
+    except ValueError:
+        response_data = response.text
+
+    return {"status": "sent elgamal Parameters to BB", "response": response_data}
 
 # Read the new election from the json file using fastapi
 # POST endpoint, reads filename from query string ex. name=election1.json

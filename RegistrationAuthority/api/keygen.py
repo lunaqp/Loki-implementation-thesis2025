@@ -17,28 +17,6 @@ print(f"generator: {GENERATOR}")
 print(f"order: {ORDER}")
 print(f"group: {GROUP}")
 
-def save_globalinfo_to_db():
-    conn = psycopg.connect(CONNECTION_INFO)
-    cur = conn.cursor()
-    cur.execute("""
-                UPDATE GlobalInfo
-                SET GroupCurve = %s, Generator = %s, OrderP = %s
-                WHERE ID = 0
-                """, (GROUP.nid(), GENERATOR.export(), ORDER.binary()))
-    conn.commit()
-    cur.close()
-    conn.close()
-
-# Notify TallyingServer and VotingServer of g and order being saved to database.
-async def notify_ts_and_vs():
-    async with httpx.AsyncClient() as client:
-        # Call TallyingServer:
-        resp_TS = await client.get("http://ts_api:8000/ts_resp")
-        # Call VotingServer:
-        resp_VS = await client.get("http://vs_api:8000/vs_resp")
-
-    return resp_TS.json(), resp_VS.json()
-
 # Generate private and public keys for each voter
 def keygen(voter_list, election_id):
     voter_info = []

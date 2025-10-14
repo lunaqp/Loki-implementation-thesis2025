@@ -3,37 +3,13 @@ import queries as db
 from fastapi import FastAPI
 import os
 import psycopg
+from models import ElGamalParams
+import base64
+import dbcalls as db
+from notifications import notify_ts_vs_params_saved
+import asyncio
 
 app = FastAPI()
-DATABASE_URL = os.getenv("DATABASE_URL")
-
-# # Loading testdata into database (temporary)
-# DBNAME = os.getenv("POSTGRES_DB", "appdb")
-# DBUSER = os.getenv("POSTGRES_USER", "postgres")
-# DBPASSWORD = os.getenv("POSTGRES_PASSWORD", "postgres")
-# DBHOST = os.getenv("POSTGRES_HOST", "db")
-# DBPORT = os.getenv("POSTGRES_PORT", "5432")
-
-# # After having created a postgres database, establish connection with the relevant info:
-# conn = psycopg.connect(dbname=DBNAME, user=DBUSER, password=DBPASSWORD, host=DBHOST, port=DBPORT)
-
-# # Open a cursor to perform database operations
-# cur = conn.cursor()
-
-# cur.execute("SELECT COUNT(*) FROM Elections;")
-# row_count = cur.fetchone()[0]
-
-# if row_count == 0:
-#     print("Database is empty, inserting test values...")
-#     with open("testvalues.sql", "r") as f:
-#         sql = f.read()
-#     cur.execute(sql)
-#     conn.commit()
-# else:
-#     print(f"Database already has data, skipping insertion.")
-
-# cur.close()
-# conn.close()
 
 @app.get("/health")
 def health():
@@ -44,10 +20,47 @@ def health():
 def hello():
     return {"message": "Hello World from BulletinBoard!"}
 
-@app.get("/candidates")
-def candidates():
-    candidates = db.fetch_candidates_for_election(0)
-    candidates_dict = [{"id": cid, "name": name} for cid, name in candidates]
-    print(candidates_dict)
-    return {"candidates": candidates_dict}
+# @app.get("/candidates")
+# def candidates():
+#     candidates = db.fetch_candidates_for_election(0)
+#     candidates_dict = [{"id": cid, "name": name} for cid, name in candidates]
+#     print(candidates_dict)
+#     return {"candidates": candidates_dict}
 
+@app.get("/elgamalparams")
+async def get_params():
+    GROUP, GENERATOR, ORDER = await db.fetch_params()
+
+    return {
+    "group": GROUP,
+    "generator": base64.b64encode(GENERATOR).decode(), # Base 64 encoded for tranfer
+    "order": base64.b64encode(ORDER).decode(),  # Base 64 encoded for tranfer
+    }
+
+
+
+@app.post("/receive-params")
+async def receive_params(params: ElGamalParams):
+    GROUP = params.group
+    GENERATOR = base64.b64decode(params.generator)
+    ORDER = base64.b64decode(params.order)
+
+    # Creating an async loop for the database access since psycopg2 only allows syncronized access.
+    loop = asyncio.get_event_loop()
+    await loop.run_in_executor(None, db.save_elgamalparams, GROUP, GENERATOR, ORDER)
+    await notify_ts_vs_params_saved()
+
+    return {"status": "ElGamal parameters saved"}
+
+@app.post("/vs-key")
+def receive_key(key):
+    KEY = base64.b64decode(key)
+    db.save_key_to_db("VS", KEY)
+
+    return {"status": "Voting Server public key saved"}
+
+@app.post("/ts-key")
+def receive_key(key):
+    db.save_key_to_db("TS", key)
+
+    return {"status": "Tallying Server public key saved"}
