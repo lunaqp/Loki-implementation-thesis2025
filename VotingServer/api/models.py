@@ -12,3 +12,8 @@ class Ballot(BaseModel):
 class BallotPayload(BaseModel):
     electionid: int
     ballot0list: List[Ballot]
+
+class ElGamalParams(BaseModel):
+    group: int
+    generator: str # base64-encoded
+    order: str # base64-encoded

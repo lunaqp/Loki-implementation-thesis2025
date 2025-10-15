@@ -4,6 +4,8 @@ from fetchNewElection import CONNECTION_INFO
 from petlib.ec import EcPt
 from models import Ballot
 import hashlib
+import requests
+from models import BallotPayload
 
 def generate_ballot0(voter_id, public_key_voter, candidates): 
     # Build ctbar (ctbar = (ctv, ctlv, ctlid, proof))
@@ -71,3 +73,14 @@ def serialise(ballot_list):
 
     return serialised_ballot_list
     
+def send_ballotlist_to_votingserver(election_id, ballot_list):
+    serialised_list = serialise(ballot_list)
+    payload = BallotPayload(
+        electionid=election_id,
+        ballot0list=serialised_list
+    )
+    print("Sending ballot0 list to vs...")
+    try:
+        requests.post("http://vs_api:8000/ballot0list", json=payload.model_dump()) # requests is synchronous
+    except requests.exceptions.RequestException as e:
+        print("Error sending ballot 0 list", e)

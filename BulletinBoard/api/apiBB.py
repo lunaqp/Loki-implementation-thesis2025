@@ -6,7 +6,7 @@ import psycopg
 from models import ElGamalParams
 import base64
 import dbcalls as db
-from notifications import notify_ts_vs_params_saved
+from notifications import notify_ts_vs_params_saved, notify_ra_public_key_saved
 import asyncio
 
 app = FastAPI()
@@ -37,8 +37,6 @@ async def get_params():
     "order": base64.b64encode(ORDER).decode(),  # Base 64 encoded for tranfer
     }
 
-
-
 @app.post("/receive-params")
 async def receive_params(params: ElGamalParams):
     GROUP = params.group
@@ -52,15 +50,14 @@ async def receive_params(params: ElGamalParams):
 
     return {"status": "ElGamal parameters saved"}
 
-@app.post("/vs-key")
-def receive_key(key):
-    KEY = base64.b64decode(key)
-    db.save_key_to_db("VS", KEY)
+@app.post("/receive-public-key")
+async def receive_key(payload: dict):
+    service = payload.get("service")
+    KEY = base64.b64decode(payload.get("key"))
+    db.save_key_to_db(service, KEY)
+    await notify_ra_public_key_saved(service)
 
-    return {"status": "Voting Server public key saved"}
+    return {"status": f"{service} public key saved"}
 
-@app.post("/ts-key")
-def receive_key(key):
-    db.save_key_to_db("TS", key)
-
-    return {"status": "Tallying Server public key saved"}
+# @app.post("/receive-election")
+# async def receive_election():

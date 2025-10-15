@@ -2,17 +2,14 @@ import os
 from fastapi import FastAPI, HTTPException, Query
 import json
 from fetchNewElection import DATA_DIR, NewElectionData, load_election_into_db
-from keygen import keygen, save_keys_to_db, GROUP, ORDER, GENERATOR
-from generateB0 import generate_ballot0, serialise
+from keygen import keygen, save_keys_to_db, send_params_to_bb
+from generateB0 import generate_ballot0, send_ballotlist_to_votingserver
 from contextlib import asynccontextmanager
-import requests
-from models import BallotPayload, ElGamalParams
-import httpx
-import base64
 
 # Defining startup functionality before the application starts:
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # await send_election_to_bb
     await send_params_to_bb()
     yield # yielding control back to FastApi
 
@@ -27,26 +24,6 @@ pending_generation = None
 @app.get("/health")
 def health():
     return {"ok": True}
-
-# @app.post("/send-params")
-async def send_params_to_bb():
-    print("sending elgamal params to BB...")
-    
-    params = ElGamalParams(
-        group = GROUP.nid(),
-        generator = base64.b64encode(GENERATOR.export()).decode(),
-        order = base64.b64encode(ORDER.binary()).decode()
-    )
-
-    async with httpx.AsyncClient() as client:
-        response = await client.post("http://bb_api:8000/receive-params", json=params.model_dump())
-
-    try:
-        response_data = response.json() if response.content else None
-    except ValueError:
-        response_data = response.text
-
-    return {"status": "sent elgamal Parameters to BB", "response": response_data}
 
 # Read the new election from the json file using fastapi
 # POST endpoint, reads filename from query string ex. name=election1.json
@@ -111,16 +88,3 @@ async def key_ready(payload: dict):
         pending_generation = None
 
     return {"ack": True}
-
-# def send_ballot0_to_vs(ballot0):
-def send_ballotlist_to_votingserver(election_id, ballot_list):
-    serialised_list = serialise(ballot_list)
-    payload = BallotPayload(
-        electionid=election_id,
-        ballot0list=serialised_list
-    )
-    print("Sending ballot0 list to vs...")
-    try:
-        requests.post("http://vs_api:8000/ballot0list", json=payload.model_dump()) # requests is synchronous
-    except requests.exceptions.RequestException as e:
-        print("Error sending ballot 0 list", e)

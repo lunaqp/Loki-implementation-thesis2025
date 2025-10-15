@@ -4,6 +4,9 @@ import os
 from cryptography.fernet import Fernet
 import httpx
 from fetchNewElection import CONNECTION_INFO
+from models import ElGamalParams
+import httpx
+import base64
 
 def generate_group_order():
     # Using the petlib library group operations to generate group and group values
@@ -16,6 +19,26 @@ GROUP, GENERATOR, ORDER = generate_group_order()
 print(f"generator: {GENERATOR}")
 print(f"order: {ORDER}")
 print(f"group: {GROUP}")
+
+
+async def send_params_to_bb():
+    print("sending elgamal params to BB...")
+    
+    params = ElGamalParams(
+        group = GROUP.nid(),
+        generator = base64.b64encode(GENERATOR.export()).decode(),
+        order = base64.b64encode(ORDER.binary()).decode()
+    )
+
+    async with httpx.AsyncClient() as client:
+        response = await client.post("http://bb_api:8000/receive-params", json=params.model_dump())
+
+    try:
+        response_data = response.json() if response.content else None
+    except ValueError:
+        response_data = response.text
+
+    return {"status": "sent elgamal Parameters to BB", "response": response_data}
 
 # Generate private and public keys for each voter
 def keygen(voter_list, election_id):

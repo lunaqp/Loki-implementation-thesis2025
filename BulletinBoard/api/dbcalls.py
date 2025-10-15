@@ -1,7 +1,5 @@
 import psycopg
 import os
-from petlib.bn import Bn # For casting database values to petlib big integer types.
-from petlib.ec import EcGroup, EcPt, EcGroup
 
 DB_NAME = os.getenv("POSTGRES_DB", "appdb")
 DB_USER = os.getenv("POSTGRES_USER", "postgres")
@@ -41,6 +39,7 @@ def save_key_to_db(service, KEY):
     conn.commit()
     cur.close()
     conn.close()
+    print(f"public key received from {service} and saved to database")
 
 
 ## ---------------- READING FROM DB ---------------- ##
@@ -55,14 +54,6 @@ async def fetch_params():
                 WHERE ID = 0
             """)
             (GROUP, GENERATOR, ORDER) = cur.fetchone()
-            
-            # Convert database values to Petlib types:
-            # GROUP = EcGroup(group)
-            # GENERATOR = EcPt.from_binary(generator, GROUP)
-            # ORDER = Bn.from_binary(order)
-            # print(f"generator: {GENERATOR}")
-            # print(f"order: {ORDER}")
-            # print(f"group: {GROUP}")
             return GROUP, GENERATOR, ORDER
         cur.close()
         conn.close()
