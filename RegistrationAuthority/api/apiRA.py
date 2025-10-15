@@ -1,10 +1,11 @@
 import os
 from fastapi import FastAPI, HTTPException, Query
 import json
-from fetchNewElection import DATA_DIR, NewElectionData, load_election_into_db
+from fetchNewElection import DATA_DIR, NewElectionData
 from keygen import keygen, save_keys_to_db, send_params_to_bb
 from generateB0 import generate_ballot0, send_ballotlist_to_votingserver
 from contextlib import asynccontextmanager
+import httpx
 
 # Defining startup functionality before the application starts:
 @asynccontextmanager
@@ -28,7 +29,7 @@ def health():
 # Read the new election from the json file using fastapi
 # POST endpoint, reads filename from query string ex. name=election1.json
 @app.post("/elections/load-file")
-def load_election_from_file(name: str = Query(..., description="Filename inside DATA_DIR")):
+async def load_election_from_file(name: str = Query(..., description="Filename inside DATA_DIR")):
     global pending_generation
 
     path = os.path.join(DATA_DIR, name) #builds path in DATA_DIR
@@ -39,8 +40,9 @@ def load_election_from_file(name: str = Query(..., description="Filename inside 
             data = json.load(f) #reads and parses json file
 
         payload = NewElectionData.model_validate(data) #pyladic validation, converts raw dict into typed NewElectionData
-        load_election_into_db(payload) #calls loader to write into the DB, returns small succes msg
-        
+
+        await send_election_to_bb(payload)
+
         # Generate and save voter keys to database
         voter_id_list = [voter.id for voter in payload.voters ]
         voter_info = keygen(voter_id_list, payload.election.id)
@@ -88,3 +90,14 @@ async def key_ready(payload: dict):
         pending_generation = None
 
     return {"ack": True}
+
+async def send_election_to_bb(payload):
+    print(payload.model_dump(mode="json"))
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.post("http://bb_api:8000/receive-election", content=payload.model_dump_json())
+            response.raise_for_status() # gets http status code
+            print(f"election sent to BB with id {payload.election.id}")
+            return response.json()
+    except Exception as e:
+        print(f"Error sending election payload: {e}")

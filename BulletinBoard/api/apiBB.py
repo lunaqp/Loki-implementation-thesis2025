@@ -3,7 +3,7 @@ import queries as db
 from fastapi import FastAPI
 import os
 import psycopg
-from models import ElGamalParams
+from models import ElGamalParams, NewElectionData
 import base64
 import dbcalls as db
 from notifications import notify_ts_vs_params_saved, notify_ra_public_key_saved
@@ -59,5 +59,9 @@ async def receive_key(payload: dict):
 
     return {"status": f"{service} public key saved"}
 
-# @app.post("/receive-election")
-# async def receive_election():
+@app.post("/receive-election")
+async def receive_election(payload: NewElectionData):
+    db.load_election_into_db(payload)
+    print(f"election loaded with id {payload.election.id}")
+    
+    return {"status": "new election loaded into database"}

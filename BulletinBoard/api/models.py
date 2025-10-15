@@ -1,6 +1,31 @@
 from pydantic import BaseModel
+from datetime import datetime
+from typing import List 
 
 class ElGamalParams(BaseModel):
     group: int
     generator: str # base64-encoded
     order: str # base64-encoded
+
+#pydandic models: when data is parsed to this model, it make automatic input validation and raises errors if fiels are missing or wrong
+#pydandic: converts string "123" into int.parsing dates.
+#Declares shape and type of the data object. ex. candidates: id, name
+class Candidate(BaseModel):
+    id: int
+    name: str
+
+class Voter(BaseModel):
+    id: int
+    name: str
+
+class Election(BaseModel):
+    id: int
+    name: str
+    start: datetime #should be ISO format
+    end: datetime
+
+#Defines whole request loader expects
+class NewElectionData(BaseModel):
+    election: Election
+    candidates: List[Candidate] = []
+    voters: List[Voter] = []
