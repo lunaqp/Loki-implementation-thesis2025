@@ -1,10 +1,8 @@
 from petlib.ec import EcGroup
-import psycopg
 import os
 from cryptography.fernet import Fernet
 import httpx
-from fetchNewElection import CONNECTION_INFO
-from models import ElGamalParams
+from models import ElGamalParams, VoterKey, VoterKeyList
 import httpx
 import base64
 
@@ -19,7 +17,6 @@ GROUP, GENERATOR, ORDER = generate_group_order()
 print(f"generator: {GENERATOR}")
 print(f"order: {ORDER}")
 print(f"group: {GROUP}")
-
 
 async def send_params_to_bb():
     print("sending elgamal params to BB...")
@@ -42,27 +39,28 @@ async def send_params_to_bb():
 
 # Generate private and public keys for each voter
 def keygen(voter_list, election_id):
-    voter_info = []
+    voter_key_list = VoterKeyList(voterkeylist=[])
+
     for id in voter_list:
-        secret_key = ORDER.random() 
+        secret_key = ORDER.random() # save secret key locally.
         public_key = secret_key * GENERATOR
-        enc_secret_key = encrypt_key(secret_key)
-        voter_info.append([election_id, id, public_key, enc_secret_key])
+        enc_secret_key = encrypt_key(secret_key) 
 
-    return voter_info
+        voter_key = VoterKey(
+            electionid = election_id,
+            voterid = id,
+            publickey = base64.b64encode(public_key.export()).decode()
+        )
+        voter_key_list.voterkeylist.append(voter_key)
+    
+    return voter_key_list
 
-# Save keymaterial to database for each voter
-def save_keys_to_db(voter_info):
-    conn = psycopg.connect(CONNECTION_INFO)
-    cur = conn.cursor()
-    for (election_id, voter_id, public_key, enc_secret_key) in voter_info:
-        cur.execute("""
-                    INSERT INTO VoterParticipatesInElection (ElectionID, VoterID, PublicKey, SecretKey)
-                    VALUES (%s, %s, %s, %s)
-                    """, (election_id, voter_id, public_key.export(), enc_secret_key))
-    conn.commit()
-    cur.close()
-    conn.close()
+async def send_keys_to_bb(voter_info: VoterKeyList):
+    async with httpx.AsyncClient() as client:
+        response = await client.post("http://bb_api:8000/receive-voter-keys", content = voter_info.model_dump_json())
+        response.raise_for_status()
+        print("voter public keys sent to BB")        
+
 
 def encrypt_key(secret_key):
     ENCRYPTION_KEY = os.getenv("VOTER_SK_ENCRYPTION_KEY") # Symmetric key - saved in docker-compose.yml. NOTE: Should be moved outside of repository.

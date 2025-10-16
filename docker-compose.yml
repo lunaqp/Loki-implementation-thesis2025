@@ -44,8 +44,6 @@ services:
       DATABASE_URL: postgresql://postgres:postgres@db:5432/appdb
       VOTER_SK_ENCRYPTION_KEY: K2QWtYSxwTUzCPF7w8uWWB_QwMFReMtAFHd3bq5tJqQ=
     depends_on:
-      db:
-        condition: service_healthy
       vs_api:
         condition: service_healthy
       ts_api:
@@ -63,9 +61,6 @@ services:
       DATABASE_URL: postgresql://postgres:postgres@db:5432/appdb
       BB_API_URL: http://bb_api:8000
       VOTER_SK_DECRYPTION_KEY: K2QWtYSxwTUzCPF7w8uWWB_QwMFReMtAFHd3bq5tJqQ=
-    depends_on:
-      db:
-        condition: service_healthy
     ports:
       - "8003:8000"
 
@@ -81,7 +76,6 @@ services:
     depends_on:
       - va_api
       - bb_api
-      - ra_api
     ports:
       - "5173:80"
 

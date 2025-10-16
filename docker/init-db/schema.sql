@@ -40,8 +40,8 @@ CREATE TABLE VoterParticipatesInElection (
     ElectionID INT REFERENCES Elections(ID),
     VoterID INT REFERENCES Voters(ID),
     PRIMARY KEY (VoterID, ElectionID),
-    PublicKey BYTEA NOT NULL,
-    SecretKey BYTEA NOT NULL -- Currently saved encrypted with a symmetric key.
+    PublicKey BYTEA NOT NULL
+    -- SecretKey BYTEA NOT NULL -- Currently saved encrypted with a symmetric key.
 );
 
 CREATE TYPE ct_tuple AS (

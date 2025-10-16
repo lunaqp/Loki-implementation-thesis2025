@@ -1,6 +1,7 @@
 import psycopg
 import os
-from models import NewElectionData
+from models import NewElectionData, VoterKeyList
+import base64
 
 DB_NAME = os.getenv("POSTGRES_DB", "appdb")
 DB_USER = os.getenv("POSTGRES_USER", "postgres")
@@ -9,7 +10,9 @@ DB_HOST = os.getenv("POSTGRES_HOST", "db")  # docker service name
 DB_PORT = int(os.getenv("POSTGRES_PORT", "5432"))
 CONNECTION_INFO = f"dbname={DB_NAME} user={DB_USER} password={DB_PASS} host={DB_HOST} port={DB_PORT}" # all info that psycopg needs to connect to db
 
+
 ## ---------------- WRITING TO DB ---------------- ##
+
 
 # loading a newly received election into the database:
 #SQL statements to be executed
@@ -89,6 +92,21 @@ def save_key_to_db(service, KEY):
     conn.close()
     print(f"public key received from {service} and saved to database")
 
+# Save keymaterial to database for each voter
+def save_voter_keys_to_db(voter_key_list: VoterKeyList):
+    conn = psycopg.connect(CONNECTION_INFO)
+    cur = conn.cursor()
+    print("saving voter public keys to database")
+    list = voter_key_list.voterkeylist
+    for voter_key in list:
+        cur.execute("""
+                    INSERT INTO VoterParticipatesInElection (ElectionID, VoterID, PublicKey)
+                    VALUES (%s, %s, %s)
+                    """, (voter_key.electionid, voter_key.voterid, base64.b64decode(voter_key.publickey))) # Decode base64 to retrieve byte object
+    conn.commit()
+    cur.close()
+    conn.close()
+
 
 ## ---------------- READING FROM DB ---------------- ##
 
@@ -105,3 +123,19 @@ async def fetch_params():
             return GROUP, GENERATOR, ORDER
         cur.close()
         conn.close()
+
+
+# Query for fetching all candidates running in a given election id:
+def fetch_candidates_for_election(election_id): # Should cursor be given as parameter?
+    conn = psycopg.connect(CONNECTION_INFO)
+    cur = conn.cursor()
+    cur.execute("""
+                SELECT c.ID, c.Name
+                FROM Candidates c
+                JOIN CandidateRunsInElection cr on c.ID = cr.CandidateID
+                WHERE cr.ElectionID = %s;""",
+                (election_id,)
+                )
+    # Retrieve query results
+    records = cur.fetchall()
+    return records

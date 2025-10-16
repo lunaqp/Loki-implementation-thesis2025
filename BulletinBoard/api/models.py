@@ -29,3 +29,11 @@ class NewElectionData(BaseModel):
     election: Election
     candidates: List[Candidate] = []
     voters: List[Voter] = []
+
+class VoterKey(BaseModel):
+    electionid: int
+    voterid: int
+    publickey: str # base64 encoded
+
+class VoterKeyList(BaseModel):
+    voterkeylist: List[VoterKey]

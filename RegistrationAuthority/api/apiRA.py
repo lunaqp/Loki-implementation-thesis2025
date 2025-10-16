@@ -2,10 +2,11 @@ import os
 from fastapi import FastAPI, HTTPException, Query
 import json
 from fetchNewElection import DATA_DIR, NewElectionData
-from keygen import keygen, save_keys_to_db, send_params_to_bb
+from keygen import keygen, send_params_to_bb, send_keys_to_bb
 from generateB0 import generate_ballot0, send_ballotlist_to_votingserver
 from contextlib import asynccontextmanager
 import httpx
+from models import VoterKeyList
 
 # Defining startup functionality before the application starts:
 @asynccontextmanager
@@ -45,13 +46,13 @@ async def load_election_from_file(name: str = Query(..., description="Filename i
 
         # Generate and save voter keys to database
         voter_id_list = [voter.id for voter in payload.voters ]
-        voter_info = keygen(voter_id_list, payload.election.id)
-        save_keys_to_db(voter_info)
+        voter_key_list: VoterKeyList = keygen(voter_id_list, payload.election.id)
+        await send_keys_to_bb(voter_key_list)
 
-        # Define what should happen once keys are ready
+        # Define function for ballot0-generation that should happen once keys are ready
         def do_generation():
             print("Keys ready! Generating ballot0 for each voter.")
-            voter_id_upk_list = [(b, c) for (_, b, c, _) in voter_info]
+            voter_id_upk_list = [(voter_key.voterid, voter_key.publickey) for voter_key in voter_key_list.voterkeylist] # _ = election_id, b = voter_id, c = public_key_voter
             ballot0_list = []
             for voter_id, public_key_voter in voter_id_upk_list:
                 ballot0 = generate_ballot0(
@@ -62,7 +63,7 @@ async def load_election_from_file(name: str = Query(..., description="Filename i
                 ballot0_list.append(ballot0)
             send_ballotlist_to_votingserver(payload.election.id, ballot0_list)
 
-        # Save callback for later
+        # Save callback for ballot0 generation function for later
         pending_generation = do_generation
 
         # If keys from TS and VS are already ready, generate ballot0 for each voter immediately
@@ -91,6 +92,7 @@ async def key_ready(payload: dict):
 
     return {"ack": True}
 
+# send election data to BB so BB can save it to the database.
 async def send_election_to_bb(payload):
     print(payload.model_dump(mode="json"))
     try:

@@ -1,9 +1,6 @@
-#Has to run along with other api's + web app. To run -> python apiBB.py
 import queries as db
 from fastapi import FastAPI
-import os
-import psycopg
-from models import ElGamalParams, NewElectionData
+from models import ElGamalParams, NewElectionData, VoterKeyList
 import base64
 import dbcalls as db
 from notifications import notify_ts_vs_params_saved, notify_ra_public_key_saved
@@ -20,12 +17,12 @@ def health():
 def hello():
     return {"message": "Hello World from BulletinBoard!"}
 
-# @app.get("/candidates")
-# def candidates():
-#     candidates = db.fetch_candidates_for_election(0)
-#     candidates_dict = [{"id": cid, "name": name} for cid, name in candidates]
-#     print(candidates_dict)
-#     return {"candidates": candidates_dict}
+@app.get("/candidates")
+def candidates():
+    candidates = db.fetch_candidates_for_election(123)
+    candidates_dict = [{"id": cid, "name": name} for cid, name in candidates]
+    print(candidates_dict)
+    return {"candidates": candidates_dict}
 
 @app.get("/elgamalparams")
 async def get_params():
@@ -59,9 +56,15 @@ async def receive_key(payload: dict):
 
     return {"status": f"{service} public key saved"}
 
+# receives election data from RA and loads it into the database.
 @app.post("/receive-election")
 async def receive_election(payload: NewElectionData):
     db.load_election_into_db(payload)
     print(f"election loaded with id {payload.election.id}")
     
     return {"status": "new election loaded into database"}
+
+# receives public keys for voters for a given election from RA and loads them into the database.
+@app.post("/receive-voter-keys")
+async def receive_voter_keys(payload: VoterKeyList):
+    db.save_voter_keys_to_db(payload)
