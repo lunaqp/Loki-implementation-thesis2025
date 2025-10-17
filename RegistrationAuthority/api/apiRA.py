@@ -46,13 +46,13 @@ async def load_election_from_file(name: str = Query(..., description="Filename i
 
             # Generate and save voter keys to database
             voter_id_list = [voter.id for voter in payload.voters ]
-            voter_key_list: VoterKeyList = keygen(voter_id_list, payload.election.id)
+            voter_key_list: VoterKeyList = await keygen(voter_id_list, payload.election.id)
             await send_keys_to_bb(voter_key_list)
 
             # Define function for ballot0-generation that should happen once keys are ready
             # async def do_generation():
             print("Keys ready! Generating ballot0 for each voter.")
-            voter_id_upk_list = [(voter_key.voterid, voter_key.publickey) for voter_key in voter_key_list.voterkeylist] # _ = election_id, b = voter_id, c = public_key_voter
+            voter_id_upk_list = [(voter_key.voterid, voter_key.publickey) for voter_key in voter_key_list.voterkeylist]
             ballot0_list = []
             for voter_id, public_key_voter in voter_id_upk_list:
                 ballot0 = await generate_ballot0(

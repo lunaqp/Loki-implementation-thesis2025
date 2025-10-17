@@ -5,6 +5,7 @@ import httpx
 from models import ElGamalParams, VoterKey, VoterKeyList
 import httpx
 import base64
+from fastapi import HTTPException
 
 def generate_group_order():
     # Using the petlib library group operations to generate group and group values
@@ -38,13 +39,14 @@ async def send_params_to_bb():
     return {"status": "sent elgamal Parameters to BB", "response": response_data}
 
 # Generate private and public keys for each voter
-def keygen(voter_list, election_id):
+async def keygen(voter_list, election_id):
     voter_key_list = VoterKeyList(voterkeylist=[])
 
     for id in voter_list:
         secret_key = ORDER.random() # save secret key locally.
         public_key = secret_key * GENERATOR
         enc_secret_key = encrypt_key(secret_key) 
+        await send_secret_key_to_va(id, election_id, enc_secret_key)
 
         voter_key = VoterKey(
             electionid = election_id,
@@ -60,6 +62,19 @@ async def send_keys_to_bb(voter_info: VoterKeyList):
         response = await client.post("http://bb_api:8000/receive-voter-keys", content = voter_info.model_dump_json())
         response.raise_for_status()
         print("voter public keys sent to BB")        
+
+async def send_secret_key_to_va(voter_id, election_id, enc_secret_key):
+    data = {"voter_id": voter_id, "election_id": election_id, "secret_key": base64.b64encode(enc_secret_key).decode()} # decode() converts b64 bytes to string
+
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.post("http://va_api:8000/receive-secret-key", json=data)
+            response.raise_for_status() # gets http status code
+          
+            return response.json()
+    except Exception as e:
+        print(f"Error sending secret key to VA: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to send secret key to VA: {str(e)}")     
 
 
 def encrypt_key(secret_key):
