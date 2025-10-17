@@ -1,12 +1,13 @@
 import os
 from fastapi import FastAPI, HTTPException, Query
 import json
-from fetchNewElection import DATA_DIR, NewElectionData
 from keygen import keygen, send_params_to_bb, send_keys_to_bb
 from generateB0 import generate_ballot0, send_ballotlist_to_votingserver
 from contextlib import asynccontextmanager
 import httpx
-from models import VoterKeyList
+from models import VoterKeyList, NewElectionData
+
+DATA_DIR = os.getenv("DATA_DIR", "/app/data") #this is the electionData dir
 
 # Defining startup functionality before the application starts:
 @asynccontextmanager
@@ -20,9 +21,6 @@ app = FastAPI(lifespan=lifespan)
 # Track which services have reported
 received_keys = {"VS": False, "TS": False}
 
-# Temporary storage for a callback to run when TS and VS public keys are ready
-pending_generation = None
-
 @app.get("/health")
 def health():
     return {"ok": True}
@@ -31,31 +29,33 @@ def health():
 # POST endpoint, reads filename from query string ex. name=election1.json
 @app.post("/elections/load-file")
 async def load_election_from_file(name: str = Query(..., description="Filename inside DATA_DIR")):
-    global pending_generation
+    if not all(received_keys.values()):
+        print("Missing TS and VS key, not ready for elections yet.")
+        return {"status": "Missing TS and VS key, not ready for elections yet."}
+    else:
+        path = os.path.join(DATA_DIR, name) #builds path in DATA_DIR
+        if not os.path.isfile(path):
+            raise HTTPException(status_code=404, detail=f"File not found: {path}")
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                data = json.load(f) #reads and parses json file
 
-    path = os.path.join(DATA_DIR, name) #builds path in DATA_DIR
-    if not os.path.isfile(path):
-        raise HTTPException(status_code=404, detail=f"File not found: {path}")
-    try:
-        with open(path, "r", encoding="utf-8") as f:
-            data = json.load(f) #reads and parses json file
+            payload = NewElectionData.model_validate(data) #pyladic validation, converts raw dict into typed NewElectionData
 
-        payload = NewElectionData.model_validate(data) #pyladic validation, converts raw dict into typed NewElectionData
+            await send_election_to_bb(payload)
 
-        await send_election_to_bb(payload)
+            # Generate and save voter keys to database
+            voter_id_list = [voter.id for voter in payload.voters ]
+            voter_key_list: VoterKeyList = keygen(voter_id_list, payload.election.id)
+            await send_keys_to_bb(voter_key_list)
 
-        # Generate and save voter keys to database
-        voter_id_list = [voter.id for voter in payload.voters ]
-        voter_key_list: VoterKeyList = keygen(voter_id_list, payload.election.id)
-        await send_keys_to_bb(voter_key_list)
-
-        # Define function for ballot0-generation that should happen once keys are ready
-        def do_generation():
+            # Define function for ballot0-generation that should happen once keys are ready
+            # async def do_generation():
             print("Keys ready! Generating ballot0 for each voter.")
             voter_id_upk_list = [(voter_key.voterid, voter_key.publickey) for voter_key in voter_key_list.voterkeylist] # _ = election_id, b = voter_id, c = public_key_voter
             ballot0_list = []
             for voter_id, public_key_voter in voter_id_upk_list:
-                ballot0 = generate_ballot0(
+                ballot0 = await generate_ballot0(
                     voter_id,
                     public_key_voter,
                     len(payload.candidates),
@@ -63,38 +63,24 @@ async def load_election_from_file(name: str = Query(..., description="Filename i
                 ballot0_list.append(ballot0)
             send_ballotlist_to_votingserver(payload.election.id, ballot0_list)
 
-        # Save callback for ballot0 generation function for later
-        pending_generation = do_generation
+            return {"status": "loaded", "election_id": payload.election.id, "file": name}
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=str(e))
 
-        # If keys from TS and VS are already ready, generate ballot0 for each voter immediately
-        if all(received_keys.values()):
-            pending_generation()
-            pending_generation = None
-
-        return {"status": "loaded", "election_id": payload.election.id, "file": name}
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
-
+# Endpoint to which the BB notifies when TS and VS keys are ready.
 @app.post("/key_ready")
 async def key_ready(payload: dict):
-    global pending_generation # For postponed generation due to missing TS and VS public_keys
     service = payload.get("service")
     print(f"Key material ready from {service}")
     received_keys[service] = True
 
     if all(received_keys.values()):
         print("Public keys generated by VS and TS. Ready for new elections")
-    
-    # If election is already loaded and generation is waiting, trigger it. Pending_generation is set when loading election-file if VS and TS public keys are missing.
-    if pending_generation and all(received_keys.values()):
-        pending_generation()
-        pending_generation = None
 
     return {"ack": True}
 
 # send election data to BB so BB can save it to the database.
 async def send_election_to_bb(payload):
-    print(payload.model_dump(mode="json"))
     try:
         async with httpx.AsyncClient() as client:
             response = await client.post("http://bb_api:8000/receive-election", content=payload.model_dump_json())
@@ -103,3 +89,4 @@ async def send_election_to_bb(payload):
             return response.json()
     except Exception as e:
         print(f"Error sending election payload: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to send election to BB: {str(e)}")        

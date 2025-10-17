@@ -139,3 +139,30 @@ def fetch_candidates_for_election(election_id): # Should cursor be given as para
     # Retrieve query results
     records = cur.fetchall()
     return records
+
+# Fetch startdate from database
+def fetch_election_dates(election_id):
+    conn = psycopg.connect(CONNECTION_INFO)
+    cur = conn.cursor()
+    cur.execute("""
+                SELECT ElectionStart, ElectionEnd
+                FROM Elections
+                WHERE ID = %s
+                """, (election_id,))
+    election_startdate, election_enddate = cur.fetchone()
+    return election_startdate, election_enddate
+
+# Fetch public keys for Tallying Server and Voting Server
+def fetch_public_keys_tsvs():
+    conn = psycopg.connect(CONNECTION_INFO)
+    cur = conn.cursor()
+    cur.execute("""
+                SELECT PublicKeyTallyingServer, PublicKeyVotingServer
+                FROM GlobalInfo
+                WHERE ID = 0
+                """)
+    public_key_ts_bin, public_key_vs_bin = cur.fetchone()
+    cur.close()
+    conn.close()
+
+    return public_key_ts_bin, public_key_vs_bin

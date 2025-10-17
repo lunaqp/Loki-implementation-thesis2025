@@ -1,15 +1,15 @@
 from keygen import GROUP, GENERATOR, ORDER 
-import psycopg
-from fetchNewElection import CONNECTION_INFO
 from petlib.ec import EcPt
 from models import Ballot
 import hashlib
 import requests
 from models import BallotPayload
+import httpx
+import base64
 
-def generate_ballot0(voter_id, public_key_voter, candidates): 
+async def generate_ballot0(voter_id, public_key_voter, candidates): 
     # Build ctbar (ctbar = (ctv, ctlv, ctlid, proof))
-    public_key_TS, public_key_VS = fetch_public_keys()
+    public_key_TS, public_key_VS = await fetch_public_keys_from_bb()
     r0 = ORDER.random()
     x = [0]*candidates
     ct0 = [enc(GENERATOR, public_key_TS, x[j], r0) for j in range(candidates)]
@@ -18,28 +18,25 @@ def generate_ballot0(voter_id, public_key_voter, candidates):
     # Build ballot (Ballot = (id, upk, ct_bar))
     ballot0 = (voter_id, public_key_voter, ct0, ctl0, ctlid, r0)
 
-    # hashed_ballot = "Hash:" + str(hash(ballot0))
-    # print(hashed_ballot)
-
     return ballot0
 
-# Fetch public keys from Tallying Server and Voting Server
-def fetch_public_keys():
-    conn = psycopg.connect(CONNECTION_INFO)
-    cur = conn.cursor()
-    cur.execute("""
-                SELECT PublicKeyTallyingServer, PublicKeyVotingServer
-                FROM GlobalInfo
-                WHERE ID = 0
-                """)
-    public_key_ts_bin, public_key_vs_bin = cur.fetchone()
-    public_key_TS = EcPt.from_binary(public_key_ts_bin, GROUP)
-    public_key_VS = EcPt.from_binary(public_key_vs_bin, GROUP)
-    cur.close()
-    conn.close()
+async def fetch_public_keys_from_bb():
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.get("http://bb_api:8000/send-public-keys-tsvs")
+            response.raise_for_status() # gets http status code
 
-    return public_key_TS, public_key_VS
-             
+            data: dict = response.json()
+            public_key_ts_bin = base64.b64decode(data["publickey_ts"])
+            public_key_vs_bin = base64.b64decode(data["publickey_vs"])
+            public_key_TS = EcPt.from_binary(public_key_ts_bin, GROUP)
+            public_key_VS = EcPt.from_binary(public_key_vs_bin, GROUP)
+
+            return public_key_TS, public_key_VS
+    except Exception as e:
+        print(f"Error sending election payload: {e}")
+
+       
 # Encryption function
 # Parameters: generator, public key to encrypt with, message to encrypt and randomness for encryption.
 def enc(g, pk, m, r):

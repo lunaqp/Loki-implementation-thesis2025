@@ -1,5 +1,6 @@
 from pydantic import BaseModel
 from typing import List
+from datetime import datetime
 
 class Ballot(BaseModel):
     id: int
@@ -25,3 +26,22 @@ class VoterKey(BaseModel):
 
 class VoterKeyList(BaseModel):
     voterkeylist: List[VoterKey]
+
+class Candidate(BaseModel):
+    id: int
+    name: str
+
+class Voter(BaseModel):
+    id: int
+    name: str
+
+class Election(BaseModel):
+    id: int
+    name: str
+    start: datetime 
+    end: datetime
+
+class NewElectionData(BaseModel):
+    election: Election
+    candidates: List[Candidate] = []
+    voters: List[Voter] = []

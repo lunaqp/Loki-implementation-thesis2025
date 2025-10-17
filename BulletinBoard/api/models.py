@@ -37,3 +37,7 @@ class VoterKey(BaseModel):
 
 class VoterKeyList(BaseModel):
     voterkeylist: List[VoterKey]
+
+class KeyPair(BaseModel):
+    publickeyTS: str # base64 encoded
+    publickeyVS: str # base64 encoded

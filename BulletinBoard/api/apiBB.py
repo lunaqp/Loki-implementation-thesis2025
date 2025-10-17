@@ -68,3 +68,21 @@ async def receive_election(payload: NewElectionData):
 @app.post("/receive-voter-keys")
 async def receive_voter_keys(payload: VoterKeyList):
     db.save_voter_keys_to_db(payload)
+
+@app.post("/send-election-startdate")
+async def send_election_startdate(payload: dict):
+    election_startdate, election_enddate = db.fetch_election_dates(payload.get("electionid"))
+
+    # Convert to ISO 8601 string for transfer
+    formatted_startdate = election_startdate.isoformat()
+    formatted_enddate = election_enddate.isoformat()
+
+    return {"startdate": formatted_startdate, "enddate": formatted_enddate}
+
+@app.get("/send-public-keys-tsvs")
+async def send_public_keys_tsvs():
+    public_key_ts_bin, public_key_vs_bin = db.fetch_public_keys_tsvs()
+    public_key_ts_b64 = base64.b64encode(public_key_ts_bin)
+    public_key_vs_b64 = base64.b64encode(public_key_vs_bin)
+    
+    return {"publickey_ts": public_key_ts_b64, "publickey_vs": public_key_vs_b64}

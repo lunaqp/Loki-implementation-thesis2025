@@ -3,7 +3,7 @@ import asyncio
 from keygen import send_public_key_to_BB
 from models import BallotPayload
 from validateBallot import validateBallot
-from epochGeneration import generate_timestamps
+from epochGeneration import generate_timestamps, fetch_electiondates_from_bb
 
 app = FastAPI()
 
@@ -29,7 +29,7 @@ async def receive_ballotlist(payload: BallotPayload):
 
     # NOTE: Validate ballots before sending to CBR via BB.
 
-    #generate_timestamps(123)
+    await generate_timestamps(payload.electionid)
     return {"status": "ok"}
 
 # append(Ballot, timestamp, )

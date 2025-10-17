@@ -194,23 +194,9 @@ def verify_proof(election_id, voter_id):
     return stmt_c.verify(proof)
 
 
-
+# Function for re-encryption
+# Parameters: generator, public key, ciphertext, randomness
 def re_enc(g, pk, ct, r):
-    """Re-Encryption of a ciphertext
-
-    Args:
-        g (EcPt): group generator
-        pk (EcPt): public key of the receiver
-        ct (EcPt, EcPt): ciphertext of encrypted message (c0, c1),
-                         where c0 = r*g and c1 = m*g + r*pk
-        r (Bn): randomness
-    
-    Returns:
-        (c0Prime, c1Prime) (EcPt, EcPt): ciphertext (c0Prime, c1Prime)
-                                         of re-encrypted ciphertext (c0, c1),
-                                         where c0 = r*g and c1 = m*g + r*pk and,
-                                         c0Prime = c0 + r*g and c1Prime = c1 + r*pk
-    """
     
     c0, c1 = ct
 
@@ -219,18 +205,9 @@ def re_enc(g, pk, ct, r):
 
     return (c0Prime, c1Prime)
 
+# Function for decryption
+# Parameters: ciphertext & secret key.
 def dec(ct, sk):
-    """Decryption of a ciphertext
-
-    Args:
-        ct (EcPt, EcPt): ciphertext of encrypted message (c0, c1),
-                        where c0 = r*g and c1 = m*g + r*pk
-        sk (Bn): secret key / decryption key
-    
-    Returns:
-        message (EcPt): decrypted message, m, on the form m*g
-    """
-
     c0, c1 = ct
 
     message = (c1 + (-sk*c0))
