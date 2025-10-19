@@ -1,5 +1,5 @@
 import queries as db
-from fastapi import FastAPI
+from fastapi import FastAPI, Query
 from models import ElGamalParams, NewElectionData, VoterKeyList
 import base64
 import dbcalls as db
@@ -18,11 +18,16 @@ def hello():
     return {"message": "Hello World from BulletinBoard!"}
 
 @app.get("/candidates")
-def candidates():
-    candidates = db.fetch_candidates_for_election(123)
+def candidates(election_id: int = Query(..., description = "id of the election")):
+    candidates = db.fetch_candidates_for_election(election_id)
     candidates_dict = [{"id": cid, "name": name} for cid, name in candidates]
-    print(candidates_dict)
     return {"candidates": candidates_dict}
+
+@app.get("/voters")
+def voters(election_id: int = Query(..., description = "id of the election")):
+    voters = db.fetch_voters_for_election(election_id)
+    voters_dict = [{"id": vid, "name": name} for vid, name in voters]
+    return {"voters": voters_dict}
 
 @app.get("/elgamalparams")
 async def get_params():
@@ -79,10 +84,20 @@ async def send_election_startdate(payload: dict):
 
     return {"startdate": formatted_startdate, "enddate": formatted_enddate}
 
-@app.get("/send-public-keys-tsvs")
+@app.get("/public-keys-tsvs")
 async def send_public_keys_tsvs():
     public_key_ts_bin, public_key_vs_bin = db.fetch_public_keys_tsvs()
     public_key_ts_b64 = base64.b64encode(public_key_ts_bin)
     public_key_vs_b64 = base64.b64encode(public_key_vs_bin)
     
     return {"publickey_ts": public_key_ts_b64, "publickey_vs": public_key_vs_b64}
+
+@app.get("/voter-public-key")
+def voter_public_key(
+    voter_id: int = Query(..., description="ID of the voter"),
+    election_id: int = Query(..., description="ID of the election")
+):
+    voter_public_key_bin = db.fetch_voter_public_key(voter_id, election_id)
+    voter_public_key_b64 = base64.b64encode(voter_public_key_bin).decode()
+
+    return {"voter_public_key": voter_public_key_b64}

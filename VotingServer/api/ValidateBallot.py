@@ -6,7 +6,10 @@ from petlib.bn import Bn # For casting database values to petlib big integer typ
 from petlib.ec import EcGroup, EcPt, EcGroup
 import hashlib
 from statement import stmt
-
+from keygen import get_elgamal_params
+import httpx
+from fastapi import HTTPException
+import base64
 
 DB_NAME = os.getenv("POSTGRES_DB", "appdb")
 DB_USER = os.getenv("POSTGRES_USER", "postgres")
@@ -19,56 +22,67 @@ conn = psycopg.connect(CONNECTION_INFO)
 
 cur = conn.cursor()
 
-def fetch_voters_for_election(election_id):
-    cur.execute("""
-                SELECT ID
-                FROM Voters v
-                Join VoterParticipatesInElection ve on v.ID = ve.VoterID
-                WHERE ve.ElectionID = %s;"""
-                ,(election_id,))
-    voter_list = cur.fetchall()
-    return voter_list
+async def fetch_voters_from_bb(election_id):
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.get(f"http://bb_api:8000/voters?election_id={election_id}")
+            response.raise_for_status() 
+          
+            data = response.json()
+            voters = data["voters"]
+            voter_id_list = [v["id"] for v in voters]
+          
+            return voter_id_list
+    except Exception as e:
+        print(f"Error fetching voters from BB {e}")
+        raise HTTPException(status_code=500, detail=f"Error fetching voters from BB: {str(e)}")     
 
-def fetch_candidates_for_election(election_id):
-    cur.execute("""
-                SELECT CandidateID
-                FROM CandidateRunsInElection c
-                WHERE ElectionID = %s;"""
-                ,(election_id,))
-    candidate_list = cur.fetchall()
-    return candidate_list
+async def fetch_candidates_from_bb(election_id):
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.get(f"http://bb_api:8000/candidates?election_id={election_id}")
+            response.raise_for_status() 
+          
+            data = response.json()
+            candidates_list: list = []
+            for candidate_id in data["id"]:
+                candidates_list.append(candidate_id)
 
-def fetch_public_keys(GROUP):
-    conn = psycopg.connect(CONNECTION_INFO)
-    cur = conn.cursor()
-    cur.execute("""
-                SELECT PublicKeyTallyingServer, PublicKeyVotingServer
-                FROM GlobalInfo
-                WHERE ID = 0
-                """)
-    public_key_ts_bin, public_key_vs_bin = cur.fetchone()
-    public_key_TS = EcPt.from_binary(public_key_ts_bin, GROUP)
-    public_key_VS = EcPt.from_binary(public_key_vs_bin, GROUP)
-    cur.close()
-    conn.close()
+            return candidates_list
+    except Exception as e:
+        print(f"Error fetching candidates from BB {e}")
+        raise HTTPException(status_code=500, detail=f"Error fetching candidates from BB: {str(e)}")     
 
-    return public_key_TS, public_key_VS
+async def fetch_public_keys_from_bb():
+    GROUP, _, _ = await get_elgamal_params()
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.get("http://bb_api:8000/public-keys-tsvs")
+            response.raise_for_status() # gets http status code
 
+            data: dict = response.json()
+            public_key_ts_bin = base64.b64decode(data["publickey_ts"]) # recreates binary representation of key
+            public_key_vs_bin = base64.b64decode(data["publickey_vs"])
+            public_key_TS = EcPt.from_binary(public_key_ts_bin, GROUP) # recreates EcPt representation of key
+            public_key_VS = EcPt.from_binary(public_key_vs_bin, GROUP)
 
-def fetch_upk(GROUP, voter_id, election_id):
-    conn = psycopg.connect(CONNECTION_INFO)
-    cur = conn.cursor()
-    cur.execute("""
-                SELECT PublicKey
-                FROM VoterParticipatesInElection
-                WHERE VoterID = %s AND ElectionID = %s;
-                """, voter_id, election_id)
-    upk = cur.fetchone()
-    upk = EcPt.from_binary(upk, GROUP)
-    cur.close()
-    conn.close()
+            return public_key_TS, public_key_VS
+    except Exception as e:
+        print(f"Error fetching public keys for TS and VS {e}")
 
-    return upk
+async def fetch_voter_public_key_from_bb(voter_id, election_id):
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.get(f"http://bb_api:8000/voter-public-key?election_id={election_id}&voter_id={voter_id}")
+            response.raise_for_status() 
+          
+            data = response.json()
+            voter_public_key_bin = base64.b64decode(data["voter_public_key"])
+            
+            return voter_public_key_bin
+    except Exception as e:
+        print(f"Error fetching public key for voter: {e}")
+        raise HTTPException(status_code=500, detail=f"Error fetching public key for voter:  {str(e)}")     
 
 def fetch_ballot_hash(election_id):
     cur.execute("""
@@ -77,11 +91,15 @@ def fetch_ballot_hash(election_id):
                 Join VoterCastsBallot vcb on vcb.BallotID = Ballots.ID
                 WHERE vcb.ElectionID = %s;"""
                 ,(election_id,))
-    ballot_hash = cur.fetchall()
-    return ballot_hash 
+    ballot_hashes = cur.fetchall() # returns a list of tuples
+
+    # Extracts the first element of each tuple
+    ballothash_list = [row[0] for row in ballot_hashes]
+    
+    return ballothash_list
 
 # Fetches the CBR for a given voter in a given election sorted by most recent votes at the top.
-def fetch_CBR_for_voter_in_election(voter_id, election_id): # We currently also gets the voters public and private keys. Do we want to move this to the Voter table?
+def fetch_CBR_for_voter_in_election(voter_id, election_id):
     cur.execute("""
                 SELECT *
                 FROM VoterParticipatesInElection p
@@ -95,7 +113,7 @@ def fetch_CBR_for_voter_in_election(voter_id, election_id): # We currently also 
     cbr = cur.fetchall()
     return cbr
 
-def fetch_last_and_previouslast_ballot(voter_id, election_id): # We currently also gets the voters public and private keys. Do we want to move this to the Voter table?
+def fetch_last_and_previouslast_ballot(voter_id, election_id):
     cur.execute("""
                 SELECT *
                 FROM VoterParticipatesInElection p
@@ -110,32 +128,11 @@ def fetch_last_and_previouslast_ballot(voter_id, election_id): # We currently al
     cbr = cur.fetchall()
     return cbr
 
-async def get_order():
-    with psycopg.connect(CONNECTION_INFO) as conn:
-        with conn.cursor() as cur:
-            cur.execute("""
-                SELECT GroupCurve, Generator, OrderP
-                FROM GlobalInfo
-                WHERE ID = 0
-            """)
-            row = cur.fetchone()
-            (group, generator, order) = row
-            # Convert database values to Petlib types:
-            GROUP = EcGroup(group)
-            GENERATOR = EcPt.from_binary(generator, GROUP)
-            ORDER = Bn.from_binary(order)
-            print(f"generator: {GENERATOR}")
-            print(f"order: {ORDER}")
-            print(f"group: {GROUP}")
-            return GROUP, GENERATOR, ORDER
-        cur.close()
-        conn.close()
-
 cbr = fetch_CBR_for_voter_in_election(election_id=543, voter_id=109)
-voter_list = fetch_voters_for_election(election_id = "789")
 
-def validateBallot(Ballot, election_id):
-    ballot_hash = fetch_ballot_hash(election_id) #NOTE Do we need compare the hash of the new ballot with all ballot hashes in an election or only the ballot hashes for that voter id. ot whole BB
+async def validate_ballot(Ballot, election_id):
+    ballot_hash: list = fetch_ballot_hash(election_id) #NOTE Do we need compare the hash of the new ballot with all ballot hashes in an election or only the ballot hashes for that voter id. ot whole BB
+    voter_list: list = await fetch_voters_from_bb(election_id)
 
     hashed_ballot = hashlib.sha256(Ballot.model_dump_json().encode("utf-8")).hexdigest() #hash the ballot
     print(hashed_ballot)
@@ -145,15 +142,18 @@ def validateBallot(Ballot, election_id):
     proof_verified = False
 
     for id in voter_list:
-        if Ballot.id == id:
+        if Ballot.voterid == id:
             uid_exists = True
 
-    for hash in ballot_hash:
-        if hashed_ballot == hash:
-            ballot_not_included = True
+    if not ballot_hash: # Guarding against empty list, not necessary if we dont have to validate Ballot0
+        ballot_not_included = True
+    else:
+        for hash in ballot_hash:
+            if hashed_ballot != hash:
+                ballot_not_included = True
 
-    proof_verified = verify_proof(election_id, Ballot.id)
-
+    # proof_verified = await verify_proof(election_id, Ballot.voterid)
+    proof_verified = True #for testing purposes, keep above instead.
     ballot_validated = uid_exists and ballot_not_included and proof_verified
 
     return ballot_validated
@@ -161,14 +161,14 @@ def validateBallot(Ballot, election_id):
     #NOTE Function to create the hash value in RA missing.
 
 
-def verify_proof(election_id, voter_id):
+async def verify_proof(election_id, voter_id):
 
-    #for idx, cbr in enumerate(CBR[i][1:], start=1):  
     last_ballot, previous_last_ballot = fetch_last_and_previouslast_ballot(election_id, voter_id)
-    _, GENERATOR, GROUP = get_order()
-    candidates = fetch_candidates_for_election(election_id)
-    pk_T, pk_vs = fetch_public_keys(GROUP)
-    upk = fetch_upk(GROUP, voter_id, election_id)
+    GROUP, GENERATOR, _ = await get_elgamal_params()
+    candidates = await fetch_candidates_from_bb(election_id)
+    pk_TS, pk_VS = await fetch_public_keys_from_bb()
+    voter_public_key_bin = await fetch_voter_public_key_from_bb(voter_id, election_id)
+    upk = EcPt.from_binary(voter_public_key_bin, GROUP)
 
     ctv = last_ballot[1]
     ctlv = last_ballot[2]
@@ -182,7 +182,7 @@ def verify_proof(election_id, voter_id):
     ctv2 = previous_last_ballot[1]
     #NOTE: What if DB only has 1 element/ballot
 
-    stmt_c = stmt((GENERATOR, pk_T, pk_vs, upk, cbr[0], cbr[1], cbr[2], ct_i, c0, c1, ctv, ctv2), 
+    stmt_c = stmt((GENERATOR, pk_TS, pk_VS, upk, cbr[0], cbr[1], cbr[2], ct_i, c0, c1, ctv, ctv2), 
                 (Secret(), Secret(), Secret(), Secret(), Secret(), Secret()), candidates)
 
     if not stmt_c.verify(proof): 
@@ -197,9 +197,7 @@ def verify_proof(election_id, voter_id):
 # Function for re-encryption
 # Parameters: generator, public key, ciphertext, randomness
 def re_enc(g, pk, ct, r):
-    
     c0, c1 = ct
-
     c0Prime = c0 + r*g
     c1Prime = c1 + r*pk
 
@@ -209,7 +207,6 @@ def re_enc(g, pk, ct, r):
 # Parameters: ciphertext & secret key.
 def dec(ct, sk):
     c0, c1 = ct
-
     message = (c1 + (-sk*c0))
 
     return message

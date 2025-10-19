@@ -3,7 +3,7 @@ from typing import List
 from datetime import datetime
 
 class Ballot(BaseModel):
-    id: int
+    voterid: int
     upk: str
     ctv: List[List[str]]
     ctlv: List[str] 

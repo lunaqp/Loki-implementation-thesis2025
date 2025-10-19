@@ -2,8 +2,8 @@ from fastapi import FastAPI
 import asyncio
 from keygen import send_public_key_to_BB
 from models import BallotPayload
-from validateBallot import validateBallot
-from epochGeneration import generate_timestamps, fetch_electiondates_from_bb
+from validateBallot import validate_ballot, fetch_voter_public_key_from_bb
+from epochGeneration import generate_timestamps
 
 app = FastAPI()
 
@@ -21,20 +21,13 @@ async def vs_resp():
 async def receive_ballotlist(payload: BallotPayload):
     print(f"Received election {payload.electionid}, {len(payload.ballot0list)} ballots")
 
-    # for ballot in payload.ballot0list:
-    #     if validateBallot(ballot, payload.electionid):
-    #         print("ballot validated")
-    #     else:
-    #         print("ballot not valid")
+    for ballot in payload.ballot0list:
+        if await validate_ballot(ballot, payload.electionid):
+            print("ballot validated")
+        else:
+            print("ballot not valid")
 
     # NOTE: Validate ballots before sending to CBR via BB.
 
     await generate_timestamps(payload.electionid)
     return {"status": "ok"}
-
-# append(Ballot, timestamp, )
-    #validate(ballot) 
-
-# generateEpochs()
-
-# obfuscate()

@@ -124,6 +124,18 @@ async def fetch_params():
         cur.close()
         conn.close()
 
+# Query for fetching all voters participating in a given election
+def fetch_voters_for_election(election_id):
+    conn = psycopg.connect(CONNECTION_INFO)
+    cur = conn.cursor()
+    cur.execute("""
+                SELECT v.ID, v.Name
+                FROM Voters v
+                Join VoterParticipatesInElection ve on v.ID = ve.VoterID
+                WHERE ve.ElectionID = %s;"""
+                ,(election_id,))
+    records = cur.fetchall()
+    return records
 
 # Query for fetching all candidates running in a given election id:
 def fetch_candidates_for_election(election_id): # Should cursor be given as parameter?
@@ -166,3 +178,19 @@ def fetch_public_keys_tsvs():
     conn.close()
 
     return public_key_ts_bin, public_key_vs_bin
+
+# Fetch public key for a given voter in a given election
+def fetch_voter_public_key(voter_id, election_id):
+    conn = psycopg.connect(CONNECTION_INFO)
+    cur = conn.cursor()
+    cur.execute("""
+                SELECT PublicKey
+                FROM VoterParticipatesInElection
+                WHERE VoterID = %s AND ElectionID = %s;
+                """, (voter_id, election_id))
+    (upk,) = cur.fetchone()
+    
+    cur.close()
+    conn.close()
+
+    return upk

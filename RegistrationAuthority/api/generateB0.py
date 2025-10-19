@@ -23,7 +23,7 @@ async def generate_ballot0(voter_id, public_key_voter, candidates):
 async def fetch_public_keys_from_bb():
     try:
         async with httpx.AsyncClient() as client:
-            response = await client.get("http://bb_api:8000/send-public-keys-tsvs")
+            response = await client.get("http://bb_api:8000/public-keys-tsvs")
             response.raise_for_status() # gets http status code
 
             data: dict = response.json()
@@ -34,7 +34,7 @@ async def fetch_public_keys_from_bb():
 
             return public_key_TS, public_key_VS
     except Exception as e:
-        print(f"Error sending election payload: {e}")
+        print(f"Error fetching public keys for TS and VS {e}")
 
        
 # Encryption function
@@ -57,7 +57,7 @@ def serialise(ballot_list):
         proof = str(ballot[5])
 
         pyBallot = Ballot(
-            id = id,
+            voterid = id,
             upk = upk,
             ctv = ctv,
             ctlv = ctlv,

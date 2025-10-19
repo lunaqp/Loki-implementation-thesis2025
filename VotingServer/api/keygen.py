@@ -6,18 +6,7 @@ from petlib.bn import Bn # For casting database values to petlib big integer typ
 from petlib.ec import EcGroup, EcPt, EcGroup
 from fastapi import HTTPException
 
-# elgamal cache for saving group, generator, and order for later use.
-elgamal_params_cache: Optional["ElGamalParams"] = None
-
-def set_cached_params(params: ElGamalParams):
-    global elgamal_params_cache
-    elgamal_params_cache = params
-
-def get_cached_params() -> ElGamalParams:
-    if elgamal_params_cache is None:
-        raise RuntimeError("ElGamal parameters not cached yet")
-    return elgamal_params_cache
-
+# TODO: Find a good place to store params to avoid excessive database calls.
 async def get_elgamal_params():
     async with httpx.AsyncClient() as client:
         try:
@@ -28,8 +17,6 @@ async def get_elgamal_params():
                 generator = data["generator"],
                 order = data["order"]
             )
-            # Saving group, generator, and order for later use (to avoid excessive fetching from database).
-            set_cached_params(params)
 
             # Convert to proper types for cryptographic functions.
             GROUP = EcGroup(params.group)

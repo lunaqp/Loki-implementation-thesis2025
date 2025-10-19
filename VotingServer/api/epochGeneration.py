@@ -28,9 +28,11 @@ def generate_epochs():
 
     epoch_array = np.array([])
 
+    generator = np.random.default_rng(seed=None)
+    
     # If sum of intervals is over 84600 seconds (24hours * 60min * 60sec) then we exceed 24 hours.
     while np.sum(epoch_array) < 84600:
-        samples = np.random.normal(center, spread, size=1100)
+        samples = generator.normal(center, spread, size=1100)
 
         # Loop to ensure we only keep values over 0 seconds and under 3 minutes.
         for interval in samples:

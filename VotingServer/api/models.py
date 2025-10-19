@@ -2,7 +2,7 @@ from pydantic import BaseModel
 from typing import List
 
 class Ballot(BaseModel):
-    id: int
+    voterid: int
     upk: str
     ctv: List[List[str]]
     ctlv: List[str] 
