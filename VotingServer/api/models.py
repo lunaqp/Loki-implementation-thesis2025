@@ -2,7 +2,7 @@ from pydantic import BaseModel
 from typing import List
 
 class Ballot(BaseModel):
-    id: int
+    voterid: int
     upk: str
     ctv: List[List[str]]
     ctlv: List[str] 
@@ -12,3 +12,8 @@ class Ballot(BaseModel):
 class BallotPayload(BaseModel):
     electionid: int
     ballot0list: List[Ballot]
+
+class ElGamalParams(BaseModel):
+    group: int
+    generator: str # base64-encoded
+    order: str # base64-encoded

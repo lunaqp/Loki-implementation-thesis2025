@@ -13,8 +13,8 @@ DROP TYPE IF EXISTS ct_tuple CASCADE;
 CREATE TABLE Elections (
     ID INT PRIMARY KEY,
     Name VARCHAR(50) NOT NULL,
-    ElectionStart DATE NOT NULL,
-    ElectionEnd DATE NOT NULL
+    ElectionStart TIMESTAMPTZ NOT NULL,
+    ElectionEnd TIMESTAMPTZ NOT NULL
 );
 
 CREATE TABLE Candidates (
@@ -31,8 +31,7 @@ CREATE TABLE CandidateRunsInElection (
 
 CREATE TABLE Voters (
     ID INT PRIMARY KEY,
-    Name VARCHAR(50) NOT NULL,
-    PublicKey INT
+    Name VARCHAR(50) NOT NULL
     -- password
 );
 
@@ -40,8 +39,8 @@ CREATE TABLE VoterParticipatesInElection (
     ElectionID INT REFERENCES Elections(ID),
     VoterID INT REFERENCES Voters(ID),
     PRIMARY KEY (VoterID, ElectionID),
-    PublicKey BYTEA NOT NULL,
-    SecretKey BYTEA NOT NULL -- Currently saved encrypted with a symmetric key.
+    PublicKey BYTEA NOT NULL
+    -- SecretKey BYTEA NOT NULL -- Currently saved encrypted with a symmetric key.
 );
 
 CREATE TYPE ct_tuple AS (
@@ -54,6 +53,7 @@ CREATE TABLE Ballots (
     CtCandidate ct_tuple ARRAY NOT NULL,
     CtVoterList ct_tuple NOT NULL,
     CtVotingServerList ct_tuple NOT NULL,
+    BallotHash TEXT NOT NULL,
     Valid BOOLEAN NOT NULL
 );
 
@@ -84,6 +84,24 @@ CREATE TABLE GlobalInfo ( -- Probably not ints.
     OrderP BYTEA
 );
 
+-- INSERT INTO Ballots ( 
+--     ID, 
+--     CtCandidate,
+--     CtVoterList,
+--     CtVotingServerList,
+--     Valid
+-- )
+-- VALUES (
+--     1,
+--     ARRAY[
+--         ROW(E'\\xDEAFDECA', E'\\xDEEEDECA')::ct_tuple,
+--         ROW(E'\\xDEAADECA', E'\\xDEFFDECA')::ct_tuple
+--     ],
+--     ROW(E'\\xDEAFDECA', E'\\xDEEEDECA')::ct_tuple,
+--     ROW(E'\\xDEAADECA', E'\\xDEFFDECA')::ct_tuple,
+--     TRUE
+-- );
+
 INSERT INTO GlobalInfo (ID, PublicKeyTallyingServer, PublicKeyVotingServer, Generator, OrderP) VALUES
-    (0, null, null, null, null)
+    (0, null, null, null, null);
 

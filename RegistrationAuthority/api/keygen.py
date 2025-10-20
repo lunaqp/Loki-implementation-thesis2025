@@ -1,9 +1,11 @@
 from petlib.ec import EcGroup
-import psycopg
 import os
 from cryptography.fernet import Fernet
 import httpx
-from fetchNewElection import CONNECTION_INFO
+from models import ElGamalParams, VoterKey, VoterKeyList
+import httpx
+import base64
+from fastapi import HTTPException
 
 def generate_group_order():
     # Using the petlib library group operations to generate group and group values
@@ -17,51 +19,63 @@ print(f"generator: {GENERATOR}")
 print(f"order: {ORDER}")
 print(f"group: {GROUP}")
 
-def save_globalinfo_to_db():
-    conn = psycopg.connect(CONNECTION_INFO)
-    cur = conn.cursor()
-    cur.execute("""
-                UPDATE GlobalInfo
-                SET GroupCurve = %s, Generator = %s, OrderP = %s
-                WHERE ID = 0
-                """, (GROUP.nid(), GENERATOR.export(), ORDER.binary()))
-    conn.commit()
-    cur.close()
-    conn.close()
+async def send_params_to_bb():
+    print("sending elgamal params to BB...")
+    
+    params = ElGamalParams(
+        group = GROUP.nid(),
+        generator = base64.b64encode(GENERATOR.export()).decode(),
+        order = base64.b64encode(ORDER.binary()).decode()
+    )
 
-# Notify TallyingServer and VotingServer of g and order being saved to database.
-async def notify_ts_and_vs():
     async with httpx.AsyncClient() as client:
-        # Call TallyingServer:
-        resp_TS = await client.get("http://ts_api:8000/ts_resp")
-        # Call VotingServer:
-        resp_VS = await client.get("http://vs_api:8000/vs_resp")
+        response = await client.post("http://bb_api:8000/receive-params", json=params.model_dump())
 
-    return resp_TS.json(), resp_VS.json()
+    try:
+        response_data = response.json() if response.content else None
+    except ValueError:
+        response_data = response.text
+
+    return {"status": "sent elgamal Parameters to BB", "response": response_data}
 
 # Generate private and public keys for each voter
-def keygen(voter_list, election_id):
-    voter_info = []
+async def keygen(voter_list, election_id):
+    voter_key_list = VoterKeyList(voterkeylist=[])
+
     for id in voter_list:
-        secret_key = ORDER.random() 
+        secret_key = ORDER.random() # save secret key locally.
         public_key = secret_key * GENERATOR
-        enc_secret_key = encrypt_key(secret_key)
-        voter_info.append([election_id, id, public_key, enc_secret_key])
+        enc_secret_key = encrypt_key(secret_key) 
+        await send_secret_key_to_va(id, election_id, enc_secret_key)
 
-    return voter_info
+        voter_key = VoterKey(
+            electionid = election_id,
+            voterid = id,
+            publickey = base64.b64encode(public_key.export()).decode()
+        )
+        voter_key_list.voterkeylist.append(voter_key)
+    
+    return voter_key_list
 
-# Save keymaterial to database for each voter
-def save_keys_to_db(voter_info):
-    conn = psycopg.connect(CONNECTION_INFO)
-    cur = conn.cursor()
-    for (election_id, voter_id, public_key, enc_secret_key) in voter_info:
-        cur.execute("""
-                    INSERT INTO VoterParticipatesInElection (ElectionID, VoterID, PublicKey, SecretKey)
-                    VALUES (%s, %s, %s, %s)
-                    """, (election_id, voter_id, public_key.export(), enc_secret_key))
-    conn.commit()
-    cur.close()
-    conn.close()
+async def send_keys_to_bb(voter_info: VoterKeyList):
+    async with httpx.AsyncClient() as client:
+        response = await client.post("http://bb_api:8000/receive-voter-keys", content = voter_info.model_dump_json())
+        response.raise_for_status()
+        print("voter public keys sent to BB")        
+
+async def send_secret_key_to_va(voter_id, election_id, enc_secret_key):
+    data = {"voter_id": voter_id, "election_id": election_id, "secret_key": base64.b64encode(enc_secret_key).decode()} # decode() converts b64 bytes to string
+
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.post("http://va_api:8000/receive-secret-key", json=data)
+            response.raise_for_status() # gets http status code
+          
+            return response.json()
+    except Exception as e:
+        print(f"Error sending secret key to VA: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to send secret key to VA: {str(e)}")     
+
 
 def encrypt_key(secret_key):
     ENCRYPTION_KEY = os.getenv("VOTER_SK_ENCRYPTION_KEY") # Symmetric key - saved in docker-compose.yml. NOTE: Should be moved outside of repository.
