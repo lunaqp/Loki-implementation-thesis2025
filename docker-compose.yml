@@ -14,8 +14,6 @@ services:
       interval: 5s
       timeout: 3s
       retries: 20
-    # networks:
-    #   - postgres-db-network
 
   adminer:
     image: adminer
@@ -43,11 +41,8 @@ services:
       dockerfile: Dockerfile
     environment:
       DATA_DIR: /app/data
-      DATABASE_URL: postgresql://postgres:postgres@db:5432/appdb
       VOTER_SK_ENCRYPTION_KEY: K2QWtYSxwTUzCPF7w8uWWB_QwMFReMtAFHd3bq5tJqQ=
     depends_on:
-      db:
-        condition: service_healthy
       vs_api:
         condition: service_healthy
       ts_api:
@@ -65,9 +60,6 @@ services:
       DATABASE_URL: postgresql://postgres:postgres@db:5432/appdb
       BB_API_URL: http://bb_api:8000
       VOTER_SK_DECRYPTION_KEY: K2QWtYSxwTUzCPF7w8uWWB_QwMFReMtAFHd3bq5tJqQ=
-    depends_on:
-      db:
-        condition: service_healthy
     ports:
       - "8003:8000"
 
@@ -78,12 +70,8 @@ services:
       dockerfile: Dockerfile
     environment:
       VITE_API_VOTINGAPP: http://va_api:8000
-      VITE_API_BULLETINBOARD: http://bb_api:8000
-      VITE_API_REGISTRATIONAUTHORITY: http://ra_api:8000
     depends_on:
       - va_api
-      - bb_api
-      - ra_api
     ports:
       - "5173:80"
 
@@ -111,13 +99,6 @@ services:
     build:
       context: ./TallyingServer/api
       dockerfile: Dockerfile
-    env_file:
-      - ./docker/env/db.env
-    environment:
-      DATABASE_URL: postgresql://postgres:postgres@db:5432/appdb
-    depends_on:
-      db:
-        condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 10s
@@ -129,6 +110,3 @@ services:
 
 volumes:
   db_data:
-# networks:
-#   postgres-db-network:
-#     driver: bridge

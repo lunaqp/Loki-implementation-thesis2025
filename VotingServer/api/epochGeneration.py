@@ -2,30 +2,24 @@ import numpy as np
 # import matplotlib.pyplot as plt
 # import seaborn as sns
 from datetime import datetime, timezone
-import os
-import psycopg
+import httpx
 
-DB_NAME = os.getenv("POSTGRES_DB", "appdb")
-DB_USER = os.getenv("POSTGRES_USER", "postgres")
-DB_PASS = os.getenv("POSTGRES_PASSWORD", "postgres")
-DB_HOST = os.getenv("POSTGRES_HOST", "db")
-DB_PORT = int(os.getenv("POSTGRES_PORT", "5432"))
-CONNECTION_INFO = f"dbname={DB_NAME} user={DB_USER} password={DB_PASS} host={DB_HOST} port={DB_PORT}" # all info that psycopg needs to connect to db
+# TODO: Create distribution for number of votes per voter - either normal or uniform distribution
 
-conn = psycopg.connect(CONNECTION_INFO)
-cur = conn.cursor()
+async def fetch_electiondates_from_bb(election_id):
+    payload = {"electionid": election_id}
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.post("http://bb_api:8000/send-election-startdate", json=payload)
+            response.raise_for_status() # gets http status code
 
-# Fetch startdate from database for timestamp generation for each voter.
-def fetch_election_start(election_id):
-    cur.execute("""
-                SELECT ElectionStart
-                FROM Elections
-                WHERE ID = %s
-                """, (election_id,))
-    election_startdate = cur.fetchone()
-    return election_startdate[0]
+            election_start = datetime.fromisoformat(response.json().get("startdate")) # recreate datetime object from iso 8601 format.
+            election_end = datetime.fromisoformat(response.json().get("enddate"))
 
-# NOTE: Do we work from a fixed size of 1000 ballots per voter or do we create a uniform distribution?
+        return election_start, election_end
+    except Exception as e:
+        print(f"Error fetching election start date: {e}")
+
 
 def generate_epochs():
     # Parameters for generating a gaussian/normal distribution
@@ -34,9 +28,11 @@ def generate_epochs():
 
     epoch_array = np.array([])
 
+    generator = np.random.default_rng(seed=None)
+    
     # If sum of intervals is over 84600 seconds (24hours * 60min * 60sec) then we exceed 24 hours.
     while np.sum(epoch_array) < 84600:
-        samples = np.random.normal(center, spread, size=1100)
+        samples = generator.normal(center, spread, size=1100)
 
         # Loop to ensure we only keep values over 0 seconds and under 3 minutes.
         for interval in samples:
@@ -46,10 +42,19 @@ def generate_epochs():
     return epoch_array
 
 # Generate timestamps for entire election for one voter
-def generate_timestamps(election_id):
+async def generate_timestamps(election_id):
+    # Calculate duration of election
+    start, end = await fetch_electiondates_from_bb(election_id) # fetches startdate from database.
+    first_timestamp = start.timestamp()
+    duration = end-start # calculating election duration in seconds.
+    duration_in_seconds = duration.total_seconds()
+    print(f"election duration in days = {duration}")
+    print(f"election duration in seconds = {duration.total_seconds()}")
+
+    #TODO: Calculate total votes per voter based on duration
+
+    #TODO: pass duration/votes to dynamically generate epochs.
     epoch_array = generate_epochs()
-    date = fetch_election_start(election_id) # fetches startdate from database.
-    first_timestamp = date.timestamp()
 
     # Adding timestamps to a timeline for the 24 hours the election lasts.
     # sum is used to track on 24-hour timeline:    0 sec |--------------------------------------| 86400 sec
@@ -57,8 +62,8 @@ def generate_timestamps(election_id):
     timestamps = [first_timestamp]
     for epoch in epoch_array:
         sum = sum + epoch
-        if sum > 86400:
-            sum = 86400
+        if sum > duration_in_seconds:
+            sum = duration_in_seconds
             last_timestamp = first_timestamp + sum
             timestamps.append(last_timestamp)
             break

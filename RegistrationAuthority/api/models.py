@@ -1,8 +1,9 @@
 from pydantic import BaseModel
 from typing import List
+from datetime import datetime
 
 class Ballot(BaseModel):
-    id: int
+    voterid: int
     upk: str
     ctv: List[List[str]]
     ctlv: List[str] 
@@ -12,3 +13,35 @@ class Ballot(BaseModel):
 class BallotPayload(BaseModel):
     electionid: int
     ballot0list: List[Ballot]
+
+class ElGamalParams(BaseModel):
+    group: int
+    generator: str # base64-encoded
+    order: str # base64-encoded
+
+class VoterKey(BaseModel):
+    electionid: int
+    voterid: int
+    publickey: str # base64 encoded
+
+class VoterKeyList(BaseModel):
+    voterkeylist: List[VoterKey]
+
+class Candidate(BaseModel):
+    id: int
+    name: str
+
+class Voter(BaseModel):
+    id: int
+    name: str
+
+class Election(BaseModel):
+    id: int
+    name: str
+    start: datetime 
+    end: datetime
+
+class NewElectionData(BaseModel):
+    election: Election
+    candidates: List[Candidate] = []
+    voters: List[Voter] = []

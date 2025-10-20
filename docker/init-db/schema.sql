@@ -31,8 +31,7 @@ CREATE TABLE CandidateRunsInElection (
 
 CREATE TABLE Voters (
     ID INT PRIMARY KEY,
-    Name VARCHAR(50) NOT NULL,
-    PublicKey INT
+    Name VARCHAR(50) NOT NULL
     -- password
 );
 
@@ -40,8 +39,8 @@ CREATE TABLE VoterParticipatesInElection (
     ElectionID INT REFERENCES Elections(ID),
     VoterID INT REFERENCES Voters(ID),
     PRIMARY KEY (VoterID, ElectionID),
-    PublicKey BYTEA NOT NULL,
-    SecretKey BYTEA NOT NULL -- Currently saved encrypted with a symmetric key.
+    PublicKey BYTEA NOT NULL
+    -- SecretKey BYTEA NOT NULL -- Currently saved encrypted with a symmetric key.
 );
 
 CREATE TYPE ct_tuple AS (
@@ -104,5 +103,5 @@ CREATE TABLE GlobalInfo ( -- Probably not ints.
 -- );
 
 INSERT INTO GlobalInfo (ID, PublicKeyTallyingServer, PublicKeyVotingServer, Generator, OrderP) VALUES
-    (0, null, null, null, null)
+    (0, null, null, null, null);
 
