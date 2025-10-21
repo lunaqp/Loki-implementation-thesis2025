@@ -49,7 +49,7 @@ CREATE TYPE ct_tuple AS (
 );
 
 CREATE TABLE Ballots (
-    ID INT PRIMARY KEY,
+    ID SERIAL PRIMARY KEY,
     CtCandidate ct_tuple ARRAY NOT NULL,
     CtVoterList ct_tuple NOT NULL,
     CtVotingServerList ct_tuple NOT NULL,

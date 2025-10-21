@@ -1,6 +1,6 @@
 import queries as db
 from fastapi import FastAPI, Query, HTTPException
-from models import ElGamalParams, NewElectionData, VoterKeyList, Ballot
+from models import ElGamalParams, NewElectionData, VoterKeyList, Ballot, BallotWithElectionid
 import base64
 import dbcalls as db
 from notifications import notify_ts_vs_params_saved, notify_ra_public_key_saved
@@ -70,10 +70,10 @@ async def receive_election(payload: NewElectionData):
     return {"status": "new election loaded into database"}
 
 @app.post("/receive-ballot0")
-async def receive_ballot0(ballot:Ballot):
+async def receive_ballot0(ballotwithelectionid:BallotWithElectionid):
     try:
-        db.load_ballot0_into_db(ballot)
-        print(f"Ballot0 loaded with voter id {ballot.voterid}")
+        db.load_ballot_into_db(ballotwithelectionid)
+        print(f"Ballot0 loaded with voter id {ballotwithelectionid.ballot.voterid}")
     
         return {"status": "new ballot0 loaded into database"}
     except Exception as e:

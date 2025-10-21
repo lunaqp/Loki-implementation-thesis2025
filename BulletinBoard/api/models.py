@@ -53,3 +53,8 @@ class Ballot(BaseModel):
 class BallotWithHash(BaseModel):
     hash: str
     ballot: Ballot
+
+class BallotWithElectionid(BaseModel):
+    ballot: Ballot
+    electionid: int
+
