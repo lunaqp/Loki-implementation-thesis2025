@@ -53,8 +53,9 @@ CREATE TABLE Ballots (
     CtCandidate ct_tuple ARRAY NOT NULL,
     CtVoterList ct_tuple NOT NULL,
     CtVotingServerList ct_tuple NOT NULL,
-    BallotHash TEXT NOT NULL,
-    Valid BOOLEAN NOT NULL
+    Valid BYTEA NOT NULL,
+    BallotHash TEXT NOT NULL
+
 );
 
 CREATE TABLE VoterCastsBallot (

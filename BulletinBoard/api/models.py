@@ -41,3 +41,15 @@ class VoterKeyList(BaseModel):
 class KeyPair(BaseModel):
     publickeyTS: str # base64 encoded
     publickeyVS: str # base64 encoded
+
+class Ballot(BaseModel):
+    voterid: int
+    upk: str
+    ctv: List[List[str]]
+    ctlv: List[str] 
+    ctlid: List[str] 
+    proof: str
+
+class BallotWithHash(BaseModel):
+    hash: str
+    ballot: Ballot
