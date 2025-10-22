@@ -9,3 +9,4 @@ https://github.com/caro3801/bplib/archive/refs/heads/fix/OpenSSL.tar.gz # petlib
 zksk
 httpx
 numpy
+duckdb
