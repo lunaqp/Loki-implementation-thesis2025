@@ -3,9 +3,18 @@ import asyncio
 from keygen import send_public_key_to_BB
 from models import BallotPayload
 from validateBallot import validate_ballot, fetch_voter_public_key_from_bb
-from epochGeneration import generate_timestamps
+from epochGeneration import save_timestamps_for_voter
+from contextlib import asynccontextmanager
+import duckdb
 
-app = FastAPI()
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Initialising DuckDB database:
+    conn = duckdb.connect("/duckdb/voter-timestamps.duckdb")
+    conn.sql("CREATE TABLE VoterTimestamps(VoterID INTEGER, ElectionID INTEGER, timestamp FLOAT, processed BOOLEAN)")
+    yield  # yielding control back to FastAPI
+
+app = FastAPI(lifespan=lifespan)
 
 @app.get("/health")
 def health():
@@ -22,12 +31,15 @@ async def receive_ballotlist(payload: BallotPayload):
     print(f"Received election {payload.electionid}, {len(payload.ballot0list)} ballots")
 
     for ballot in payload.ballot0list:
+        await save_timestamps_for_voter(payload.electionid, ballot.voterid)
+        conn = duckdb.connect("/duckdb/voter-timestamps.duckdb") # for printing tables when testing
+        conn.table("VoterTimestamps").show() # for printing tables when testing
         if await validate_ballot(ballot, payload.electionid):
             print("ballot validated")
         else:
             print("ballot not valid")
 
-    # NOTE: Validate ballots before sending to CBR via BB.
+    # NOTE: Validate ballots before sending 
+    # to CBR via BB.
 
-    await generate_timestamps(payload.electionid)
     return {"status": "ok"}

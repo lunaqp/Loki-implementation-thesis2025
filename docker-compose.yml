@@ -79,10 +79,13 @@ services:
     build:
       context: ./VotingServer/api
       dockerfile: Dockerfile
+    volumes:
+      - vs_data:/duckdb
     env_file:
       - ./docker/env/db.env
     environment:
       DATABASE_URL: postgresql://postgres:postgres@db:5432/appdb
+      DUCKDB_PATH: /duckdb/voter-timestamps.duckdb
     depends_on:
       db:
         condition: service_healthy
@@ -110,3 +113,4 @@ services:
 
 volumes:
   db_data:
+  vs_data:
