@@ -1,6 +1,6 @@
 import queries as db
-from fastapi import FastAPI, Query
-from models import ElGamalParams, NewElectionData, VoterKeyList
+from fastapi import FastAPI, Query, HTTPException
+from models import ElGamalParams, NewElectionData, VoterKeyList, Ballot, BallotWithElectionid
 import base64
 import dbcalls as db
 from notifications import notify_ts_vs_params_saved, notify_ra_public_key_saved
@@ -68,6 +68,17 @@ async def receive_election(payload: NewElectionData):
     print(f"election loaded with id {payload.election.id}")
     
     return {"status": "new election loaded into database"}
+
+@app.post("/receive-ballot0")
+async def receive_ballot0(ballotwithelectionid:BallotWithElectionid):
+    try:
+        db.load_ballot_into_db(ballotwithelectionid)
+        print(f"Ballot0 loaded with voter id {ballotwithelectionid.ballot.voterid}")
+    
+        return {"status": "new ballot0 loaded into database"}
+    except Exception as e:
+        print(f"[BB] load_ballot0_into_db failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 # receives public keys for voters for a given election from RA and loads them into the database.
 @app.post("/receive-voter-keys")

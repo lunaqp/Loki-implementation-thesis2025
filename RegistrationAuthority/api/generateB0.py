@@ -1,7 +1,6 @@
 from keygen import GROUP, GENERATOR, ORDER 
 from petlib.ec import EcPt
 from models import Ballot
-import hashlib
 import requests
 from models import BallotPayload
 import httpx
@@ -47,14 +46,17 @@ def enc(g, pk, m, r):
 
 # Serialising ballot 0 list into pydantic objects for transferring to VS
 def serialise(ballot_list):
+    print("serilaizingggg")
     serialised_ballot_list = []
     for ballot in ballot_list:
         id = ballot[0]
-        upk = str(ballot[1])
-        ctv = [[str(x), str(y)] for (x, y) in ballot[2]]
-        ctlv = [str(ballot[3][0]), str(ballot[3][1])]
-        ctlid = [str(ballot[4][0]), str(ballot[4][1])]
-        proof = str(ballot[5])
+        upk = ballot[1]
+        ctv = [[base64.b64encode(x.export()).decode(), base64.b64encode(y.export()).decode()] for (x, y) in ballot[2]]
+        ctlv = [base64.b64encode(ballot[3][0].export()).decode(), base64.b64encode(ballot[3][1].export()).decode()]
+        ctlid = [base64.b64encode(ballot[4][0].export()).decode(), base64.b64encode(ballot[4][1].export()).decode()]
+        proof = base64.b64encode(ballot[5].binary()).decode()
+        print("i have serialized")
+        print(type(id), type(upk), type(ctv), type(ctlv), type(ctlid), type(proof))
 
         pyBallot = Ballot(
             voterid = id,
@@ -64,13 +66,11 @@ def serialise(ballot_list):
             ctlid = ctlid,
             proof = proof
         )
-        hashed_ballot = hashlib.sha256(pyBallot.model_dump_json().encode("utf-8")).hexdigest()
-        print(hashed_ballot)
         serialised_ballot_list.append(pyBallot) 
 
     return serialised_ballot_list
     
-def send_ballotlist_to_votingserver(election_id, ballot_list):
+async def send_ballotlist_to_votingserver(election_id, ballot_list):
     serialised_list = serialise(ballot_list)
     payload = BallotPayload(
         electionid=election_id,
@@ -78,6 +78,8 @@ def send_ballotlist_to_votingserver(election_id, ballot_list):
     )
     print("Sending ballot0 list to vs...")
     try:
-        requests.post("http://vs_api:8000/ballot0list", json=payload.model_dump()) # requests is synchronous
-    except requests.exceptions.RequestException as e:
+        async with httpx.AsyncClient() as client:
+            response = await client.post("http://vs_api:8000/ballot0list", json=payload.model_dump()) 
+            response.raise_for_status()
+    except Exception as e:
         print("Error sending ballot 0 list", e)

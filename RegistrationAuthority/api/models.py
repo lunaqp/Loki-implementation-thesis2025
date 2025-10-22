@@ -10,6 +10,10 @@ class Ballot(BaseModel):
     ctlid: List[str] 
     proof: str
 
+class BallotWithHash(BaseModel):
+    hash: str
+    ballot: Ballot
+
 class BallotPayload(BaseModel):
     electionid: int
     ballot0list: List[Ballot]

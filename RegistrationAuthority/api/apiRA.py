@@ -61,7 +61,7 @@ async def load_election_from_file(name: str = Query(..., description="Filename i
                     len(payload.candidates),
                 )
                 ballot0_list.append(ballot0)
-            send_ballotlist_to_votingserver(payload.election.id, ballot0_list)
+            await send_ballotlist_to_votingserver(payload.election.id, ballot0_list)
 
             return {"status": "loaded", "election_id": payload.election.id, "file": name}
         except Exception as e:
