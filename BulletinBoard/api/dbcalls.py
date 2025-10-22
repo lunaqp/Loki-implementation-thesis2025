@@ -1,7 +1,9 @@
 import psycopg
 import os
-from models import NewElectionData, VoterKeyList
+from models import NewElectionData, VoterKeyList, Ballot, BallotWithElectionid
 import base64
+import hashlib
+
 
 DB_NAME = os.getenv("POSTGRES_DB", "appdb")
 DB_USER = os.getenv("POSTGRES_USER", "postgres")
@@ -20,6 +22,19 @@ SQL_INSERT_ELECTION = """
 INSERT INTO Elections (ID, Name, ElectionStart, ElectionEnd)
 VALUES (%s, %s, %s, %s)
 ON CONFLICT (ID) DO NOTHING;
+"""
+
+SQL_INSERT_BALLOT = """
+INSERT INTO Ballots (CtCandidate, CtVoterList, CtVotingServerList, valid, BallotHash)
+VALUES (%s, %s, %s, %s, %s)
+ON CONFLICT (ID) DO NOTHING
+RETURNING ID;
+"""
+
+SQL_INSERT_RELATION_VOTERCASTBALLOT = """
+INSERT INTO VoterCastsBallot (BallotID, VoterID, ElectionID, VoteTimestamp)
+VALUES (%s, %s, %s, NOW())
+ON CONFLICT (BallotID) DO NOTHING;
 """
 
 SQL_INSERT_CANDIDATE = """
@@ -59,6 +74,36 @@ def load_election_into_db(payload: NewElectionData):
             # Insert Voters + relation (no keys yet)
             for v in payload.voters:
                 cur.execute(SQL_INSERT_VOTER, (v.id, v.name))
+
+
+
+def load_ballot_into_db(ballotwithelectionid):
+    ballot = ballotwithelectionid.ballot
+    election_id = ballotwithelectionid.electionid
+    ctv = [(base64.b64decode(x), base64.b64decode(y)) for (x,y) in ballot.ctv]
+    ctlv = (base64.b64decode(ballot.ctlv[0]), base64.b64decode(ballot.ctlv[1]))
+    ctlid = (base64.b64decode(ballot.ctlid[0]), base64.b64decode(ballot.ctlid[1]))
+    proof = base64.b64decode(ballot.proof)
+
+    hashed_ballot = hashlib.sha256(ballot.model_dump_json().encode("utf-8")).hexdigest()
+    print(hashed_ballot)
+
+
+    with psycopg.connect(CONNECTION_INFO) as conn:
+        with conn.cursor() as cur:
+            
+            cur.execute(
+                SQL_INSERT_BALLOT,
+                (ctv, ctlv, ctlid, proof, hashed_ballot),
+            )
+            ballot_id = cur.fetchone()[0]
+
+            cur.execute(
+                SQL_INSERT_RELATION_VOTERCASTBALLOT,
+                (ballot_id, ballot.voterid, election_id)
+            )
+    print("ballot loaded to db")
+           
 
 # saving group, generator and order to database after receiving them from RA.
 def save_elgamalparams(GROUP, GENERATOR, ORDER):
