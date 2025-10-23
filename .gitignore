@@ -231,3 +231,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Duckdb database file if extracted:
+/voter-timestamps.duckdb

@@ -57,4 +57,5 @@ class BallotWithHash(BaseModel):
 class BallotWithElectionid(BaseModel):
     ballot: Ballot
     electionid: int
+    timestamp: datetime
 
