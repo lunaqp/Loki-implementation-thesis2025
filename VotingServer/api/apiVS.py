@@ -34,10 +34,8 @@ async def receive_ballotlist(payload: BallotPayload):
 
     for ballot in payload.ballot0list:
         await save_timestamps_for_voter(payload.electionid, ballot.voterid)
-        conn = duckdb.connect("/duckdb/voter-timestamps.duckdb") # for printing tables when testing
-        conn.table("VoterTimestamps").show() # for printing tables when testing
+       
         ballot0_timestamp = await fetch_ballot0_timestamp(payload.electionid, ballot.voterid)
-        print(ballot0_timestamp)
 
         ballot_with_electionid = BallotWithElectionid(
             ballot = ballot,
@@ -45,6 +43,8 @@ async def receive_ballotlist(payload: BallotPayload):
             timestamp = ballot0_timestamp
         )
         await send_ballot0_to_bb(ballot_with_electionid)
+    conn = duckdb.connect("/duckdb/voter-timestamps.duckdb") # for printing tables when testing
+    conn.table("VoterTimestamps").show() # for printing tables when testing
 
     # NOTE: Validate ballots before sending to CBR via BB.
 
