@@ -84,7 +84,7 @@ async def generate_timestamps(election_id):
     # Print for troubleshooting
     for timestamp in timestamps:
         dt = datetime.fromtimestamp(timestamp, tz=timezone.utc)
-        #print(dt)
+        print(dt)
 
     return timestamps
 
@@ -97,12 +97,38 @@ async def save_timestamps_for_voter(election_id, voter_id):
         print(f"Error saving timestamps for voter {voter_id} in election {election_id}: {e}")
 
 async def save_timestamps_to_db(election_id, voter_id, timestamps):
-    print(f"Writing timestamps to Duckdb database for voter {voter_id}")
+    print(f"Writing timestamps to Duckdb for voter {voter_id}")
     try:
-        async with duckdb_lock: # lock is acquired to see if access should be allowed, locked while accessing and released before returning  
+        async with duckdb_lock: # lock is acquired to check if access should be allowed, lock while accessing ressource and is then released before returning  
             conn = duckdb.connect("/duckdb/voter-timestamps.duckdb")
-            print("inserting data in duckdb database")
+            print("inserting data in duckdb")
             for timestamp in timestamps:
-                conn.sql(f"INSERT INTO VoterTimestamps VALUES ({voter_id}, {election_id},{timestamp}, false)")
+                dt_timestamp = datetime.fromtimestamp(timestamp, tz=timezone.utc) # convert to datetime to store in DB as TIMESTAMPTZ
+                conn.execute(f"INSERT INTO VoterTimestamps VALUES (?, ?, ?, ?)", (voter_id, election_id, dt_timestamp, False))
     except Exception as e:
-        print(f"error writing to duckdb database for voter {voter_id} in election {election_id}: {e}")
+        print(f"error writing to duckdb for voter {voter_id} in election {election_id}: {e}")
+
+async def fetch_ballot0_timestamp(election_id, voter_id):
+    try:
+        async with duckdb_lock: # lock is acquired to check if access should be allowed, lock while accessing ressource and is then released before returning  
+            conn = duckdb.connect("/duckdb/voter-timestamps.duckdb")
+            print("fetching first timestamp from duckdb")
+            (ballot0_timestamp,) = conn.execute("""
+                    SELECT Timestamp
+                    FROM VoterTimestamps
+                    WHERE VoterID = ? AND ElectionID = ?
+                    ORDER BY Timestamp ASC
+                    LIMIT 1
+                    """, (voter_id, election_id)).fetchone()
+            
+            # Set processed column to true for the fetched timestamp:
+            conn.execute("""
+                UPDATE VoterTimestamps
+                SET Processed = TRUE
+                WHERE VoterID = ? AND ElectionID = ? AND Timestamp = ?
+            """, (voter_id, election_id, ballot0_timestamp))
+
+            return ballot0_timestamp
+    except Exception as e:
+        print(f"error fetching timestamp from duckdb for voter {voter_id} in election {election_id}: {e}")
+
