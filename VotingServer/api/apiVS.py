@@ -49,6 +49,11 @@ async def receive_ballotlist(payload: BallotPayload):
 
     return {"status": "ok"}
 
+# @app.post("/receive-ballot")
+# async def receive_ballot(pyBallot: Ballot):
+
+
+
 async def send_ballot0_to_bb(ballot_with_electionid: BallotWithElectionid):
     try:
         async with httpx.AsyncClient() as client:

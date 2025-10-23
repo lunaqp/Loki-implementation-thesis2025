@@ -4,11 +4,13 @@ import httpx
 from fastapi import HTTPException
 import base64
 from petlib.ec import EcPt, EcGroup, Bn
-from modelsVA import ElGamalParams
+from modelsVA import ElGamalParams, Ballot
 import os
 import psycopg
 import duckdb
 from cryptography.fernet import Fernet
+import httpx
+
 
 DB_NAME = os.getenv("POSTGRES_DB", "appdb")
 DB_USER = os.getenv("POSTGRES_USER", "postgres")
@@ -112,17 +114,17 @@ def bin_to_int(lst, size):
       b[i]=1  
    return int(''.join(str(bit) for bit in b),2)
 
-def fetch_secret_key(voter_id, election_id):
-    conn = duckdb.connect("/duckdb/voter-secret-keys.duckdb")
-    print(f"fetching secret key for {voter_id}")
-    (enc_secret_key,) = conn.execute("""
-            SELECT Key
+def fetch_keys(voter_id, election_id):
+    conn = duckdb.connect("/duckdb/voter-keys.duckdb")
+    print(f"fetching keys for {voter_id}")
+    (enc_secret_key, public_key) = conn.execute("""
+            SELECT SecretKey, PublicKey
             FROM VoterSecretKeys
             WHERE VoterID = ? AND ElectionID = ?
             """, (voter_id, election_id)).fetchone()
     usk_bin = decrypt_key(enc_secret_key)
     
-    return usk_bin
+    return usk_bin, public_key
 
 def decrypt_key(enc_secret_key):
     ENCRYPTION_KEY = os.getenv("VOTER_SK_DECRYPTION_KEY") # Symmetric key - saved in docker-compose.yml
@@ -137,7 +139,7 @@ def vote(usk, v, lv_list, election_id, voter_id):
     last_ballot, previous_last_ballot = fetch_last_and_previouslast_ballot(election_id, voter_id)
     cbr_length = fetch_cbr_length(voter_id, election_id)
     candidates = fetch_candidates_from_bb(election_id)
-    usk_bin = fetch_secret_key(voter_id, election_id)
+    usk_bin, public_key = fetch_keys(voter_id, election_id)
     usk = EcPt.from_binary(usk_bin, GROUP)
 
     secret_usk = Secret(value=usk)
@@ -188,9 +190,29 @@ def vote(usk, v, lv_list, election_id, voter_id):
 
     #prove the statement
     nizk = full_stmt.prove(sec_dict.update({R1_r_v: R1_r_v.value, R1_lv: R1_lv.value, R1_r_lv: R1_r_lv.value, R1_r_lid: R1_r_lid.value, secret_usk: secret_usk.value}))
+    
+    pyBallot = constructBallot(voter_id, public_key, ct_v, ct_lv, ct_lid, nizk)
+    return pyBallot
 
-    return (ct_v, ct_lv, ct_lid, nizk)
+def constructBallot(voter_id, public_key, ct_v, ct_lv, ct_lid, proof):
+    pyBallot = Ballot(
+            voterid = voter_id,
+            upk = public_key,
+            ctv = ct_v,
+            ctlv = ct_lv,
+            ctlid = ct_lid,
+            proof = proof
+        )
+    return pyBallot
 
+async def send_ballot_to_VS(pyBallot:Ballot):
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.post("http://vs_api:8000/receive-ballot", json=pyBallot.model_dump()) 
+            response.raise_for_status()
+    except Exception as e:
+        print("Error sending ballot", {e})
+    
 
 def enc(g, pk, m, r):
     c0 = r*g
