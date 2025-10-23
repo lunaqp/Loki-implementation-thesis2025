@@ -33,7 +33,7 @@ RETURNING ID;
 
 SQL_INSERT_RELATION_VOTERCASTBALLOT = """
 INSERT INTO VoterCastsBallot (BallotID, VoterID, ElectionID, VoteTimestamp)
-VALUES (%s, %s, %s, NOW())
+VALUES (%s, %s, %s, %s)
 ON CONFLICT (BallotID) DO NOTHING;
 """
 
@@ -77,8 +77,8 @@ def load_election_into_db(payload: NewElectionData):
 
 
 
-def load_ballot_into_db(ballotwithelectionid):
-    ballot = ballotwithelectionid.ballot
+def load_ballot_into_db(ballotwithelectionid: BallotWithElectionid):
+    ballot: Ballot = ballotwithelectionid.ballot
     election_id = ballotwithelectionid.electionid
     ctv = [(base64.b64decode(x), base64.b64decode(y)) for (x,y) in ballot.ctv]
     ctlv = (base64.b64decode(ballot.ctlv[0]), base64.b64decode(ballot.ctlv[1]))
@@ -86,8 +86,7 @@ def load_ballot_into_db(ballotwithelectionid):
     proof = base64.b64decode(ballot.proof)
 
     hashed_ballot = hashlib.sha256(ballot.model_dump_json().encode("utf-8")).hexdigest()
-    print(hashed_ballot)
-
+    timestamp = ballotwithelectionid.timestamp
 
     with psycopg.connect(CONNECTION_INFO) as conn:
         with conn.cursor() as cur:
@@ -100,7 +99,7 @@ def load_ballot_into_db(ballotwithelectionid):
 
             cur.execute(
                 SQL_INSERT_RELATION_VOTERCASTBALLOT,
-                (ballot_id, ballot.voterid, election_id)
+                (ballot_id, ballot.voterid, election_id, timestamp)
             )
     print("ballot loaded to db")
            

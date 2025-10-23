@@ -1,5 +1,6 @@
 from pydantic import BaseModel
 from typing import List
+from datetime import datetime
 
 class Ballot(BaseModel):
     voterid: int
@@ -25,3 +26,4 @@ class BallotWithHash(BaseModel):
 class BallotWithElectionid(BaseModel):
     ballot: Ballot
     electionid: int
+    timestamp: datetime

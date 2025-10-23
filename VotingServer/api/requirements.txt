@@ -10,3 +10,4 @@ zksk
 httpx
 numpy
 duckdb
+pytz # For converting Duckdb timestamps back to python datetime.
