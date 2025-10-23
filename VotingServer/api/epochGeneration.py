@@ -64,7 +64,7 @@ async def generate_timestamps(election_id):
     # Generates total number of votes for a single voter.
     voteamount = generate_voteamount()
 
-    #TODO: pass election duration and the total number of votes for the given voter to dynamically generate epochs.
+    # pass election duration and the total number of votes for the given voter to dynamically generate epochs.
     epoch_array = generate_epochs(election_duration_secs, voteamount)
 
     # Adding timestamps to a timeline for the 24 hours the election lasts.
@@ -80,11 +80,6 @@ async def generate_timestamps(election_id):
             break
         timestamp = first_timestamp + sum
         timestamps.append(timestamp)
-
-    # Print for troubleshooting
-    for timestamp in timestamps:
-        dt = datetime.fromtimestamp(timestamp, tz=timezone.utc)
-        print(dt)
 
     return timestamps
 
@@ -112,7 +107,6 @@ async def fetch_ballot0_timestamp(election_id, voter_id):
     try:
         async with duckdb_lock: # lock is acquired to check if access should be allowed, lock while accessing ressource and is then released before returning  
             conn = duckdb.connect("/duckdb/voter-timestamps.duckdb")
-            print("fetching first timestamp from duckdb")
             (ballot0_timestamp,) = conn.execute("""
                     SELECT Timestamp
                     FROM VoterTimestamps

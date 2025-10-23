@@ -6,6 +6,7 @@ docker compose down
 Write-Host "Removing Docker data volumes..." -ForegroundColor Green
 docker volume rm loki-implementation-thesis2025_vs_data
 docker volume rm loki-implementation-thesis2025_db_data
+docker volume rm loki-implementation-thesis2025_va_data
 
 # Building Docker images
 Write-Host "Building docker images..." -ForegroundColor Green
@@ -37,7 +38,6 @@ do {
         }
         '4' {
             Write-Host "Exiting. Closing and removing Docker images..." -ForegroundColor Green
-            docker compose down
         }
         default {
             Write-Host "Invalid selection. Choose a number from 1-4"  -ForegroundColor Red

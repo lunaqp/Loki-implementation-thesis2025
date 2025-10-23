@@ -8,7 +8,6 @@ from contextlib import asynccontextmanager
 import duckdb
 import httpx
 
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Initialising DuckDB database:

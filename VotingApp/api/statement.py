@@ -2,7 +2,6 @@ from zksk import Secret, DLRep
 from zksk.primitives.dl_notequal import DLNotEqual
 from functools import reduce
 
-
 def stmt(public_params, private_params, candidates):
     """Constructs the statement for the ZK proofs in Vote and Obfuscate
 

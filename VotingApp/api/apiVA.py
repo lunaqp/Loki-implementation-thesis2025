@@ -3,9 +3,17 @@ from fastapi import FastAPI
 import os
 from bulletin_routes import router as bulletin_router
 import base64
+import duckdb
+from contextlib import asynccontextmanager
 
-app = FastAPI()
-DATABASE_URL = os.getenv("DATABASE_URL")
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Initialising DuckDB database:
+    conn = duckdb.connect("/duckdb/voter-secret-keys.duckdb")
+    conn.sql("CREATE TABLE VoterSecretKeys(VoterID INTEGER, ElectionID INTEGER, Key BLOB)")
+    yield  # yielding control back to FastAPI
+
+app = FastAPI(lifespan=lifespan)
 
 @app.get("/health")
 def health():
@@ -27,4 +35,14 @@ def receive_secret_key(data: dict):
     print(f"secret key decoded: {base64.b64decode(enc_secret_key)}")
 
     # TODO: Figure out where to save secret keys/how to store.
+    save_secret_key_to_duckdb(voter_id, election_id, enc_secret_key)
+
     return {"status": "secret key received"}
+
+def save_secret_key_to_duckdb(voter_id, election_id, enc_secret_key):
+    try:
+        conn = duckdb.connect("/duckdb/voter-secret-keys.duckdb")
+        print(f"inserting secret key in duckdb for voter {voter_id}")
+        conn.execute(f"INSERT INTO VoterSecretKeys VALUES (?, ?, ?)", (voter_id, election_id, enc_secret_key))
+    except Exception as e:
+        print(f"error inserting secret key in duckdb for voter {voter_id}: {e}")
