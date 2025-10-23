@@ -2,7 +2,7 @@ from petlib.ec import EcGroup
 import os
 from cryptography.fernet import Fernet
 import httpx
-from models import ElGamalParams, VoterKey, VoterKeyList
+from modelsRA import ElGamalParams, VoterKey, VoterKeyList
 import httpx
 import base64
 from fastapi import HTTPException

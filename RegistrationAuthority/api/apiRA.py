@@ -5,7 +5,7 @@ from keygen import keygen, send_params_to_bb, send_keys_to_bb
 from generateB0 import generate_ballot0, send_ballotlist_to_votingserver
 from contextlib import asynccontextmanager
 import httpx
-from models import VoterKeyList, NewElectionData
+from modelsRA import VoterKeyList, NewElectionData
 
 DATA_DIR = os.getenv("DATA_DIR", "/app/data") #this is the electionData dir
 

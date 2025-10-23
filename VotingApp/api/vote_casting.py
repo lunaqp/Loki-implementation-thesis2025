@@ -191,17 +191,18 @@ def vote(usk, v, lv_list, election_id, voter_id):
     #prove the statement
     nizk = full_stmt.prove(sec_dict.update({R1_r_v: R1_r_v.value, R1_lv: R1_lv.value, R1_r_lv: R1_r_lv.value, R1_r_lid: R1_r_lid.value, secret_usk: secret_usk.value}))
     
-    pyBallot = constructBallot(voter_id, public_key, ct_v, ct_lv, ct_lid, nizk)
+    pyBallot = constructBallot(voter_id, public_key, ct_v, ct_lv, ct_lid, nizk, election_id)
     return pyBallot
 
-def constructBallot(voter_id, public_key, ct_v, ct_lv, ct_lid, proof):
+def constructBallot(voter_id, public_key, ct_v, ct_lv, ct_lid, proof, election_id):
     pyBallot = Ballot(
             voterid = voter_id,
             upk = public_key,
             ctv = ct_v,
             ctlv = ct_lv,
             ctlid = ct_lid,
-            proof = proof
+            proof = proof,
+            electionid = election_id
         )
     return pyBallot
 

@@ -1,4 +1,4 @@
-from models import Ballot
+from modelsVS import Ballot
 import os
 import psycopg
 from zksk import Secret
@@ -130,7 +130,8 @@ def fetch_last_and_previouslast_ballot(voter_id, election_id):
 
 cbr = fetch_CBR_for_voter_in_election(election_id=543, voter_id=109)
 
-async def validate_ballot(Ballot, election_id):
+async def validate_ballot(ballot):
+    election_id = ballot.electionid
     ballot_hash: list = fetch_ballot_hash(election_id) #NOTE Do we need compare the hash of the new ballot with all ballot hashes in an election or only the ballot hashes for that voter id. ot whole BB
     voter_list: list = await fetch_voters_from_bb(election_id)
 
