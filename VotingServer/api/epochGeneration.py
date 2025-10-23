@@ -27,7 +27,6 @@ def generate_voteamount():
 
     # Discrete uniform distribution from 800-1200. Size=None means that a single value is returned.
     voteamount = generator.integers(low=800, high=1200, size=None, dtype=np.int64, endpoint=True) # endpoint=true makes both low and high inclusive. Range is therefore 800-1200.
-    print(voteamount)
 
     return voteamount
 
