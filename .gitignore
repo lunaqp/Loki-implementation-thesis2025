@@ -234,3 +234,4 @@ dist-ssr
 
 # Duckdb database file if extracted:
 /voter-timestamps.duckdb
+voter-keys.duckdb
