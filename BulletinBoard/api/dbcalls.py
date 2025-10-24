@@ -55,6 +55,12 @@ VALUES (%s, %s)
 ON CONFLICT (ID) DO NOTHING;
 """
 
+SQL_INSERT_IMAGES = """
+INSERT INTO Images (ImageFilename, BallotID)
+VALUES (%s, %s)
+ON CONFLICT (BallotID) DO NOTHING;
+"""
+
 def load_election_into_db(payload: NewElectionData):
 
     #Writes the election, candidates, voters and relations to the DB.
@@ -99,6 +105,10 @@ def load_ballot_into_db(pyBallot: Ballot):
             cur.execute(
                 SQL_INSERT_RELATION_VOTERCASTBALLOT,
                 (ballot_id, pyBallot.voterid, election_id, timestamp)
+            )
+            cur.execute(
+                SQL_INSERT_IMAGES,
+                (pyBallot.imagepath, ballot_id)
             )
     print("ballot loaded to db")
 
