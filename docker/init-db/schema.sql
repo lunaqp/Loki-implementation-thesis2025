@@ -53,7 +53,7 @@ CREATE TABLE Ballots (
     CtCandidate ct_tuple ARRAY NOT NULL,
     CtVoterList ct_tuple NOT NULL,
     CtVotingServerList ct_tuple NOT NULL,
-    Valid BYTEA NOT NULL,
+    Proof BYTEA NOT NULL,
     BallotHash TEXT NOT NULL
 
 );
@@ -90,7 +90,7 @@ CREATE TABLE GlobalInfo ( -- Probably not ints.
 --     CtCandidate,
 --     CtVoterList,
 --     CtVotingServerList,
---     Valid
+--     Proof
 -- )
 -- VALUES (
 --     1,

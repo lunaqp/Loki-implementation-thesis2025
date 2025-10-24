@@ -81,7 +81,7 @@ async def fetch_public_keys_from_bb():
 
 def fetch_last_and_previouslast_ballot(voter_id, election_id):
     cur.execute("""
-                SELECT CtCandidate, CtVoterList, CtVotingServerList, Valid
+                SELECT CtCandidate, CtVoterList, CtVotingServerList, Proof
                 FROM VoterParticipatesInElection p
                 JOIN VoterCastsBallot c 
                 ON p.ElectionID = c.ElectionID AND p.VoterID = c.VoterID

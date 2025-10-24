@@ -25,7 +25,7 @@ ON CONFLICT (ID) DO NOTHING;
 """
 
 SQL_INSERT_BALLOT = """
-INSERT INTO Ballots (CtCandidate, CtVoterList, CtVotingServerList, valid, BallotHash)
+INSERT INTO Ballots (CtCandidate, CtVoterList, CtVotingServerList, Proof, BallotHash)
 VALUES (%s, %s, %s, %s, %s)
 ON CONFLICT (ID) DO NOTHING
 RETURNING ID;
