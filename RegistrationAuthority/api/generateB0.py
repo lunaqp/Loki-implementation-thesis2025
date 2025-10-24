@@ -1,8 +1,8 @@
 from keygen import GROUP, GENERATOR, ORDER 
 from petlib.ec import EcPt
-from models import Ballot
+from modelsRA import Ballot
 import requests
-from models import BallotPayload
+from modelsRA import BallotPayload
 import httpx
 import base64
 

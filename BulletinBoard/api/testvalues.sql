@@ -29,7 +29,7 @@ VALUES
     -- (5, 'Stephen'),
     -- (6, 'Max');
 
--- INSERT INTO Ballots (ID, CtCandidate, CtVoterList, CtVotingServerList, Valid)
+-- INSERT INTO Ballots (ID, CtCandidate, CtVoterList, CtVotingServerList, Proof)
 -- VALUES
 --     (0, (01,01), (02,02), (03,03), TRUE),
     -- (1, (01,01), (02,02), (03,03), TRUE),

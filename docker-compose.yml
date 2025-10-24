@@ -56,10 +56,13 @@ services:
     build:
       context: ./VotingApp/api
       dockerfile: Dockerfile
+    volumes:
+      - va_data:/duckdb
     environment:
       DATABASE_URL: postgresql://postgres:postgres@db:5432/appdb
       BB_API_URL: http://bb_api:8000
       VOTER_SK_DECRYPTION_KEY: K2QWtYSxwTUzCPF7w8uWWB_QwMFReMtAFHd3bq5tJqQ=
+      DUCKDB_PATH: /duckdb/voter-keys.duckdb
     ports:
       - "8003:8000"
 
@@ -114,3 +117,4 @@ services:
 volumes:
   db_data:
   vs_data:
+  va_data:

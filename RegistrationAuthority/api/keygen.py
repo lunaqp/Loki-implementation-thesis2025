@@ -2,7 +2,7 @@ from petlib.ec import EcGroup
 import os
 from cryptography.fernet import Fernet
 import httpx
-from models import ElGamalParams, VoterKey, VoterKeyList
+from modelsRA import ElGamalParams, VoterKey, VoterKeyList
 import httpx
 import base64
 from fastapi import HTTPException
@@ -46,7 +46,7 @@ async def keygen(voter_list, election_id):
         secret_key = ORDER.random() # save secret key locally.
         public_key = secret_key * GENERATOR
         enc_secret_key = encrypt_key(secret_key) 
-        await send_secret_key_to_va(id, election_id, enc_secret_key)
+        await send_keys_to_va(id, election_id, enc_secret_key, public_key)
 
         voter_key = VoterKey(
             electionid = election_id,
@@ -63,17 +63,17 @@ async def send_keys_to_bb(voter_info: VoterKeyList):
         response.raise_for_status()
         print("voter public keys sent to BB")        
 
-async def send_secret_key_to_va(voter_id, election_id, enc_secret_key):
-    data = {"voter_id": voter_id, "election_id": election_id, "secret_key": base64.b64encode(enc_secret_key).decode()} # decode() converts b64 bytes to string
+async def send_keys_to_va(voter_id, election_id, enc_secret_key, public_key):
+    data = {"voter_id": voter_id, "election_id": election_id, "secret_key": base64.b64encode(enc_secret_key).decode(), "public_key":base64.b64encode(public_key.export()).decode() } # decode() converts b64 bytes to string
 
     try:
         async with httpx.AsyncClient() as client:
-            response = await client.post("http://va_api:8000/receive-secret-key", json=data)
+            response = await client.post("http://va_api:8000/receive-keys", json=data)
             response.raise_for_status() # gets http status code
           
             return response.json()
     except Exception as e:
-        print(f"Error sending secret key to VA: {e}")
+        print(f"Error sending keys to VA: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to send secret key to VA: {str(e)}")     
 
 

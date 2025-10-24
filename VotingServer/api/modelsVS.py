@@ -1,6 +1,8 @@
 from pydantic import BaseModel
 from typing import List
 from datetime import datetime
+from typing import Optional
+
 
 class Ballot(BaseModel):
     voterid: int
@@ -9,6 +11,9 @@ class Ballot(BaseModel):
     ctlv: List[str] 
     ctlid: List[str] 
     proof: str
+    electionid: Optional[int] = None
+    timestamp: Optional[datetime] = None
+    hash: Optional[str] = None
 
 class BallotPayload(BaseModel):
     electionid: int
