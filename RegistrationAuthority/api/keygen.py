@@ -44,9 +44,12 @@ async def keygen(voter_list, election_id):
 
     for id in voter_list:
         secret_key = ORDER.random() # save secret key locally.
+        print(f"secret key type: {type(secret_key)}")
         public_key = secret_key * GENERATOR
-        enc_secret_key = encrypt_key(secret_key) 
-        await send_keys_to_va(id, election_id, enc_secret_key, public_key)
+        print(f"public key type: {type(public_key)}")
+        #enc_secret_key = encrypt_key(secret_key) # TODO: Either reintroduce encryption or remove from code
+        print(f"secret key: {secret_key}")
+        await send_keys_to_va(id, election_id, secret_key, public_key)
 
         voter_key = VoterKey(
             electionid = election_id,
@@ -63,8 +66,8 @@ async def send_keys_to_bb(voter_info: VoterKeyList):
         response.raise_for_status()
         print("voter public keys sent to BB")        
 
-async def send_keys_to_va(voter_id, election_id, enc_secret_key, public_key):
-    data = {"voter_id": voter_id, "election_id": election_id, "secret_key": base64.b64encode(enc_secret_key).decode(), "public_key":base64.b64encode(public_key.export()).decode() } # decode() converts b64 bytes to string
+async def send_keys_to_va(voter_id, election_id, secret_key, public_key):
+    data = {"voter_id": voter_id, "election_id": election_id, "secret_key": base64.b64encode(secret_key.binary()).decode(), "public_key":base64.b64encode(public_key.export()).decode() } # decode() converts b64 bytes to string
 
     try:
         async with httpx.AsyncClient() as client:
@@ -82,7 +85,7 @@ def encrypt_key(secret_key):
     cipher = Fernet(ENCRYPTION_KEY)
     # the encrypt() function returns a URL-safe base64-encoded secure message that cannot be read or altered without the key - a “Fernet token”.
     encrypted_secret_key = cipher.encrypt(str(secret_key).encode()) # Fernet needs byte objects or strings.
-    
+    print(f"Type of encrypted key: {type(encrypted_secret_key)}")
     return encrypted_secret_key
 
 # Only for testing if decryption worked - might be relevant in VotingApp

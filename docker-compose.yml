@@ -58,6 +58,9 @@ services:
       dockerfile: Dockerfile
     volumes:
       - va_data:/duckdb
+    depends_on:
+      db:
+        condition: service_healthy
     environment:
       DATABASE_URL: postgresql://postgres:postgres@db:5432/appdb
       BB_API_URL: http://bb_api:8000

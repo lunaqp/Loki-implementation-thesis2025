@@ -47,19 +47,21 @@ async def get_elgamal_params():
 
 
 async def fetch_candidates_from_bb(election_id):
+    print(f"{election_id}")
     try:
         async with httpx.AsyncClient() as client:
             response = await client.get(f"http://bb_api:8000/candidates?election_id={election_id}")
             response.raise_for_status() 
-          
+
             data = response.json()
             candidates_list: list = []
-            for candidate_id in data["id"]:
-                candidates_list.append(candidate_id)
 
+            for candidate in data["candidates"]:
+                candidates_list.append(candidate["id"])
+ 
             return candidates_list
     except Exception as e:
-        print(f"Error fetching candidates from BB {e}")
+        print(f"Error fetching candidates from BB: {e}")
         raise HTTPException(status_code=500, detail=f"Error fetching candidates from BB: {str(e)}")     
 
 async def fetch_public_keys_from_bb():
@@ -94,6 +96,25 @@ def fetch_last_and_previouslast_ballot(voter_id, election_id):
     (last_ballot, previous_last_ballot) = cur.fetchall()
     return last_ballot, previous_last_ballot
 
+def fetch_last_ballot(voter_id, election_id):
+    print(f"fetching ballot for {election_id}, voter: {voter_id}")
+
+    cur.execute("""
+                SELECT CtCandidate, CtVoterList, CtVotingServerList, Proof
+                FROM VoterParticipatesInElection p
+                JOIN VoterCastsBallot c 
+                ON p.ElectionID = c.ElectionID AND p.VoterID = c.VoterID
+                JOIN Ballots b
+                ON b.ID = c.BallotID
+                WHERE p.ElectionID = %s AND p.VoterID = %s
+                ORDER BY c.VoteTimestamp DESC
+                LIMIT 1;
+                """, (election_id, voter_id))
+    row = cur.fetchone()
+    
+    last_ballot = (row[0], row[1], row[2], row[3],)
+
+    return last_ballot
 
 def fetch_cbr_length(voter_id, election_id):
     cur.execute("""
@@ -119,36 +140,49 @@ def fetch_keys(voter_id, election_id):
     print(f"fetching keys for {voter_id}")
     (enc_secret_key, public_key) = conn.execute("""
             SELECT SecretKey, PublicKey
-            FROM VoterSecretKeys
+            FROM VoterKeys
             WHERE VoterID = ? AND ElectionID = ?
             """, (voter_id, election_id)).fetchone()
-    usk_bin = decrypt_key(enc_secret_key)
-    
+    #usk_bin = decrypt_key(enc_secret_key)
+    usk_bin = enc_secret_key
     return usk_bin, public_key
 
 def decrypt_key(enc_secret_key):
     ENCRYPTION_KEY = os.getenv("VOTER_SK_DECRYPTION_KEY") # Symmetric key - saved in docker-compose.yml
     cipher = Fernet(ENCRYPTION_KEY)
     decrypted_secret_key = cipher.decrypt(enc_secret_key)
-
+    print(f"decrypted secret key = {decrypted_secret_key}")
     return decrypted_secret_key
 
-def vote(usk, v, lv_list, election_id, voter_id):
-    GROUP, GENERATOR, ORDER = get_elgamal_params()
-    pk_TS, pk_VS = fetch_public_keys_from_bb()
-    last_ballot, previous_last_ballot = fetch_last_and_previouslast_ballot(election_id, voter_id)
+async def vote(v, lv_list, election_id, voter_id):
+    GROUP, GENERATOR, ORDER = await get_elgamal_params()
+    pk_TS, pk_VS = await fetch_public_keys_from_bb()
     cbr_length = fetch_cbr_length(voter_id, election_id)
-    candidates = fetch_candidates_from_bb(election_id)
+    # Fetch last ballot and previous last ballot
+    if cbr_length >= 2:
+        last_ballot_bin, previous_last_ballot_bin = fetch_last_and_previouslast_ballot(voter_id, election_id)
+    else:
+        # if there is no last previous ballot then we use the last ballot as the previous ballot
+        last_ballot_bin = fetch_last_ballot(voter_id, election_id)
+        previous_last_ballot_bin = last_ballot_bin
+
+    # Converting back to EcPt objects
+    last_ballot = convert_to_ecpt(last_ballot_bin, GROUP) 
+    previous_last_ballot = convert_to_ecpt(previous_last_ballot_bin, GROUP)
+
+    candidates: list = await fetch_candidates_from_bb(election_id)
     usk_bin, public_key = fetch_keys(voter_id, election_id)
-    usk = EcPt.from_binary(usk_bin, GROUP)
+    usk = Bn.from_binary(usk_bin)
+
+    print(f"usk: {usk}")
 
     secret_usk = Secret(value=usk)
     R1_r_v = Secret(value=ORDER.random())
     R1_r_lv = Secret(value=ORDER.random())
     R1_r_lid = Secret(value=ORDER.random())
-    R1_v = [0]*candidates
+    R1_v = [0]*len(candidates) # list with a "0" for each candidate
     
-    for i in range(candidates):
+    for i in range(len(candidates)):
         R1_v[i] = Secret(value=0)
     if v>0:
         #generate R1_v based on the vote otherwise abstention
@@ -162,7 +196,7 @@ def vote(usk, v, lv_list, election_id, voter_id):
 
     #generating the new ballot
     ct_i = (2*ct_lid[0],2*ct_lid[1]) 
-    ct_v = [enc(GENERATOR, pk_TS, R1_v[i].value, R1_r_v.value) for i in range(candidates)]
+    ct_v = [enc(GENERATOR, pk_TS, R1_v[i].value, R1_r_v.value) for i in range(len(candidates))]
     ct_lv = enc(GENERATOR, pk_VS, R1_lv.value, R1_r_lv.value) 
     ct_lid = re_enc(GENERATOR, pk_VS, (ct_i[0], GENERATOR+ct_i[1]), R1_r_lid.value)
     c0 = ct_lv[0]-ct_lid[0]
@@ -172,11 +206,11 @@ def vote(usk, v, lv_list, election_id, voter_id):
         print(f"[{cbr_length}] Voted for candidate {v} with voter list {lv_list}") 
     else: print(f"[{cbr_length}] Voted for no candidate (abstention) with voter list {lv_list}")
 
-    full_stmt=stmt((GENERATOR, pk_TS, pk_VS, usk*GENERATOR, ct_v, ct_lv, ct_lid, ct_i, c0, c1, ct_v, previous_last_ballot), (R1_r_v, R1_lv, R1_r_lv, R1_r_lid, secret_usk, Secret()), candidates)
+    full_stmt=stmt((GENERATOR, pk_TS, pk_VS, usk*GENERATOR, ct_v, ct_lv, ct_lid, ct_i, c0, c1, ct_v, previous_last_ballot), (R1_r_v, R1_lv, R1_r_lv, R1_r_lid, secret_usk, Secret()), len(candidates))
     simulation_indexes=[]
 
     #if the vote is for abstention then we need to simulate the proof for all candidates
-    simulation_indexes=[i for i in range(candidates)] if v==0 else [i for i in range(candidates+1) if i!=v-1]
+    simulation_indexes=[i for i in range(len(candidates))] if v==0 else [i for i in range(len(candidates+1)) if i!=v-1]
 
     #setting the relations to be simulated
     for i in simulation_indexes:
@@ -185,7 +219,7 @@ def vote(usk, v, lv_list, election_id, voter_id):
     full_stmt.subproofs[2].set_simulated()
     
     #constructing the witness for each candidate vote encryption 
-    R1_v_str=[('R1_v'+str([i]), R1_v[i].value) for i in range(candidates)]
+    R1_v_str=[('R1_v'+str([i]), R1_v[i].value) for i in range(len(candidates))]
     sec_dict=dict(R1_v_str)
 
     #prove the statement
@@ -193,6 +227,18 @@ def vote(usk, v, lv_list, election_id, voter_id):
     
     pyBallot = constructBallot(voter_id, public_key, ct_v, ct_lv, ct_lid, nizk, election_id)
     return pyBallot
+
+def convert_to_ecpt(ballot_bin, GROUP):
+    ct_v_bin, ct_lv_bin, ct_lid_bin, proof_bin = ballot_bin
+    print(f"ct_v_bin: {ct_v_bin}")
+    print(f"type of ct_v_bin: {type(ct_v_bin)}")
+    print(f"type of ct_v_bin[0]: {type(ct_v_bin[0])}")
+    ct_v = [(EcPt.from_binary(x, GROUP), EcPt.from_binary(y, GROUP)) for (x, y) in ct_v_bin]
+    ct_lv = (EcPt.from_binary(ct_lv_bin[0], GROUP), EcPt.from_binary(ct_lv_bin[1], GROUP))
+    ct_lid = (EcPt.from_binary(ct_lid_bin[0], GROUP), EcPt.from_binary(ct_lid_bin[1], GROUP))
+    proof = (EcPt.from_binary(proof_bin[0], GROUP), EcPt.from_binary(proof_bin[1], GROUP))
+    
+    return (ct_v, ct_lv, ct_lid, proof)
 
 def constructBallot(voter_id, public_key, ct_v, ct_lv, ct_lid, proof, election_id):
     pyBallot = Ballot(
