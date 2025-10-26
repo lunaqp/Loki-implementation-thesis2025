@@ -77,12 +77,8 @@ def load_election_into_db(payload: NewElectionData):
                 cur.execute(SQL_INSERT_VOTER, (v.id, v.name))
 
 
-
 def load_ballot_into_db(pyBallot: Ballot):
     election_id = pyBallot.electionid
-    # ctv = [(base64.b64decode(x), base64.b64decode(y)) for (x,y) in pyBallot.ctv]
-    # ctlv = (base64.b64decode(pyBallot.ctlv[0]), base64.b64decode(pyBallot.ctlv[1]))
-    # ctlid = (base64.b64decode(pyBallot.ctlid[0]), base64.b64decode(pyBallot.ctlid[1]))
     ctv = json.dumps(pyBallot.ctv) # json string of base64 encoding
     ctlv = json.dumps(pyBallot.ctlv)
     ctlid = json.dumps(pyBallot.ctlid)
@@ -240,3 +236,53 @@ def fetch_voter_public_key(voter_id, election_id):
     conn.close()
 
     return upk
+
+def fetch_last_and_previouslast_ballot(voter_id, election_id):
+    conn = psycopg.connect(CONNECTION_INFO)
+    cur = conn.cursor()
+    cur.execute("""
+                SELECT CtCandidate, CtVoterList, CtVotingServerList, Proof
+                FROM VoterParticipatesInElection p
+                JOIN VoterCastsBallot c 
+                ON p.ElectionID = c.ElectionID AND p.VoterID = c.VoterID
+                JOIN Ballots b
+                ON b.ID = c.BallotID
+                WHERE p.ElectionID = %s AND p.VoterID = %s
+                ORDER BY c.VoteTimestamp DESC
+                LIMIT 2;
+                """, (election_id, voter_id))
+    rows = cur.fetchall()
+
+    # In case only one row is in the database (ballot0):
+    if len(rows) == 1:
+        last_ballot_b64 = serialise_ballot_cts(rows[0])
+        return last_ballot_b64, None
+
+    last_ballot_b64 = serialise_ballot_cts(rows[0])
+    previous_last_ballot_b64 = serialise_ballot_cts(rows[1])
+
+    return last_ballot_b64, previous_last_ballot_b64
+
+# Helper function for sending ct_bar values.
+def serialise_ballot_cts(ballot_ct):
+    ct_v_b64 = ballot_ct[0]
+    ct_lv_b64 = ballot_ct[1]
+    ct_lid_b64 = ballot_ct[2]
+    
+    # serialising and base64 encoding NIZK proof:
+    proof_b64 = base64.b64encode(ballot_ct[3]).decode()
+
+    return (ct_v_b64, ct_lv_b64, ct_lid_b64, proof_b64)
+
+def fetch_cbr_length(voter_id, election_id):
+    conn = psycopg.connect(CONNECTION_INFO)
+    cur = conn.cursor()
+    cur.execute("""
+                SELECT COUNT(*)
+                FROM VoterParticipatesInElection p
+                JOIN VoterCastsBallot c 
+                ON p.ElectionID = c.ElectionID AND p.VoterID = c.VoterID
+                WHERE p.ElectionID = %s AND p.VoterID = %s
+                """, (election_id, voter_id))
+    (cbr_length,) = cur.fetchone()  # fetchone returns a tuple like (count,)
+    return cbr_length

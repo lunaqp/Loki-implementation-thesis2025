@@ -6,21 +6,8 @@ import base64
 from petlib.ec import EcPt, EcGroup, Bn
 from modelsVA import ElGamalParams, Ballot
 import os
-import psycopg
 import duckdb
 from cryptography.fernet import Fernet
-
-
-DB_NAME = os.getenv("POSTGRES_DB", "appdb")
-DB_USER = os.getenv("POSTGRES_USER", "postgres")
-DB_PASS = os.getenv("POSTGRES_PASSWORD", "postgres")
-DB_HOST = os.getenv("POSTGRES_HOST", "db")  # docker service name
-DB_PORT = int(os.getenv("POSTGRES_PORT", "5432"))
-CONNECTION_INFO = f"dbname={DB_NAME} user={DB_USER} password={DB_PASS} host={DB_HOST} port={DB_PORT}"
-
-conn = psycopg.connect(CONNECTION_INFO)
-
-cur = conn.cursor()
 
 async def get_elgamal_params():
     async with httpx.AsyncClient() as client:
@@ -46,7 +33,6 @@ async def get_elgamal_params():
 
 
 async def fetch_candidates_from_bb(election_id):
-    print(f"{election_id}")
     try:
         async with httpx.AsyncClient() as client:
             response = await client.get(f"http://bb_api:8000/candidates?election_id={election_id}")
@@ -80,63 +66,45 @@ async def fetch_public_keys_from_bb():
     except Exception as e:
         print(f"Error fetching public keys for TS and VS {e}")
 
-def fetch_last_and_previouslast_ballot(voter_id, election_id):
-    cur.execute("""
-                SELECT CtCandidate, CtVoterList, CtVotingServerList, Proof
-                FROM VoterParticipatesInElection p
-                JOIN VoterCastsBallot c 
-                ON p.ElectionID = c.ElectionID AND p.VoterID = c.VoterID
-                JOIN Ballots b
-                ON b.ID = c.BallotID
-                WHERE p.ElectionID = %s AND p.VoterID = %s
-                ORDER BY c.VoteTimestamp DESC
-                LIMIT 2;
-                """, (election_id, voter_id))
-    (last_ballot, previous_last_ballot) = cur.fetchall()
-    return last_ballot, previous_last_ballot
+async def fetch_last_and_previouslast_ballot_from_bb(voter_id, election_id):
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.get(f"http://bb_api:8000/last_previous_last_ballot?election_id={election_id}&voter_id={voter_id}")
+            response.raise_for_status() 
 
-def fetch_last_ballot(voter_id, election_id):
-    print(f"fetching ballot for {election_id}, voter: {voter_id}")
+            data = response.json()
+            last_ballot_b64 = data["last_ballot"]
+            previous_last_ballot_b64 = data["previous_last_ballot"]
 
-    cur.execute("""
-                SELECT CtCandidate, CtVoterList, CtVotingServerList, Proof
-                FROM VoterParticipatesInElection p
-                JOIN VoterCastsBallot c 
-                ON p.ElectionID = c.ElectionID AND p.VoterID = c.VoterID
-                JOIN Ballots b
-                ON b.ID = c.BallotID
-                WHERE p.ElectionID = %s AND p.VoterID = %s
-                ORDER BY c.VoteTimestamp DESC
-                LIMIT 1;
-                """, (election_id, voter_id))
-    row = cur.fetchone()
+            return last_ballot_b64, previous_last_ballot_b64
+    except Exception as e:
+        print(f"Error fetching previous ballots from BB: {e}")
+        raise HTTPException(status_code=500, detail=f"Error fetching previous ballots from BB: {str(e)}")     
 
-    last_ballot = (row[0], row[1], row[2], row[3],)
+async def fetch_cbr_length_from_bb(voter_id, election_id):
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.get(f"http://bb_api:8000/cbr_length?election_id={election_id}&voter_id={voter_id}")
+            response.raise_for_status() 
+            data = response.json()
 
-    return last_ballot
-
-def fetch_cbr_length(voter_id, election_id):
-    cur.execute("""
-                SELECT COUNT(*)
-                FROM VoterParticipatesInElection p
-                JOIN VoterCastsBallot c 
-                ON p.ElectionID = c.ElectionID AND p.VoterID = c.VoterID
-                WHERE p.ElectionID = %s AND p.VoterID = %s
-                """, (election_id, voter_id))
-    (cbr_length,) = cur.fetchone()  # fetchone returns a tuple like (count,)
-    return cbr_length
+        return data["cbr_length"]
+    
+    except Exception as e:
+        print(f"Error fetching previous ballots from BB: {e}")
+        raise HTTPException(status_code=500, detail=f"Error fetching previous ballots from BB: {str(e)}")    
 
 def bin_to_int(lst, size):
-   b=[0]*size
-   #the new bit is set to 1
-   b[-1]=1
-   for i in lst:
-      b[i]=1  
-   return int(''.join(str(bit) for bit in b),2)
+    b=[0]*size
+    #the new bit is set to 1
+    b[-1]=1
+    for i in lst:
+        b[i]=1  
+
+    return int(''.join(str(bit) for bit in b),2)
 
 def fetch_keys(voter_id, election_id):
     conn = duckdb.connect("/duckdb/voter-keys.duckdb")
-    print(f"fetching keys for {voter_id}")
     (enc_secret_key, public_key) = conn.execute("""
             SELECT SecretKey, PublicKey
             FROM VoterKeys
@@ -144,6 +112,7 @@ def fetch_keys(voter_id, election_id):
             """, (voter_id, election_id)).fetchone()
     #usk_bin = decrypt_key(enc_secret_key)
     usk_bin = enc_secret_key
+
     return usk_bin, public_key
 
 def decrypt_key(enc_secret_key):
@@ -156,13 +125,13 @@ def decrypt_key(enc_secret_key):
 async def fetch_data(voter_id, election_id):
     GROUP, GENERATOR, ORDER = await get_elgamal_params()
     pk_TS, pk_VS = await fetch_public_keys_from_bb()
-    cbr_length = fetch_cbr_length(voter_id, election_id)
+    cbr_length = await fetch_cbr_length_from_bb(voter_id, election_id)
     # Fetch last ballot and previous last ballot
     if cbr_length >= 2:
-        last_ballot_bin, previous_last_ballot_bin = fetch_last_and_previouslast_ballot(voter_id, election_id)
+        last_ballot_bin, previous_last_ballot_bin = await fetch_last_and_previouslast_ballot_from_bb(voter_id, election_id)
     else:
         # if there is no last previous ballot then we use the last ballot as the previous ballot
-        last_ballot_bin = fetch_last_ballot(voter_id, election_id)
+        last_ballot_bin, _ = await fetch_last_and_previouslast_ballot_from_bb(voter_id, election_id)
         previous_last_ballot_bin = last_ballot_bin
 
     # Converting back to EcPt objects
@@ -172,6 +141,7 @@ async def fetch_data(voter_id, election_id):
     candidates: list = await fetch_candidates_from_bb(election_id)
     usk_bin, public_key = fetch_keys(voter_id, election_id)
     usk = Bn.from_binary(usk_bin)
+
     return(GENERATOR, ORDER, pk_TS, pk_VS, cbr_length, last_ballot, previous_last_ballot, candidates, public_key, usk)
 
 async def vote(v, lv_list, election_id, voter_id):
@@ -230,6 +200,7 @@ async def vote(v, lv_list, election_id, voter_id):
     nizk = full_stmt.prove(sec_dict.update({R1_r_v: R1_r_v.value, R1_lv: R1_lv.value, R1_r_lv: R1_r_lv.value, R1_r_lid: R1_r_lid.value, secret_usk: secret_usk.value}))
     
     pyBallot = constructBallot(voter_id, public_key, ct_v, ct_lv, ct_lid, nizk, election_id)
+    
     return pyBallot
 
 # Ballots are stored base64 encrypted in a json struture.

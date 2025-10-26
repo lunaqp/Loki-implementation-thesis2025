@@ -123,3 +123,21 @@ def voter_public_key(
     voter_public_key_b64 = base64.b64encode(voter_public_key_bin).decode()
 
     return {"voter_public_key": voter_public_key_b64}
+
+@app.get("/last_previous_last_ballot")
+def get_last_previous_last_ballot(
+    election_id: int = Query(..., description="ID of the election"),
+    voter_id: int = Query(..., description="ID of the voter")
+):
+    last_ballot, previous_last_ballot = db.fetch_last_and_previouslast_ballot(voter_id, election_id)
+
+    return {"last_ballot": last_ballot, "previous_last_ballot": previous_last_ballot }
+
+@app.get("/cbr_length")
+def get_cbr_lenghth(
+    election_id: int = Query(..., description="ID of the election"),
+    voter_id: int = Query(..., description="ID of the voter")
+):
+    cbr_length = db.fetch_cbr_length(voter_id, election_id)
+
+    return {"cbr_length": cbr_length }

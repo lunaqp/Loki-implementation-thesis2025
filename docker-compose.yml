@@ -62,7 +62,6 @@ services:
       db:
         condition: service_healthy
     environment:
-      DATABASE_URL: postgresql://postgres:postgres@db:5432/appdb
       BB_API_URL: http://bb_api:8000
       VOTER_SK_DECRYPTION_KEY: K2QWtYSxwTUzCPF7w8uWWB_QwMFReMtAFHd3bq5tJqQ=
       DUCKDB_PATH: /duckdb/voter-keys.duckdb
