@@ -3,6 +3,7 @@ import os
 from modelsBB import NewElectionData, VoterKeyList, Ballot, BallotWithElectionid
 import base64
 import hashlib
+import json
 
 
 DB_NAME = os.getenv("POSTGRES_DB", "appdb")
@@ -79,9 +80,12 @@ def load_election_into_db(payload: NewElectionData):
 
 def load_ballot_into_db(pyBallot: Ballot):
     election_id = pyBallot.electionid
-    ctv = [(base64.b64decode(x), base64.b64decode(y)) for (x,y) in pyBallot.ctv]
-    ctlv = (base64.b64decode(pyBallot.ctlv[0]), base64.b64decode(pyBallot.ctlv[1]))
-    ctlid = (base64.b64decode(pyBallot.ctlid[0]), base64.b64decode(pyBallot.ctlid[1]))
+    # ctv = [(base64.b64decode(x), base64.b64decode(y)) for (x,y) in pyBallot.ctv]
+    # ctlv = (base64.b64decode(pyBallot.ctlv[0]), base64.b64decode(pyBallot.ctlv[1]))
+    # ctlid = (base64.b64decode(pyBallot.ctlid[0]), base64.b64decode(pyBallot.ctlid[1]))
+    ctv = json.dumps(pyBallot.ctv) # json string of base64 encoding
+    ctlv = json.dumps(pyBallot.ctlv)
+    ctlid = json.dumps(pyBallot.ctlid)
     proof = base64.b64decode(pyBallot.proof)
 
     hashed_ballot = hashlib.sha256(pyBallot.model_dump_json().encode("utf-8")).hexdigest()

@@ -1,12 +1,10 @@
-from fastapi import FastAPI, HTTPException
-import os
+from fastapi import FastAPI
 from bulletin_routes import router as bulletin_router
 import base64
 import duckdb
 from contextlib import asynccontextmanager
-import httpx
 from modelsVA import Ballot, VoterBallot
-from vote_casting import vote
+from vote_casting import vote, send_ballot_to_VS
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -53,16 +51,8 @@ def save_keys_to_duckdb(voter_id, election_id, enc_secret_key, public_key):
 # Sending ballot to Voting Server after receiving it in the Voting App frontend.
 @app.post("/api/send-ballot")
 async def send_ballot(voter_ballot: VoterBallot):
-    print("Sending ballot to Voting Server")
+    # Constructing ballot
     pyBallot: Ballot = await vote(voter_ballot.v, voter_ballot.lv_list, voter_ballot.election_id, voter_ballot.voter_id)
-    
-    async with httpx.AsyncClient() as client:
-        try:
-            response = await client.post("http://vs_api:8000/receive-ballot", json=pyBallot.model_dump())
-            response.raise_for_status()
-            print(f"Ballot sent to voting server")
-            # TODO: Get response from Voting server and then -> if status = validated return success to frontend, else return ballot invalid
-            return {"status": "success"}
-        except Exception as e:
-            raise HTTPException(status_code=502, detail=f"Unable to send ballot to Voting Server: {e}")
-            
+    # Sending ballot to voting-server
+    print("Sending ballot to Voting Server")
+    await send_ballot_to_VS(pyBallot)
