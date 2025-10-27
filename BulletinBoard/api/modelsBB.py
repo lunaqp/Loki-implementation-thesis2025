@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 from datetime import datetime
-from typing import List 
+from typing import List, Optional
 
 class ElGamalParams(BaseModel):
     group: int
@@ -49,6 +49,10 @@ class Ballot(BaseModel):
     ctlv: List[str] 
     ctlid: List[str] 
     proof: str
+    electionid: Optional[int] = None
+    timestamp: Optional[datetime] = None
+    hash: Optional[str] = None
+    imagepath: Optional[str] = None
 
 class BallotWithHash(BaseModel):
     hash: str
@@ -57,4 +61,5 @@ class BallotWithHash(BaseModel):
 class BallotWithElectionid(BaseModel):
     ballot: Ballot
     electionid: int
+    timestamp: datetime
 

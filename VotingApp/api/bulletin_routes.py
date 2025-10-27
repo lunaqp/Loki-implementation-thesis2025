@@ -21,9 +21,9 @@ def fetch_from_bb():
         raise HTTPException(status_code=500, detail=f"Error fetching from BB: {str(e)}")
 
 @router.get("/candidates") #define route in VotingApp
-def get_candidates():
+def get_candidates(election_id=123):
     try:
-        resp = requests.get(f"{BB_API_URL}/candidates", timeout=5) #Make GET call to BB /candidates endpoint
+        resp = requests.get(f"{BB_API_URL}/candidates?election_id={election_id}", timeout=5) #Make GET call to BB /candidates endpoint
         resp.raise_for_status()
         return resp.json() #forwared JSON to front end
     except requests.exceptions.RequestException as e: #catch network errors

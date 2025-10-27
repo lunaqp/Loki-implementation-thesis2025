@@ -1,4 +1,4 @@
-from models import Ballot
+from modelsVS import Ballot
 import os
 import psycopg
 from zksk import Secret
@@ -10,6 +10,7 @@ from keygen import get_elgamal_params
 import httpx
 from fastapi import HTTPException
 import base64
+from hashVS import hash_ballot
 
 DB_NAME = os.getenv("POSTGRES_DB", "appdb")
 DB_USER = os.getenv("POSTGRES_USER", "postgres")
@@ -130,13 +131,12 @@ def fetch_last_and_previouslast_ballot(voter_id, election_id):
 
 cbr = fetch_CBR_for_voter_in_election(election_id=543, voter_id=109)
 
-async def validate_ballot(Ballot, election_id):
+async def validate_ballot(pyballot:Ballot):
+    election_id = pyballot.electionid
     ballot_hash: list = fetch_ballot_hash(election_id) #NOTE Do we need compare the hash of the new ballot with all ballot hashes in an election or only the ballot hashes for that voter id. ot whole BB
     voter_list: list = await fetch_voters_from_bb(election_id)
 
-    hashed_ballot = hashlib.sha256(Ballot.model_dump_json().encode("utf-8")).hexdigest() #hash the ballot
-    print(hashed_ballot)
-
+    hashed_ballot = hash_ballot(pyballot) #hash the ballot
     uid_exists = False
     ballot_not_included = False
     proof_verified = False

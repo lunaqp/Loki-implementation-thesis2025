@@ -1,8 +1,7 @@
 from keygen import GROUP, GENERATOR, ORDER 
 from petlib.ec import EcPt
-from models import Ballot
-import requests
-from models import BallotPayload
+from modelsRA import Ballot
+from modelsRA import BallotPayload
 import httpx
 import base64
 
@@ -46,7 +45,6 @@ def enc(g, pk, m, r):
 
 # Serialising ballot 0 list into pydantic objects for transferring to VS
 def serialise(ballot_list):
-    print("serilaizingggg")
     serialised_ballot_list = []
     for ballot in ballot_list:
         id = ballot[0]
@@ -55,9 +53,7 @@ def serialise(ballot_list):
         ctlv = [base64.b64encode(ballot[3][0].export()).decode(), base64.b64encode(ballot[3][1].export()).decode()]
         ctlid = [base64.b64encode(ballot[4][0].export()).decode(), base64.b64encode(ballot[4][1].export()).decode()]
         proof = base64.b64encode(ballot[5].binary()).decode()
-        print("i have serialized")
-        print(type(id), type(upk), type(ctv), type(ctlv), type(ctlid), type(proof))
-
+  
         pyBallot = Ballot(
             voterid = id,
             upk = upk,
@@ -78,8 +74,8 @@ async def send_ballotlist_to_votingserver(election_id, ballot_list):
     )
     print("Sending ballot0 list to vs...")
     try:
-        async with httpx.AsyncClient() as client:
+        async with httpx.AsyncClient(timeout=httpx.Timeout(30.0)) as client:
             response = await client.post("http://vs_api:8000/ballot0list", json=payload.model_dump()) 
             response.raise_for_status()
     except Exception as e:
-        print("Error sending ballot 0 list", e)
+        print("Error sending ballot 0 list", {e})
