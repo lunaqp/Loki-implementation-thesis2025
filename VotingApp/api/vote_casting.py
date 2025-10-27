@@ -128,15 +128,15 @@ async def fetch_data(voter_id, election_id):
     cbr_length = await fetch_cbr_length_from_bb(voter_id, election_id)
     # Fetch last ballot and previous last ballot
     if cbr_length >= 2:
-        last_ballot_bin, previous_last_ballot_bin = await fetch_last_and_previouslast_ballot_from_bb(voter_id, election_id)
+        last_ballot_b64, previous_last_ballot_b64 = await fetch_last_and_previouslast_ballot_from_bb(voter_id, election_id)
     else:
         # if there is no last previous ballot then we use the last ballot as the previous ballot
-        last_ballot_bin, _ = await fetch_last_and_previouslast_ballot_from_bb(voter_id, election_id)
-        previous_last_ballot_bin = last_ballot_bin
+        last_ballot_b64, _ = await fetch_last_and_previouslast_ballot_from_bb(voter_id, election_id)
+        previous_last_ballot_b64 = last_ballot_b64
 
     # Converting back to EcPt objects
-    last_ballot = convert_to_ecpt(last_ballot_bin, GROUP) 
-    previous_last_ballot = convert_to_ecpt(previous_last_ballot_bin, GROUP)
+    last_ballot = convert_to_ecpt(last_ballot_b64, GROUP) 
+    previous_last_ballot = convert_to_ecpt(previous_last_ballot_b64, GROUP)
 
     candidates: list = await fetch_candidates_from_bb(election_id)
     usk_bin, public_key = fetch_keys(voter_id, election_id)
@@ -220,8 +220,6 @@ def convert_to_ecpt(ballot_json, GROUP):
     ct_lv = (EcPt.from_binary(ct_lv_bin[0], GROUP), EcPt.from_binary(ct_lv_bin[1], GROUP))
     ct_lid = (EcPt.from_binary(ct_lid_bin[0], GROUP), EcPt.from_binary(ct_lid_bin[1], GROUP))
     
-    #proof = base.NIZK.deserialize(proof_bin)
-
     return (ct_v, ct_lv, ct_lid, proof_bin)
 
 def constructBallot(voter_id, public_key, ct_v, ct_lv, ct_lid, proof, election_id):
@@ -235,6 +233,7 @@ def constructBallot(voter_id, public_key, ct_v, ct_lv, ct_lid, proof, election_i
     
     # serialising and base64 encoding NIZK proof:
     proof_ser = base.NIZK.serialize(proof)
+   # print(f"serialised proof: {proof_ser}")
     proof_b64 = base64.b64encode(proof_ser).decode()
 
     pyBallot = Ballot(
