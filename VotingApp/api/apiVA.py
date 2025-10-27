@@ -1,10 +1,10 @@
-#To run -> npm run api
 from fastapi import FastAPI
-import os
 from bulletin_routes import router as bulletin_router
 import base64
 import duckdb
 from contextlib import asynccontextmanager
+from modelsVA import Ballot, VoterBallot
+from vote_casting import vote, send_ballot_to_VS
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -34,11 +34,8 @@ def receive_secret_key(data: dict):
     public_key = data["public_key"]
 
     print(f"voterid: {voter_id}, electionid: {election_id}, secretkey: {enc_secret_key}, publickey: {public_key}")
-    print(f"secret key decoded: {base64.b64decode(enc_secret_key)}")
-    print(f"secret key decoded: {base64.b64decode(public_key)}")
 
-
-    # TODO: Figure out where to save secret keys/how to store.
+    # Public and private keys are saved in internal duckdb database. Secret key is symmetrically encrypted with Fernet.
     save_keys_to_duckdb(voter_id, election_id, enc_secret_key, public_key)
 
     return {"status": "secret key received"}
@@ -47,6 +44,15 @@ def save_keys_to_duckdb(voter_id, election_id, enc_secret_key, public_key):
     try:
         conn = duckdb.connect("/duckdb/voter-keys.duckdb")
         print(f"inserting keys in duckdb for voter {voter_id}")
-        conn.execute(f"INSERT INTO VoterKeys VALUES (?, ?, ?, ?)", (voter_id, election_id, enc_secret_key, base64.b64decode(public_key)))
+        conn.execute(f"INSERT INTO VoterKeys VALUES (?, ?, ?, ?)", (voter_id, election_id, base64.b64decode(enc_secret_key), base64.b64decode(public_key)))
     except Exception as e:
         print(f"error inserting keys in duckdb for voter {voter_id}: {e}")
+
+# Sending ballot to Voting Server after receiving it in the Voting App frontend.
+@app.post("/api/send-ballot")
+async def send_ballot(voter_ballot: VoterBallot):
+    # Constructing ballot
+    pyBallot: Ballot = await vote(voter_ballot.v, voter_ballot.lv_list, voter_ballot.election_id, voter_ballot.voter_id)
+    # Sending ballot to voting-server
+    print("Sending ballot to Voting Server")
+    await send_ballot_to_VS(pyBallot)

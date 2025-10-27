@@ -43,19 +43,13 @@ CREATE TABLE VoterParticipatesInElection (
     -- SecretKey BYTEA NOT NULL -- Currently saved encrypted with a symmetric key.
 );
 
-CREATE TYPE ct_tuple AS (
-    c1 BYTEA, 
-    c2 BYTEA
-);
-
 CREATE TABLE Ballots (
     ID SERIAL PRIMARY KEY,
-    CtCandidate ct_tuple ARRAY NOT NULL,
-    CtVoterList ct_tuple NOT NULL,
-    CtVotingServerList ct_tuple NOT NULL,
+    CtCandidate JSONB NOT NULL,
+    CtVoterList JSONB NOT NULL,
+    CtVotingServerList JSONB NOT NULL,
     Proof BYTEA NOT NULL,
     BallotHash TEXT NOT NULL
-
 );
 
 CREATE TABLE VoterCastsBallot (
@@ -68,12 +62,6 @@ CREATE TABLE VoterCastsBallot (
 CREATE TABLE Images (
     ImageFilename VARCHAR(20) NOT NULL,
     BallotID INT PRIMARY KEY REFERENCES Ballots(ID)
-);
-
-CREATE TABLE VotingServer (
-    PublicKey INT NOT NULL,
-    PrivateKey INT NOT NULL
-    --ct_lid moved into participation relation?
 );
 
 CREATE TABLE GlobalInfo ( -- Probably not ints.

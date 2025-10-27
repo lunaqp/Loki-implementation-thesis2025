@@ -1,7 +1,6 @@
 from keygen import GROUP, GENERATOR, ORDER 
 from petlib.ec import EcPt
 from modelsRA import Ballot
-import requests
 from modelsRA import BallotPayload
 import httpx
 import base64
@@ -54,7 +53,7 @@ def serialise(ballot_list):
         ctlv = [base64.b64encode(ballot[3][0].export()).decode(), base64.b64encode(ballot[3][1].export()).decode()]
         ctlid = [base64.b64encode(ballot[4][0].export()).decode(), base64.b64encode(ballot[4][1].export()).decode()]
         proof = base64.b64encode(ballot[5].binary()).decode()
-
+  
         pyBallot = Ballot(
             voterid = id,
             upk = upk,

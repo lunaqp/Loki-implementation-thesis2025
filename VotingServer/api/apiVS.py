@@ -60,9 +60,9 @@ async def receive_ballotlist(payload: BallotPayload):
 
 @app.post("/receive-ballot")
 async def receive_ballot(pyBallot: Ballot):
-    ballot_validated = validate_ballot(pyBallot)
+    ballot_validated = await validate_ballot(pyBallot)
     if ballot_validated: 
-        send_ballot_to_bb(pyBallot)
+        await send_ballot_to_bb(pyBallot)
         return ballot_validated
     else:
         return ballot_validated 

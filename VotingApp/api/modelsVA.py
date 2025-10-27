@@ -1,6 +1,7 @@
 from pydantic import BaseModel
 from typing import List
 from typing import Optional
+from datetime import datetime
 
 class ElGamalParams(BaseModel):
     group: int
@@ -18,3 +19,9 @@ class Ballot(BaseModel):
     timestamp: Optional[datetime] = None
     hash: Optional[str] = None
     imagepath: Optional[str] = None
+
+class VoterBallot(BaseModel):
+    v: int
+    lv_list: list
+    election_id: int
+    voter_id: int
