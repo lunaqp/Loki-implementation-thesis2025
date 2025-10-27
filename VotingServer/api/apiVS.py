@@ -7,12 +7,13 @@ from epochGeneration import save_timestamps_for_voter, generate_timestamps, fetc
 from contextlib import asynccontextmanager
 import duckdb
 import httpx
+from hashVS import hash_ballot
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Initialising DuckDB database:
     conn = duckdb.connect("/duckdb/voter-timestamps.duckdb")
-    conn.sql("CREATE TABLE VoterTimestamps(VoterID INTEGER, ElectionID INTEGER, Timestamp TIMESTAMPTZ, Processed BOOLEAN)")
+    conn.sql("CREATE TABLE IF NOT EXISTS VoterTimestamps(VoterID INTEGER, ElectionID INTEGER, Timestamp TIMESTAMPTZ, Processed BOOLEAN, ImagePath TEXT)")
     yield  # yielding control back to FastAPI
 
 app = FastAPI(lifespan=lifespan)
@@ -34,7 +35,7 @@ async def receive_ballotlist(payload: BallotPayload):
     for ballot in payload.ballot0list:
         await save_timestamps_for_voter(payload.electionid, ballot.voterid)
        
-        ballot0_timestamp = await fetch_ballot0_timestamp(payload.electionid, ballot.voterid)
+        ballot0_timestamp, image_path = await fetch_ballot0_timestamp(payload.electionid, ballot.voterid)
 
         pyBallot = Ballot(
             voterid = ballot.voterid,
@@ -45,7 +46,10 @@ async def receive_ballotlist(payload: BallotPayload):
             proof = ballot.proof,
             electionid = payload.electionid,
             timestamp = ballot0_timestamp,
+            imagepath = image_path
         )
+        # pyBallot.hash = hash_ballot(pyBallot) #test, is it the same hash produced
+        # print("VS hash:", pyBallot.hash)
         await send_ballot0_to_bb(pyBallot)
     conn = duckdb.connect("/duckdb/voter-timestamps.duckdb") # for printing tables when testing
     conn.table("VoterTimestamps").show() # for printing tables when testing

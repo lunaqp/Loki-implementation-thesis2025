@@ -18,6 +18,7 @@ class Ballot(BaseModel):
     electionid: Optional[int] = None
     timestamp: Optional[datetime] = None
     hash: Optional[str] = None
+    imagepath: Optional[str] = None
 
 class VoterBallot(BaseModel):
     v: int
