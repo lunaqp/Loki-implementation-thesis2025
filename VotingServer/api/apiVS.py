@@ -7,6 +7,7 @@ from epochGeneration import save_timestamps_for_voter, generate_timestamps, fetc
 from contextlib import asynccontextmanager
 import duckdb
 import httpx
+from hashVS import hash_ballot
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -47,6 +48,8 @@ async def receive_ballotlist(payload: BallotPayload):
             timestamp = ballot0_timestamp,
             imagepath = image_path
         )
+        # pyBallot.hash = hash_ballot(pyBallot) #test, is it the same hash produced
+        # print("VS hash:", pyBallot.hash)
         await send_ballot0_to_bb(pyBallot)
     conn = duckdb.connect("/duckdb/voter-timestamps.duckdb") # for printing tables when testing
     conn.table("VoterTimestamps").show() # for printing tables when testing
