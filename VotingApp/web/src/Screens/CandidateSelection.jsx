@@ -33,6 +33,13 @@ const CandidateSelection = ({ candidates }) => {
 
   const handleConfirm = () => {
     setShowPopUp(false);
+    const v = 1;
+    const voter_id = 101;
+    const election_id = 123;
+    const lv_list = [];
+
+    sendBallot(v, lv_list, election_id, voter_id);
+
     navigate(nextRoute);
   };
 
@@ -43,6 +50,28 @@ const CandidateSelection = ({ candidates }) => {
   const handleChange = (e) => {
     setSelectedCandidate(e.target.value);
   };
+
+  async function sendBallot(v, lv_list, election_id, voter_id) {
+    try {
+      const response = await fetch("/api/send-ballot", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ v, lv_list, election_id, voter_id }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || "Failed to send ballot");
+      }
+
+      const data = await response.json();
+      console.log("API response:", data);
+    } catch (err) {
+      console.error("API error:", err);
+    }
+  }
 
   return (
     candidates && (
