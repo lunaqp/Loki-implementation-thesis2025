@@ -142,18 +142,18 @@ async def validate_ballot(pyballot:Ballot):
     proof_verified = False
 
     for id in voter_list:
-        if Ballot.voterid == id:
+        if pyballot.voterid == id:
             uid_exists = True
 
     if not ballot_hash: # Guarding against empty list, not necessary if we dont have to validate Ballot0
         ballot_not_included = True
-    else:
-        for hash in ballot_hash:
-            if hashed_ballot != hash:
-                ballot_not_included = True
+
+    if hashed_ballot not in ballot_hash:
+        ballot_not_included = True
 
     # proof_verified = await verify_proof(election_id, Ballot.voterid)
     proof_verified = True #for testing purposes, keep above instead.
+    
     ballot_validated = uid_exists and ballot_not_included and proof_verified
 
     return ballot_validated
