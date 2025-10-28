@@ -170,9 +170,9 @@ async def vote(v, lv_list, election_id, voter_id):
 
     #generating the new ballot
     ct_i = (2*ct_lid[0],2*ct_lid[1]) 
-    ct_v = [enc(GENERATOR, pk_TS, R1_v[i].value, R1_r_v.value) for i in range(len(candidates))]
-    ct_lv = enc(GENERATOR, pk_VS, R1_lv.value, R1_r_lv.value) 
-    ct_lid = re_enc(GENERATOR, pk_VS, (ct_i[0], GENERATOR+ct_i[1]), R1_r_lid.value)
+    ct_v_new = [enc(GENERATOR, pk_TS, R1_v[i].value, R1_r_v.value) for i in range(len(candidates))]
+    ct_lv_new = enc(GENERATOR, pk_VS, R1_lv.value, R1_r_lv.value) 
+    ct_lid_new = re_enc(GENERATOR, pk_VS, (ct_i[0], GENERATOR+ct_i[1]), R1_r_lid.value)
     c0 = ct_lv[0]-ct_lid[0]
     c1 = ct_lv[1]-ct_lid[1]
 
@@ -180,7 +180,7 @@ async def vote(v, lv_list, election_id, voter_id):
         print(f"[{cbr_length}] Voted for candidate {v} with voter list {lv_list}") 
     else: print(f"[{cbr_length}] Voted for no candidate (abstention) with voter list {lv_list}")
 
-    full_stmt=stmt((GENERATOR, pk_TS, pk_VS, usk*GENERATOR, ct_v, ct_lv, ct_lid, ct_i, c0, c1, ct_v, ct_vv), (R1_r_v, R1_lv, R1_r_lv, R1_r_lid, secret_usk, Secret()), len(candidates))
+    full_stmt=stmt((GENERATOR, pk_TS, pk_VS, usk*GENERATOR, ct_v_new, ct_lv_new, ct_lid_new, ct_i, c0, c1, ct_v, ct_vv), (R1_r_v, R1_lv, R1_r_lv, R1_r_lid, secret_usk, Secret()), len(candidates))
     simulation_indexes=[]
 
     #if the vote is for abstention then we need to simulate the proof for all candidates
@@ -198,8 +198,8 @@ async def vote(v, lv_list, election_id, voter_id):
 
     #prove the statement
     nizk = full_stmt.prove(sec_dict.update({R1_r_v: R1_r_v.value, R1_lv: R1_lv.value, R1_r_lv: R1_r_lv.value, R1_r_lid: R1_r_lid.value, secret_usk: secret_usk.value}))
-    
-    pyBallot = constructBallot(voter_id, public_key, ct_v, ct_lv, ct_lid, nizk, election_id)
+
+    pyBallot = constructBallot(voter_id, public_key, ct_v_new, ct_lv_new, ct_lid_new, nizk, election_id)
     
     return pyBallot
 

@@ -163,7 +163,6 @@ async def verify_proof(election_id, voter_id, pyballot):
     GROUP, GENERATOR, _ = await get_elgamal_params()
     current_ballot_b64 = (pyballot.ctv, pyballot.ctlv, pyballot.ctlid, pyballot.proof)
     ctv_current, ctlv_current, ctlid_current, proof_current = convert_to_ecpt(current_ballot_b64, GROUP)
-    print(f"proof_current: {proof_current}")
     
     cbr_length = await fetch_cbr_length_from_bb(voter_id, election_id)
     
@@ -197,7 +196,9 @@ async def verify_proof(election_id, voter_id, pyballot):
     stmt_c = stmt((GENERATOR, pk_TS, pk_VS, upk, ctv_current, ctlv_current, ctlid_current, ct_i, c0, c1, ctv, ctv2), 
                 (Secret(), Secret(), Secret(), Secret(), Secret(), Secret()), len(candidates))
 
-    if not stmt_c.verify(proof_current): 
+    statement_verified = stmt_c.verify(proof_current)
+
+    if not statement_verified: 
         print("verification failed")
         #NOTE: if failed to verify send message to voting app and display in UI "ballot not valid"
     else:
