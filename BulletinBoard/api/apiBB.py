@@ -1,6 +1,5 @@
-import queries as db
 from fastapi import FastAPI, Query, HTTPException
-from modelsBB import ElGamalParams, NewElectionData, VoterKeyList, Ballot, BallotWithElectionid
+from modelsBB import ElGamalParams, NewElectionData, VoterKeyList, Ballot
 import base64
 import dbcalls as db
 from notifications import notify_ts_vs_params_saved, notify_ra_public_key_saved
@@ -131,7 +130,7 @@ def get_last_previous_last_ballot(
 ):
     last_ballot, previous_last_ballot = db.fetch_last_and_previouslast_ballot(voter_id, election_id)
 
-    return {"last_ballot": last_ballot, "previous_last_ballot": previous_last_ballot }
+    return {"last_ballot": last_ballot, "previous_last_ballot": previous_last_ballot}
 
 @app.get("/cbr_length")
 def get_cbr_lenghth(
@@ -140,4 +139,12 @@ def get_cbr_lenghth(
 ):
     cbr_length = db.fetch_cbr_length(voter_id, election_id)
 
-    return {"cbr_length": cbr_length }
+    return {"cbr_length": cbr_length}
+
+@app.get("/fetch-ballot-hashes")
+def fetch_ballot_hashes(
+    election_id: int = Query(..., description="ID of the election")
+):
+    ballot_hashes = db.fetch_ballot_hashes(election_id)
+    
+    return {"ballot_hashes": ballot_hashes}

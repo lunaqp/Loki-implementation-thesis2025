@@ -1,6 +1,6 @@
 import psycopg
 import os
-from modelsBB import NewElectionData, VoterKeyList, Ballot, BallotWithElectionid
+from modelsBB import NewElectionData, VoterKeyList, Ballot
 import base64
 import hashlib
 from hashBB import hash_ballot
@@ -118,7 +118,6 @@ def load_ballot_into_db(pyBallot: Ballot):
                 SQL_INSERT_IMAGES,
                 (pyBallot.imagepath, ballot_id)
             )
-    print("ballot loaded to db")
 
 # saving group, generator and order to database after receiving them from RA.
 def save_elgamalparams(GROUP, GENERATOR, ORDER):
@@ -320,3 +319,29 @@ def fetch_CBR_for_voter_in_election(voter_id, election_id):
                 """, (election_id, voter_id))
     cbr = cur.fetchall()
     return cbr
+
+def fetch_ballot_hashes(election_id):
+    conn = psycopg.connect(CONNECTION_INFO)
+    cur = conn.cursor()
+    cur.execute("""
+                SELECT BallotHash
+                FROM Ballots
+                Join VoterCastsBallot vcb on vcb.BallotID = Ballots.ID
+                WHERE vcb.ElectionID = %s;"""
+                ,(election_id,))
+    ballot_hashes = cur.fetchall() # returns a list of tuples
+
+    # Extracts the first element of each tuple
+    ballothash_list = [row[0] for row in ballot_hashes]
+    
+    return ballothash_list
+
+# Fetch image filename for specific ballot
+def fetch_imageFilename_for_ballot(cur, ballot_id):
+    cur.execute("""
+                SELECT ImageFilename
+                FROM Images 
+                WHERE BallotID = %s
+                """, (ballot_id,))
+    records = cur.fetchall()
+    return records

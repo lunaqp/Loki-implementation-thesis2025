@@ -58,9 +58,6 @@ services:
       dockerfile: Dockerfile
     volumes:
       - va_data:/duckdb
-    depends_on:
-      db:
-        condition: service_healthy
     environment:
       BB_API_URL: http://bb_api:8000
       VOTER_SK_DECRYPTION_KEY: K2QWtYSxwTUzCPF7w8uWWB_QwMFReMtAFHd3bq5tJqQ=
@@ -87,15 +84,9 @@ services:
     volumes:
       - vs_data:/duckdb
       - ./VotingApp/web/public/images:/images:ro
-
-    env_file:
-      - ./docker/env/db.env
+      - ./VotingServer/api/keys.json:/app/keys.json
     environment:
-      DATABASE_URL: postgresql://postgres:postgres@db:5432/appdb
       DUCKDB_PATH: /duckdb/voter-timestamps.duckdb
-    depends_on:
-      db:
-        condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 10s
