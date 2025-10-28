@@ -179,7 +179,7 @@ async def verify_proof(election_id, voter_id, pyballot):
 
     candidates: list = await fetch_candidates_from_bb(election_id)
     pk_TS, pk_VS = await fetch_public_keys_from_bb()
-    voter_public_key_bin = await fetch_voter_public_key_from_bb(voter_id, election_id)
+    voter_public_key_bin = await fetch_voter_public_key_from_bb(voter_id, election_id) # TODO: use public key sent with ballot instead of fetching from the database.
     upk = EcPt.from_binary(voter_public_key_bin, GROUP)
 
     ctv = last_ballot[0]
