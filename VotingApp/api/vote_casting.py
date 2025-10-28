@@ -128,15 +128,15 @@ async def fetch_data(voter_id, election_id):
     cbr_length = await fetch_cbr_length_from_bb(voter_id, election_id)
     # Fetch last ballot and previous last ballot
     if cbr_length >= 2:
-        last_ballot_bin, previous_last_ballot_bin = await fetch_last_and_previouslast_ballot_from_bb(voter_id, election_id)
+        last_ballot_b64, previous_last_ballot_b64 = await fetch_last_and_previouslast_ballot_from_bb(voter_id, election_id)
     else:
         # if there is no last previous ballot then we use the last ballot as the previous ballot
-        last_ballot_bin, _ = await fetch_last_and_previouslast_ballot_from_bb(voter_id, election_id)
-        previous_last_ballot_bin = last_ballot_bin
+        last_ballot_b64, _ = await fetch_last_and_previouslast_ballot_from_bb(voter_id, election_id)
+        previous_last_ballot_b64 = last_ballot_b64
 
     # Converting back to EcPt objects
-    last_ballot = convert_to_ecpt(last_ballot_bin, GROUP) 
-    previous_last_ballot = convert_to_ecpt(previous_last_ballot_bin, GROUP)
+    last_ballot = convert_to_ecpt(last_ballot_b64, GROUP) 
+    previous_last_ballot = convert_to_ecpt(previous_last_ballot_b64, GROUP)
 
     candidates: list = await fetch_candidates_from_bb(election_id)
     usk_bin, public_key = fetch_keys(voter_id, election_id)
@@ -170,9 +170,9 @@ async def vote(v, lv_list, election_id, voter_id):
 
     #generating the new ballot
     ct_i = (2*ct_lid[0],2*ct_lid[1]) 
-    ct_v = [enc(GENERATOR, pk_TS, R1_v[i].value, R1_r_v.value) for i in range(len(candidates))]
-    ct_lv = enc(GENERATOR, pk_VS, R1_lv.value, R1_r_lv.value) 
-    ct_lid = re_enc(GENERATOR, pk_VS, (ct_i[0], GENERATOR+ct_i[1]), R1_r_lid.value)
+    ct_v_new = [enc(GENERATOR, pk_TS, R1_v[i].value, R1_r_v.value) for i in range(len(candidates))]
+    ct_lv_new = enc(GENERATOR, pk_VS, R1_lv.value, R1_r_lv.value) 
+    ct_lid_new = re_enc(GENERATOR, pk_VS, (ct_i[0], GENERATOR+ct_i[1]), R1_r_lid.value)
     c0 = ct_lv[0]-ct_lid[0]
     c1 = ct_lv[1]-ct_lid[1]
 
@@ -180,7 +180,7 @@ async def vote(v, lv_list, election_id, voter_id):
         print(f"[{cbr_length}] Voted for candidate {v} with voter list {lv_list}") 
     else: print(f"[{cbr_length}] Voted for no candidate (abstention) with voter list {lv_list}")
 
-    full_stmt=stmt((GENERATOR, pk_TS, pk_VS, usk*GENERATOR, ct_v, ct_lv, ct_lid, ct_i, c0, c1, ct_v, ct_vv), (R1_r_v, R1_lv, R1_r_lv, R1_r_lid, secret_usk, Secret()), len(candidates))
+    full_stmt=stmt((GENERATOR, pk_TS, pk_VS, usk*GENERATOR, ct_v_new, ct_lv_new, ct_lid_new, ct_i, c0, c1, ct_v, ct_vv), (R1_r_v, R1_lv, R1_r_lv, R1_r_lid, secret_usk, Secret()), len(candidates))
     simulation_indexes=[]
 
     #if the vote is for abstention then we need to simulate the proof for all candidates
@@ -198,8 +198,8 @@ async def vote(v, lv_list, election_id, voter_id):
 
     #prove the statement
     nizk = full_stmt.prove(sec_dict.update({R1_r_v: R1_r_v.value, R1_lv: R1_lv.value, R1_r_lv: R1_r_lv.value, R1_r_lid: R1_r_lid.value, secret_usk: secret_usk.value}))
-    
-    pyBallot = constructBallot(voter_id, public_key, ct_v, ct_lv, ct_lid, nizk, election_id)
+
+    pyBallot = constructBallot(voter_id, public_key, ct_v_new, ct_lv_new, ct_lid_new, nizk, election_id)
     
     return pyBallot
 
@@ -220,8 +220,6 @@ def convert_to_ecpt(ballot_json, GROUP):
     ct_lv = (EcPt.from_binary(ct_lv_bin[0], GROUP), EcPt.from_binary(ct_lv_bin[1], GROUP))
     ct_lid = (EcPt.from_binary(ct_lid_bin[0], GROUP), EcPt.from_binary(ct_lid_bin[1], GROUP))
     
-    #proof = base.NIZK.deserialize(proof_bin)
-
     return (ct_v, ct_lv, ct_lid, proof_bin)
 
 def constructBallot(voter_id, public_key, ct_v, ct_lv, ct_lid, proof, election_id):
@@ -235,6 +233,7 @@ def constructBallot(voter_id, public_key, ct_v, ct_lv, ct_lid, proof, election_i
     
     # serialising and base64 encoding NIZK proof:
     proof_ser = base.NIZK.serialize(proof)
+   # print(f"serialised proof: {proof_ser}")
     proof_b64 = base64.b64encode(proof_ser).decode()
 
     pyBallot = Ballot(

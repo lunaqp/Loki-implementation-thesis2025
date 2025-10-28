@@ -97,7 +97,7 @@ def load_ballot_into_db(pyBallot: Ballot):
     ctlv = json.dumps(pyBallot.ctlv)
     ctlid = json.dumps(pyBallot.ctlid)
     proof = base64.b64decode(pyBallot.proof)
-
+    
     hashed_ballot = hash_ballot(pyBallot) 
     timestamp = pyBallot.timestamp
 
@@ -289,7 +289,6 @@ def serialise_ballot_cts(ballot_ct):
     
     # serialising and base64 encoding NIZK proof:
     proof_b64 = base64.b64encode(ballot_ct[3]).decode()
-
     return (ct_v_b64, ct_lv_b64, ct_lid_b64, proof_b64)
 
 def fetch_cbr_length(voter_id, election_id):
@@ -304,3 +303,20 @@ def fetch_cbr_length(voter_id, election_id):
                 """, (election_id, voter_id))
     (cbr_length,) = cur.fetchone()  # fetchone returns a tuple like (count,)
     return cbr_length
+
+# Fetches the CBR for a given voter in a given election sorted by most recent votes at the top.
+def fetch_CBR_for_voter_in_election(voter_id, election_id):
+    conn = psycopg.connect(CONNECTION_INFO)
+    cur = conn.cursor()
+    cur.execute("""
+                SELECT *
+                FROM VoterParticipatesInElection p
+                JOIN VoterCastsBallot c 
+                ON p.ElectionID = c.ElectionID AND p.VoterID = c.VoterID
+                JOIN Ballots b
+                ON b.ID = c.BallotID
+                WHERE p.ElectionID = %s AND p.VoterID = %s
+                ORDER BY c.VoteTimestamp DESC;
+                """, (election_id, voter_id))
+    cbr = cur.fetchall()
+    return cbr

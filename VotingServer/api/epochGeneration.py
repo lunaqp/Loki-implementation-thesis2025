@@ -149,3 +149,27 @@ async def fetch_ballot0_timestamp(election_id, voter_id):
     except Exception as e:
         print(f"error fetching timestamp from duckdb for voter {voter_id} in election {election_id}: {e}")
 
+
+async def fetch_ballot_timestamp_and_imagepath(election_id, voter_id):
+    try:
+        async with duckdb_lock: # lock is acquired to check if access should be allowed, lock while accessing ressource and is then released before returning  
+            conn = duckdb.connect("/duckdb/voter-timestamps.duckdb")
+            ballot_timestamp, image_path = conn.execute("""
+                    SELECT Timestamp, ImagePath
+                    FROM VoterTimestamps
+                    WHERE VoterID = ? AND ElectionID = ? AND Processed = false
+                    ORDER BY Timestamp ASC
+                    LIMIT 1
+                    """, (voter_id, election_id)).fetchone()
+            
+            # Set processed column to true for the fetched timestamp:
+            conn.execute("""
+                UPDATE VoterTimestamps
+                SET Processed = TRUE
+                WHERE VoterID = ? AND ElectionID = ? AND Timestamp = ?
+            """, (voter_id, election_id, ballot_timestamp))
+
+            return ballot_timestamp, image_path
+    except Exception as e:
+        print(f"error fetching timestamp from duckdb for voter {voter_id} in election {election_id}: {e}")
+
