@@ -29,6 +29,12 @@ services:
       - ./docker/env/db.env
     environment:
       DATABASE_URL: postgresql://postgres:postgres@db:5432/appdb
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
     depends_on:
       db:
         condition: service_healthy
@@ -46,6 +52,8 @@ services:
       vs_api:
         condition: service_healthy
       ts_api:
+        condition: service_healthy
+      bb_api:
         condition: service_healthy
     ports:
       - "8002:8000"

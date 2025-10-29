@@ -1,5 +1,5 @@
 import numpy as np
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 import httpx
 import duckdb
 import asyncio
@@ -64,7 +64,7 @@ def generate_epochs(election_duration_secs, voteamount):
 
         # Loop to ensure we only keep values over 0 seconds and less than twice the mean/center.
         for interval in samples:
-            if interval > 0 and interval < center * 2:
+            if interval > 5 and interval < center * 2: #NOTE: minimum time = 5 sec buffer. To ensure certain amount of time between timestamps.
                 epoch_array = np.append(epoch_array, interval)
         
     return epoch_array
@@ -102,6 +102,12 @@ async def generate_timestamps(election_id):
 
     return timestamps
 
+def round_seconds_timestamps(ts: datetime) -> datetime:
+    if ts.microsecond >= 500_000:
+        ts += timedelta(seconds = 1)
+
+    return ts.replace(microsecond = 0)
+
 async def save_timestamps_for_voter(election_id, voter_id):
     try:
         timestamps = await generate_timestamps(election_id) # returns array of timestamps.
@@ -120,7 +126,8 @@ async def save_timestamps_to_db(election_id, voter_id, timestamps):
             rows = [] #list to collect all rows we want to insert in DB in one batch
             for timestamp, img in zip(timestamps, image_paths):
                 dt_timestamp = datetime.fromtimestamp(timestamp, tz=timezone.utc) # convert to datetime to store in DB as TIMESTAMPTZ
-                rows.append((voter_id, election_id, dt_timestamp, False, img))
+                timestamp_rounded = round_seconds_timestamps(dt_timestamp)
+                rows.append((voter_id, election_id, timestamp_rounded, False, img))
             conn.executemany("INSERT INTO VoterTimestamps (VoterID, ElectionID, Timestamp, Processed, ImagePath) VALUES (?, ?, ?, ?, ?)", rows) #inserts all rows in one operation
         conn.close()
     except Exception as e:

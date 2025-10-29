@@ -8,12 +8,14 @@ from contextlib import asynccontextmanager
 import duckdb
 import httpx
 from hashVS import hash_ballot
+from epochHandling import update_time
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Initialising DuckDB database:
     conn = duckdb.connect("/duckdb/voter-timestamps.duckdb")
     conn.sql("CREATE TABLE IF NOT EXISTS VoterTimestamps(VoterID INTEGER, ElectionID INTEGER, Timestamp TIMESTAMPTZ, Processed BOOLEAN, ImagePath TEXT)")
+    asyncio.create_task(update_time())
     yield  # yielding control back to FastAPI
 
 app = FastAPI(lifespan=lifespan)
