@@ -3,18 +3,22 @@ import asyncio
 from keygen import send_public_key_to_BB
 from modelsVS import BallotPayload, Ballot
 from validateBallot import validate_ballot, obfuscate
-from epochGeneration import save_timestamps_for_voter, fetch_ballot0_timestamp, fetch_ballot_timestamp_and_imagepath
+from epochGeneration import save_timestamps_for_voter, fetch_ballot0_timestamp, fetch_ballot_timestamp_and_imagepath, duckdb_lock
 from contextlib import asynccontextmanager
 import duckdb
 import httpx
 from hashVS import hash_ballot
-from epochHandling import update_time
+from epochHandling import update_time, send_ballot0_to_bb
+import base64
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Initialising DuckDB database:
-    conn = duckdb.connect("/duckdb/voter-timestamps.duckdb")
-    conn.sql("CREATE TABLE IF NOT EXISTS VoterTimestamps(VoterID INTEGER, ElectionID INTEGER, Timestamp TIMESTAMPTZ, Processed BOOLEAN, ImagePath TEXT)")
+    conn = duckdb.connect("/duckdb/voter-data.duckdb")
+    conn.sql("CREATE TABLE IF NOT EXISTS VoterTimestamps(VoterID INTEGER, ElectionID INTEGER, Timestamp TIMESTAMPTZ, Processed BOOLEAN, ImagePath TEXT)" )
+    conn.sql("CREATE TABLE IF NOT EXISTS PendingVotes(VoterID INTEGER, ElectionID INTEGER, PublicKey BLOB, ctv TEXT, ctlv TEXT, ctlid TEXT, Proof BLOB)")
+
     asyncio.create_task(update_time())
     yield  # yielding control back to FastAPI
 
@@ -53,7 +57,7 @@ async def receive_ballotlist(payload: BallotPayload):
         # pyBallot.hash = hash_ballot(pyBallot) #test, is it the same hash produced
         # print("VS hash:", pyBallot.hash)
         await send_ballot0_to_bb(pyBallot)
-    conn = duckdb.connect("/duckdb/voter-timestamps.duckdb") # for printing tables when testing
+    conn = duckdb.connect("/duckdb/voter-data.duckdb") # for printing tables when testing
     conn.table("VoterTimestamps").show() # for printing tables when testing
 
     # NOTE: Validate ballots before sending to CBR via BB.
@@ -62,43 +66,14 @@ async def receive_ballotlist(payload: BallotPayload):
 
 @app.post("/receive-ballot")
 async def receive_ballot(pyBallot: Ballot):
-    ballot_validated = await validate_ballot(pyBallot)
-    if ballot_validated: 
-        await send_ballot_to_bb(pyBallot)
-        obf_ballot = await obfuscate(voter_id=101, election_id=123)
-        await send_ballot_to_bb(obf_ballot)
-        return ballot_validated
-    else:
-        return ballot_validated 
-
-
-async def send_ballot_to_bb(pyBallot:Ballot):
-    ballot_timestamp, image_path = await fetch_ballot_timestamp_and_imagepath(pyBallot.electionid, pyBallot.voterid)
-
-    pyBallot.timestamp = ballot_timestamp
-    pyBallot.imagepath = image_path
-
-    conn = duckdb.connect("/duckdb/voter-timestamps.duckdb") # for printing tables when testing
-    conn.table("VoterTimestamps").show() # for printing tables when testing
-
     try:
-        async with httpx.AsyncClient() as client:
-            response = await client.post("http://bb_api:8000/receive-ballot", content = pyBallot.model_dump_json())
-            response.raise_for_status() # gets http status code
-            print(f"ballot sent to BB for voter {pyBallot.voterid}")
-            return response.json()
+        async with duckdb_lock: # lock is acquired to check if access should be allowed, lock while accessing ressource and is then released before returning  
+            conn = duckdb.connect("/duckdb/voter-data.duckdb")
+            public_key = base64.b64decode(pyBallot.upk)
+            proof = base64.b64decode(pyBallot.proof)
+            conn.execute("INSERT INTO PendingVotes (VoterID, ElectionID, PublicKey, ctv, ctlv, ctlid, Proof) VALUES (?, ?, ?, ?, ?, ?, ?)", (pyBallot.voterid, pyBallot.electionid, public_key, pyBallot.ctv, pyBallot.ctlv, pyBallot.ctlid, proof)) 
+            conn.table("PendingVotes").show()
+        conn.close()
     except Exception as e:
-        print(f"Error sending ballot: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to send ballot to BB: {str(e)}") 
+        print(f"error writing ballot to duckdb for voter {pyBallot.voterid} in election {pyBallot.electionid}: {e}")
 
-
-async def send_ballot0_to_bb(pyBallot: Ballot):
-    try:
-        async with httpx.AsyncClient() as client:
-            response = await client.post("http://bb_api:8000/receive-ballot0", content = pyBallot.model_dump_json())
-            response.raise_for_status() # gets http status code
-            print(f"ballot0 sent to BB for voter {pyBallot.voterid}")
-            return response.json()
-    except Exception as e:
-        print(f"Error sending ballot0: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to send ballot0 to BB: {str(e)}")  

@@ -94,7 +94,7 @@ services:
       - ./VotingApp/web/public/images:/images:ro
       - ./VotingServer/api/keys.json:/app/keys.json
     environment:
-      DUCKDB_PATH: /duckdb/voter-timestamps.duckdb
+      DUCKDB_PATH: /duckdb/voter-data.duckdb
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 10s

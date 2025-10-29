@@ -3,8 +3,13 @@ import httpx
 import duckdb
 import asyncio
 from datetime import datetime
-import os, glob, random
+from validateBallot import obfuscate, validate_ballot
 from epochGeneration import duckdb_lock, round_seconds_timestamps
+from modelsVS import Ballot
+import base64
+from fastapi import HTTPException 
+from epochGeneration import fetch_ballot_timestamp_and_imagepath
+
 
 
 current_time = datetime.now()
@@ -13,15 +18,66 @@ async def update_time():
     global current_time
     while True:
         current_time = round_seconds_timestamps(datetime.now())
-        print(current_time)
         await asyncio.sleep(1)
+
+def timestamp_management(voter_id, election_id):
+    while True:
+        if current_time == fetch_next_timestamp_for_voter(voter_id, election_id):
+            cast_vote()
+
+    
+
+
+async def cast_vote(voter_id, election_id):
+    try:
+        async with duckdb_lock: # lock is acquired to check if access should be allowed, lock while accessing ressource and is then released before returning  
+            conn = duckdb.connect("/duckdb/voter-data.duckdb")
+            row = conn.execute("""
+                    SELECT PublicKey, ctv, ctlv, ctlid, Proof
+                    FROM PendingVotes
+                    WHERE VoterID = ? AND ElectionID = ?
+                    """, (voter_id, election_id)).fetchone()
+            
+            if not row or all(x is None for x in row):
+                await obfuscate(voter_id, election_id)
+            else:
+                public_key, ct_v, ct_lv, ct_lid, proof = row
+                pyballot:Ballot = construct_ballot(voter_id, public_key, ct_v, ct_lv, ct_lid, proof, election_id)
+                ballot_validated = await validate_ballot(pyballot)
+                if ballot_validated:
+                    conn.execute("DELETE FROM PendingVotes WHERE VoterID = ? AND ElectionID = ?", voter_id, election_id) 
+                    await send_ballot_to_bb(pyballot)
+                    return ballot_validated #true if validated
+                else:
+                    return ballot_validated #false if not validated
+
+            conn.close()
+
+    except Exception as e:
+        print(f"error, fetching pending votes: {e}")
+
+
+def construct_ballot(voter_id, public_key, ct_v, ct_lv, ct_lid, proof, election_id):
+    public_key_b64 = base64.b64encode(public_key).decode()
+    proof_b64 = base64.b64encode(proof).decode()
+
+    pyBallot = Ballot(
+            voterid = voter_id,
+            upk = public_key_b64,
+            ctv = ct_v,
+            ctlv = ct_lv,
+            ctlid = ct_lid,
+            proof = proof_b64,
+            electionid = election_id
+        )
+    return pyBallot
 
 
 async def fetch_next_timestamp_for_voter(voter_id, election_id):
     try:
         async with duckdb_lock: # lock is acquired to check if access should be allowed, lock while accessing ressource and is then released before returning  
-            conn = duckdb.connect("/duckdb/voter-timestamps.duckdb")
-            voter_id, timestamp = conn.execute("""
+            conn = duckdb.connect("/duckdb/voter-data.duckdb")
+            (timestamp,) = conn.execute("""
                     SELECT VoterID, Timestamp
                     FROM VoterTimestamps
                     WHERE ElectionID = ? AND Processed = false
@@ -29,8 +85,40 @@ async def fetch_next_timestamp_for_voter(voter_id, election_id):
                     LIMIT 1
                     """, (voter_id, election_id)).fetchone()
             
-            return voter_id, timestamp
+            return timestamp
     except Exception as e:
         print(f"error fetching next timestamp from duckdb for voter {voter_id} in election {election_id}: {e}")
+
+
+async def send_ballot_to_bb(pyBallot:Ballot):
+    ballot_timestamp, image_path = await fetch_ballot_timestamp_and_imagepath(pyBallot.electionid, pyBallot.voterid)
+
+    pyBallot.timestamp = ballot_timestamp
+    pyBallot.imagepath = image_path
+
+    conn = duckdb.connect("/duckdb/voter-data.duckdb") # for printing tables when testing
+    conn.table("VoterTimestamps").show() # for printing tables when testing
+
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.post("http://bb_api:8000/receive-ballot", content = pyBallot.model_dump_json())
+            response.raise_for_status() # gets http status code
+            print(f"ballot sent to BB for voter {pyBallot.voterid}")
+            return response.json()
+    except Exception as e:
+        print(f"Error sending ballot: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to send ballot to BB: {str(e)}") 
+
+
+async def send_ballot0_to_bb(pyBallot: Ballot):
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.post("http://bb_api:8000/receive-ballot0", content = pyBallot.model_dump_json())
+            response.raise_for_status() # gets http status code
+            print(f"ballot0 sent to BB for voter {pyBallot.voterid}")
+            return response.json()
+    except Exception as e:
+        print(f"Error sending ballot0: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to send ballot0 to BB: {str(e)}")  
 
 

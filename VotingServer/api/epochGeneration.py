@@ -120,7 +120,7 @@ async def save_timestamps_to_db(election_id, voter_id, timestamps):
     print(f"Writing timestamps to Duckdb for voter {voter_id}")
     try:
         async with duckdb_lock: # lock is acquired to check if access should be allowed, lock while accessing ressource and is then released before returning  
-            conn = duckdb.connect("/duckdb/voter-timestamps.duckdb")
+            conn = duckdb.connect("/duckdb/voter-data.duckdb")
             image_paths = assign_images_for_timestamps(len(timestamps))
             print("inserting data in duckdb")
             rows = [] #list to collect all rows we want to insert in DB in one batch
@@ -136,7 +136,7 @@ async def save_timestamps_to_db(election_id, voter_id, timestamps):
 async def fetch_ballot0_timestamp(election_id, voter_id):
     try:
         async with duckdb_lock: # lock is acquired to check if access should be allowed, lock while accessing ressource and is then released before returning  
-            conn = duckdb.connect("/duckdb/voter-timestamps.duckdb")
+            conn = duckdb.connect("/duckdb/voter-data.duckdb")
             ballot0_timestamp, image_path = conn.execute("""
                     SELECT Timestamp, ImagePath
                     FROM VoterTimestamps
@@ -160,7 +160,7 @@ async def fetch_ballot0_timestamp(election_id, voter_id):
 async def fetch_ballot_timestamp_and_imagepath(election_id, voter_id):
     try:
         async with duckdb_lock: # lock is acquired to check if access should be allowed, lock while accessing ressource and is then released before returning  
-            conn = duckdb.connect("/duckdb/voter-timestamps.duckdb")
+            conn = duckdb.connect("/duckdb/voter-data.duckdb")
             ballot_timestamp, image_path = conn.execute("""
                     SELECT Timestamp, ImagePath
                     FROM VoterTimestamps
