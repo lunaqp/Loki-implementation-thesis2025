@@ -53,13 +53,3 @@ class Ballot(BaseModel):
     timestamp: Optional[datetime] = None
     hash: Optional[str] = None
     imagepath: Optional[str] = None
-
-class BallotWithHash(BaseModel):
-    hash: str
-    ballot: Ballot
-
-class BallotWithElectionid(BaseModel):
-    ballot: Ballot
-    electionid: int
-    timestamp: datetime
-
