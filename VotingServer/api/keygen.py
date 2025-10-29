@@ -5,6 +5,8 @@ import base64
 from petlib.bn import Bn # For casting database values to petlib big integer types.
 from petlib.ec import EcGroup, EcPt, EcGroup
 from fastapi import HTTPException
+import os
+import json
 
 # TODO: Find a good place to store params to avoid excessive database calls.
 async def get_elgamal_params():
@@ -34,7 +36,18 @@ async def keygen():
     secret_key = ORDER.random() 
     public_key = secret_key * GENERATOR
     print("VS public and private key generated")
-    #TODO: save secret key somewhere locally
+    #TODO: Consider how to store safely. Docker secrets/symmetric encryption
+    # Path to secret_key.json:
+    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+    SECRET_KEY_PATH = os.path.join(BASE_DIR, 'keys.json')
+
+    data = {"public_key": base64.b64encode(public_key.export()).decode(), "secret_key": base64.b64encode(secret_key.binary()).decode()}
+
+    # Saving keys to json-file:
+    with open(SECRET_KEY_PATH, 'w') as file:
+        json.dump(data, file)
+    print(f"Secret key saved to {SECRET_KEY_PATH}")
+
     return public_key
 
 async def send_public_key_to_BB():

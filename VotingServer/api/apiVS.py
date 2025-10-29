@@ -1,9 +1,9 @@
 from fastapi import FastAPI, HTTPException
 import asyncio
 from keygen import send_public_key_to_BB
-from modelsVS import BallotPayload, Ballot, BallotWithElectionid
-from validateBallot import validate_ballot, fetch_voter_public_key_from_bb
-from epochGeneration import save_timestamps_for_voter, generate_timestamps, fetch_ballot0_timestamp, fetch_ballot_timestamp_and_imagepath
+from modelsVS import BallotPayload, Ballot
+from validateBallot import validate_ballot, obfuscate
+from epochGeneration import save_timestamps_for_voter, fetch_ballot0_timestamp, fetch_ballot_timestamp_and_imagepath
 from contextlib import asynccontextmanager
 import duckdb
 import httpx
@@ -63,6 +63,8 @@ async def receive_ballot(pyBallot: Ballot):
     ballot_validated = await validate_ballot(pyBallot)
     if ballot_validated: 
         await send_ballot_to_bb(pyBallot)
+        obf_ballot = await obfuscate(voter_id=101, election_id=123)
+        await send_ballot_to_bb(obf_ballot)
         return ballot_validated
     else:
         return ballot_validated 
@@ -76,7 +78,6 @@ async def send_ballot_to_bb(pyBallot:Ballot):
 
     conn = duckdb.connect("/duckdb/voter-timestamps.duckdb") # for printing tables when testing
     conn.table("VoterTimestamps").show() # for printing tables when testing
-
 
     try:
         async with httpx.AsyncClient() as client:
