@@ -7,6 +7,7 @@ from petlib.ec import EcGroup, EcPt, EcGroup
 from fastapi import HTTPException
 import os
 import json
+from coloursVS import BLUE, RED
 
 # TODO: Find a good place to store params to avoid excessive database calls.
 async def get_elgamal_params():
@@ -25,17 +26,16 @@ async def get_elgamal_params():
             GENERATOR = EcPt.from_binary(base64.b64decode(params.generator), GROUP)
             ORDER = Bn.from_binary(base64.b64decode(params.order))
             
-            print(f"elgamal params fetched from BB: {GROUP}, \n {GENERATOR} \n {ORDER}")
             return GROUP, GENERATOR, ORDER
         
         except Exception as e:
-            raise HTTPException(status_code=502, detail=f"Unable to fetch elgamal params: {e}") #NOTE: What would be the most correct status_codes for different scenarios?
+            raise HTTPException(status_code=502, detail=f"{RED}Unable to fetch elgamal params: {e}") #NOTE: What would be the most correct status_codes for different scenarios?
 
 async def keygen():
     _, GENERATOR, ORDER = await get_elgamal_params()
     secret_key = ORDER.random() 
     public_key = secret_key * GENERATOR
-    print("VS public and private key generated")
+    print(f"{BLUE}VS public and private key generated")
     #TODO: Consider how to store safely. Docker secrets/symmetric encryption
     # Path to secret_key.json:
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -46,7 +46,7 @@ async def keygen():
     # Saving keys to json-file:
     with open(SECRET_KEY_PATH, 'w') as file:
         json.dump(data, file)
-    print(f"Secret key saved to {SECRET_KEY_PATH}")
+    print(f"{BLUE}Secret key saved to {SECRET_KEY_PATH}")
 
     return public_key
 

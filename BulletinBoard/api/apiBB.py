@@ -4,6 +4,7 @@ import base64
 import dbcalls as db
 from notifications import notify_ts_vs_params_saved, notify_ra_public_key_saved
 import asyncio
+from coloursBB import RED, CYAN, GREEN
 
 app = FastAPI()
 
@@ -64,7 +65,7 @@ async def receive_key(payload: dict):
 @app.post("/receive-election")
 async def receive_election(payload: NewElectionData):
     db.load_election_into_db(payload)
-    print(f"election loaded with id {payload.election.id}")
+    print(f"{CYAN}election loaded with id {payload.election.id}")
     
     return {"status": "new election loaded into database"}
 
@@ -72,22 +73,22 @@ async def receive_election(payload: NewElectionData):
 async def receive_ballot0(pyBallot:Ballot):
     try:
         db.load_ballot_into_db(pyBallot)
-        print(f"Ballot0 loaded with voter id {pyBallot.voterid}")
+        print(f"{CYAN}Ballot0 loaded with voter id {pyBallot.voterid}")
     
         return {"status": "new ballot0 loaded into database"}
     except Exception as e:
-        print(f"[BB] load_ballot0_into_db failed: {e}")
+        print(f"{RED}[BB] load_ballot0_into_db failed: {e}")
         raise HTTPException(status_code=500, detail=str(e))
     
 @app.post("/receive-ballot")
 async def receive_ballot(pyBallot:Ballot):
     try:
         db.load_ballot_into_db(pyBallot)
-        print(f"Ballot loaded with voter id {pyBallot.voterid}")
+        print(f"{GREEN}Ballot loaded with voter id {pyBallot.voterid}")
     
         return {"status": "new ballot loaded into database"}
     except Exception as e:
-        print(f"[BB] load_ballot_into_db failed: {e}")
+        print(f"{RED}[BB] load_ballot_into_db failed: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 # receives public keys for voters for a given election from RA and loads them into the database.

@@ -5,6 +5,7 @@ import duckdb
 import asyncio
 import os, glob, random
 from itertools import cycle
+from coloursVS import RED, CYAN
 
 duckdb_lock = asyncio.Lock()
 IMG_DIR = "/images" #where img are located, defined in docker compose
@@ -12,7 +13,7 @@ IMG_DIR = "/images" #where img are located, defined in docker compose
 def load_image_paths(img_dir: str = IMG_DIR):
     paths = glob.glob(os.path.join(img_dir, "*.jpg")) #Use Python glob module to search for files that match pattern *.jpg inside the img_dir
     if not paths:
-        raise RuntimeError(f"No images found in {img_dir}")
+        raise RuntimeError(f"{RED}No images found in {img_dir}")
     return paths #return list of img paths
 
 #NOTE: Remove cycle once we have images enough
@@ -22,7 +23,6 @@ def assign_images_for_timestamps(length: int): #assigns imgs, returns list of le
     imgs = ["a", "b", "c", "d", "e", "f"]
     random.shuffle(imgs)
     return [p for _, p in zip(range(length), cycle(imgs))] #Creates an infinite repeating iterator of images, pairs it with a length, takes second element from each pair(img path) and builds a list
-
 
 
 async def fetch_electiondates_from_bb(election_id):
@@ -37,7 +37,7 @@ async def fetch_electiondates_from_bb(election_id):
 
         return election_start, election_end
     except Exception as e:
-        print(f"Error fetching election start date: {e}")
+        print(f"{RED}Error fetching election start date: {e}")
 
 # Generating the total amount of votes for a single voter based on a discrete uniform distribution
 def generate_voteamount():
@@ -75,10 +75,7 @@ async def generate_timestamps(election_id):
     start, end = await fetch_electiondates_from_bb(election_id) # fetches startdate from database.
     first_timestamp = start.timestamp()
     election_duration = end-start
-    election_duration_days = election_duration.days # NOTE: Might not be needed. Depends on whether we want to increase vote amount based on election length.
     election_duration_secs = election_duration.total_seconds() # calculating election duration in seconds.
-    print(f"election duration = {election_duration}")
-    print(f"election duration in seconds = {election_duration_secs}")
 
     # Generates total number of votes for a single voter.
     voteamount = generate_voteamount()
@@ -114,15 +111,14 @@ async def save_timestamps_for_voter(election_id, voter_id):
         await save_timestamps_to_db(election_id, voter_id, timestamps) 
 
     except Exception as e:
-        print(f"Error saving timestamps for voter {voter_id} in election {election_id}: {e}")
+        print(f"{RED}Error saving timestamps for voter {voter_id} in election {election_id}: {e}")
 
 async def save_timestamps_to_db(election_id, voter_id, timestamps):
-    print(f"Writing timestamps to Duckdb for voter {voter_id}")
+    print(f"{CYAN}Writing timestamps to Duckdb for voter {voter_id}")
     try:
         async with duckdb_lock: # lock is acquired to check if access should be allowed, lock while accessing ressource and is then released before returning  
             conn = duckdb.connect("/duckdb/voter-data.duckdb")
             image_paths = assign_images_for_timestamps(len(timestamps))
-            print("inserting data in duckdb")
             rows = [] #list to collect all rows we want to insert in DB in one batch
             for timestamp, img in zip(timestamps, image_paths):
                 dt_timestamp = datetime.fromtimestamp(timestamp, tz=timezone.utc) # convert to datetime to store in DB as TIMESTAMPTZ
@@ -131,7 +127,7 @@ async def save_timestamps_to_db(election_id, voter_id, timestamps):
             conn.executemany("INSERT INTO VoterTimestamps (VoterID, ElectionID, Timestamp, Processed, ImagePath) VALUES (?, ?, ?, ?, ?)", rows) #inserts all rows in one operation
         conn.close()
     except Exception as e:
-        print(f"error writing to duckdb for voter {voter_id} in election {election_id}: {e}")
+        print(f"{RED}error writing to duckdb for voter {voter_id} in election {election_id}: {e}")
 
 async def fetch_ballot0_timestamp(election_id, voter_id):
     try:
@@ -154,7 +150,7 @@ async def fetch_ballot0_timestamp(election_id, voter_id):
 
             return ballot0_timestamp, image_path
     except Exception as e:
-        print(f"error fetching timestamp from duckdb for voter {voter_id} in election {election_id}: {e}")
+        print(f"{RED}error fetching timestamp from duckdb for voter {voter_id} in election {election_id}: {e}")
 
 
 async def fetch_ballot_timestamp_and_imagepath(election_id, voter_id):
@@ -178,5 +174,5 @@ async def fetch_ballot_timestamp_and_imagepath(election_id, voter_id):
 
             return ballot_timestamp, image_path
     except Exception as e:
-        print(f"error fetching timestamp from duckdb for voter {voter_id} in election {election_id}: {e}")
+        print(f"{RED}error fetching timestamp from duckdb for voter {voter_id} in election {election_id}: {e}")
 

@@ -8,6 +8,7 @@ from modelsVA import ElGamalParams, Ballot
 import os
 import duckdb
 from cryptography.fernet import Fernet
+from coloursVA import RED, GREEN
 
 async def get_elgamal_params():
     async with httpx.AsyncClient() as client:
@@ -28,7 +29,7 @@ async def get_elgamal_params():
             return GROUP, GENERATOR, ORDER
         
         except Exception as e:
-            raise HTTPException(status_code=502, detail=f"Unable to fetch elgamal params: {e}") #NOTE: What would be the most correct status_codes for different scenarios?
+            raise HTTPException(status_code=502, detail=f"{RED}Unable to fetch elgamal params: {e}") #NOTE: What would be the most correct status_codes for different scenarios?
 
 
 async def fetch_candidates_from_bb(election_id):
@@ -45,8 +46,8 @@ async def fetch_candidates_from_bb(election_id):
  
             return candidates_list
     except Exception as e:
-        print(f"Error fetching candidates from BB: {e}")
-        raise HTTPException(status_code=500, detail=f"Error fetching candidates from BB: {str(e)}")     
+        print(f"{RED}Error fetching candidates from BB: {e}")
+        raise HTTPException(status_code=500, detail=f"{RED}Error fetching candidates from BB: {str(e)}")     
 
 async def fetch_public_keys_from_bb():
     GROUP, _, _ = await get_elgamal_params()
@@ -63,7 +64,7 @@ async def fetch_public_keys_from_bb():
 
             return public_key_TS, public_key_VS
     except Exception as e:
-        print(f"Error fetching public keys for TS and VS {e}")
+        print(f"{RED}Error fetching public keys for TS and VS {e}")
 
 async def fetch_last_and_previouslast_ballot_from_bb(voter_id, election_id):
     try:
@@ -77,8 +78,8 @@ async def fetch_last_and_previouslast_ballot_from_bb(voter_id, election_id):
 
             return last_ballot_b64, previous_last_ballot_b64
     except Exception as e:
-        print(f"Error fetching previous ballots from BB: {e}")
-        raise HTTPException(status_code=500, detail=f"Error fetching previous ballots from BB: {str(e)}")     
+        print(f"{RED}Error fetching previous ballots from BB: {e}")
+        raise HTTPException(status_code=500, detail=f"{RED}Error fetching previous ballots from BB: {str(e)}")     
 
 async def fetch_cbr_length_from_bb(voter_id, election_id):
     try:
@@ -90,8 +91,8 @@ async def fetch_cbr_length_from_bb(voter_id, election_id):
         return data["cbr_length"]
     
     except Exception as e:
-        print(f"Error fetching previous ballots from BB: {e}")
-        raise HTTPException(status_code=500, detail=f"Error fetching previous ballots from BB: {str(e)}")    
+        print(f"{RED}Error fetching previous ballots from BB: {e}")
+        raise HTTPException(status_code=500, detail=f"{RED}Error fetching previous ballots from BB: {str(e)}")    
 
 def bin_to_int(lst, size):
     b=[0]*size
@@ -162,7 +163,7 @@ async def vote(v, lv_list, election_id, voter_id):
     R1_lv = Secret(value=bin_to_int(lv_list, cbr_length+1))
 
     #last ballot from voter's CBR
-    ct_v, ct_lv, ct_lid, proof = last_ballot
+    ct_v, ct_lv, ct_lid, _ = last_ballot
 
     # previous last ballot vote:
     ct_vv = previous_last_ballot[0]
@@ -176,8 +177,8 @@ async def vote(v, lv_list, election_id, voter_id):
     c1 = ct_lv[1]-ct_lid[1]
 
     if v>0:
-        print(f"[{cbr_length}] Voted for candidate {v} with voter list {lv_list}") 
-    else: print(f"[{cbr_length}] Voted for no candidate (abstention) with voter list {lv_list}")
+        print(f"{GREEN}[{cbr_length}] Voted for candidate {v} with voter list {lv_list}") 
+    else: print(f"{GREEN}[{cbr_length}] Voted for no candidate (abstention) with voter list {lv_list}")
 
     full_stmt=stmt((GENERATOR, pk_TS, pk_VS, usk*GENERATOR, ct_v_new, ct_lv_new, ct_lid_new, ct_i, c0, c1, ct_v, ct_vv), (R1_r_v, R1_lv, R1_r_lv, R1_r_lid, secret_usk, Secret()), len(candidates))
     simulation_indexes=[]
@@ -254,7 +255,7 @@ async def send_ballot_to_VS(pyBallot:Ballot):
             # TODO: Get response from Voting server and then -> if status = validated return success to frontend, else return ballot invalid
             return {"status": "success"}
     except Exception as e:
-        print("Error sending ballot", {e})
+        print(f"{RED}Error sending ballot", {e})
 
 
 def enc(g, pk, m, r):

@@ -2,9 +2,9 @@ import psycopg
 import os
 from modelsBB import NewElectionData, VoterKeyList, Ballot
 import base64
-import hashlib
 from hashBB import hash_ballot
 import json
+from coloursBB import BLUE, CYAN
 
 
 DB_NAME = os.getenv("POSTGRES_DB", "appdb")
@@ -121,7 +121,7 @@ def load_ballot_into_db(pyBallot: Ballot):
 
 # saving group, generator and order to database after receiving them from RA.
 def save_elgamalparams(GROUP, GENERATOR, ORDER):
-    print("saving Elgamal parameters to database")
+    print(f"{BLUE}saving Elgamal parameters to database")
     conn = psycopg.connect(CONNECTION_INFO)
     cur = conn.cursor()
     cur.execute("""
@@ -149,13 +149,13 @@ def save_key_to_db(service, KEY):
     conn.commit()
     cur.close()
     conn.close()
-    print(f"public key received from {service} and saved to database")
+    print(f"{BLUE}public key received from {service} and saved to database")
 
 # Save keymaterial to database for each voter
 def save_voter_keys_to_db(voter_key_list: VoterKeyList):
     conn = psycopg.connect(CONNECTION_INFO)
     cur = conn.cursor()
-    print("saving voter public keys to database")
+    print(f"{CYAN}saving voter public keys to database")
     list = voter_key_list.voterkeylist
     for voter_key in list:
         cur.execute("""

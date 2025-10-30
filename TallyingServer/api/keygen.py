@@ -36,7 +36,6 @@ async def get_elgamal_params():
             GENERATOR = EcPt.from_binary(base64.b64decode(params.generator), GROUP)
             ORDER = Bn.from_binary(base64.b64decode(params.order))
             
-            print(f"elgamal params fetched from BB: {GROUP}, \n {GENERATOR} \n {ORDER}")
             return GROUP, GENERATOR, ORDER
         
         except Exception as e:
