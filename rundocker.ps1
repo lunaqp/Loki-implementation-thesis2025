@@ -36,7 +36,7 @@ do {
         }
         '3' {
             Write-Host "Extracting DuckDB database file for Voting Server"  -ForegroundColor Green
-            docker cp loki-implementation-thesis2025-vs_api-1:/duckdb/voter-timestamps.duckdb ./voter-timestamps.duckdb
+            docker cp loki-implementation-thesis2025-vs_api-1:/duckdb/voter-data.duckdb ./voter-data.duckdb
         }
         '4' {
             Write-Host "Extracting DuckDB database file for Voting App"  -ForegroundColor Green

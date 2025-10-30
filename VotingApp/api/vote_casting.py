@@ -247,7 +247,6 @@ def constructBallot(voter_id, public_key, ct_v, ct_lv, ct_lid, proof, election_i
     return pyBallot
 
 async def send_ballot_to_VS(pyBallot:Ballot):
-    "Sending ballot to Voting Server..."
     try:
         async with httpx.AsyncClient() as client:
             response = await client.post("http://vs_api:8000/receive-ballot", json=pyBallot.model_dump()) 
