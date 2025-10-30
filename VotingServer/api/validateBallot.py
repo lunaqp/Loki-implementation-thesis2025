@@ -286,7 +286,7 @@ async def obfuscate(voter_id, election_id):
     nizk = full_stmt.prove({r_v: r_v.value, r_lv: r_lv.value, r_lid: r_lid.value, sk: sk.value})
 
     pyBallot: Ballot = construct_ballot(voter_id, upk, ct_v_new, ct_lv_new, ct_lid_new, nizk, election_id)
-    
+    print("pyballot created from obf")
     return pyBallot
 
 
