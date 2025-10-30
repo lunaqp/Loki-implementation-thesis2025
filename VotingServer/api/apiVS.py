@@ -3,13 +3,14 @@ import asyncio
 from keygen import send_public_key_to_BB
 from modelsVS import BallotPayload, Ballot
 from validateBallot import validate_ballot, obfuscate
-from epochGeneration import save_timestamps_for_voter, fetch_ballot0_timestamp, fetch_ballot_timestamp_and_imagepath, duckdb_lock
+from epochGeneration import save_timestamps_for_voter, fetch_ballot0_timestamp, fetch_ballot_timestamp_and_imagepath, duckdb_lock, fetch_electiondates_from_bb
 from contextlib import asynccontextmanager
 import duckdb
 import httpx
 from hashVS import hash_ballot
-from epochHandling import update_time, send_ballot0_to_bb
+from epochHandling import update_time, send_ballot0_to_bb, timestamp_management
 import base64
+import json
 
 
 @asynccontextmanager
@@ -17,7 +18,7 @@ async def lifespan(app: FastAPI):
     # Initialising DuckDB database:
     conn = duckdb.connect("/duckdb/voter-data.duckdb")
     conn.sql("CREATE TABLE IF NOT EXISTS VoterTimestamps(VoterID INTEGER, ElectionID INTEGER, Timestamp TIMESTAMPTZ, Processed BOOLEAN, ImagePath TEXT)" )
-    conn.sql("CREATE TABLE IF NOT EXISTS PendingVotes(VoterID INTEGER, ElectionID INTEGER, PublicKey BLOB, ctv TEXT, ctlv TEXT, ctlid TEXT, Proof BLOB)")
+    conn.sql("CREATE TABLE IF NOT EXISTS PendingVotes(VoterID INTEGER, ElectionID INTEGER, PublicKey TEXT, ctv TEXT, ctlv TEXT, ctlid TEXT, Proof TEXT)")
 
     asyncio.create_task(update_time())
     yield  # yielding control back to FastAPI
@@ -37,9 +38,11 @@ async def vs_resp():
 @app.post("/ballot0list")
 async def receive_ballotlist(payload: BallotPayload):
     print(f"Received election {payload.electionid}, {len(payload.ballot0list)} ballots")
+    start, end = await fetch_electiondates_from_bb(payload.electionid)
 
     for ballot in payload.ballot0list:
         await save_timestamps_for_voter(payload.electionid, ballot.voterid)
+        asyncio.create_task(timestamp_management(ballot.voterid, payload.electionid, start, end))
        
         ballot0_timestamp, image_path = await fetch_ballot0_timestamp(payload.electionid, ballot.voterid)
 
@@ -69,11 +72,14 @@ async def receive_ballot(pyBallot: Ballot):
     try:
         async with duckdb_lock: # lock is acquired to check if access should be allowed, lock while accessing ressource and is then released before returning  
             conn = duckdb.connect("/duckdb/voter-data.duckdb")
-            public_key = base64.b64decode(pyBallot.upk)
-            proof = base64.b64decode(pyBallot.proof)
-            conn.execute("INSERT INTO PendingVotes (VoterID, ElectionID, PublicKey, ctv, ctlv, ctlid, Proof) VALUES (?, ?, ?, ?, ?, ?, ?)", (pyBallot.voterid, pyBallot.electionid, public_key, pyBallot.ctv, pyBallot.ctlv, pyBallot.ctlid, proof)) 
+            #public_key = base64.b64decode(pyBallot.upk)
+            #proof = base64.b64decode(pyBallot.proof)
+            ctv = json.dumps(pyBallot.ctv) # json string of base64 encoding
+            ctlv = json.dumps(pyBallot.ctlv)
+            ctlid = json.dumps(pyBallot.ctlid)
+            conn.execute("INSERT INTO PendingVotes (VoterID, ElectionID, PublicKey, ctv, ctlv, ctlid, Proof) VALUES (?, ?, ?, ?, ?, ?, ?)", (pyBallot.voterid, pyBallot.electionid, pyBallot.upk, ctv, ctlv, ctlid, pyBallot.proof)) 
             conn.table("PendingVotes").show()
-        conn.close()
+            conn.close()
     except Exception as e:
         print(f"error writing ballot to duckdb for voter {pyBallot.voterid} in election {pyBallot.electionid}: {e}")
 
