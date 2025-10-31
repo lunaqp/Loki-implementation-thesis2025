@@ -12,19 +12,22 @@ import json
 import pytz
 from coloursVS import RED, CYAN, GREEN, PURPLE
 
-tz = pytz.timezone('Europe/Copenhagen')
-current_time = datetime.now(tz)
+current_time = datetime.now(timezone.utc)
 
 async def update_time():
     global current_time
     while True:
-        tz = pytz.timezone('Europe/Copenhagen')
-        current_time = round_seconds_timestamps(datetime.now(tz))
+        current_time = round_seconds_timestamps(datetime.now(timezone.utc))
         await asyncio.sleep(1)
 
 async def timestamp_management(voter_id, election_id, start, end):
     time_until_start_election = (start-current_time).total_seconds()
+    print(f"start: {start}")
+    print(f"current time: {current_time}")
     print(f"{CYAN}Time until election starts: {time_until_start_election}")
+    print(f"start tzinfo: {start.tzinfo}")
+    print(f"current time tzinfo: {current_time.tzinfo}")
+
     
     await asyncio.sleep(time_until_start_election)
 
