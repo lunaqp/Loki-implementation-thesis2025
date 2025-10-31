@@ -108,6 +108,8 @@ services:
     build:
       context: ./TallyingServer/api
       dockerfile: Dockerfile
+    volumes:
+      - ./TallyingServer/api/keys.json:/app/keys.json
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 10s

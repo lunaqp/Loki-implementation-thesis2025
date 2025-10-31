@@ -338,6 +338,8 @@ def fetch_ballot_hashes(election_id):
 
 # Fetch image filename for specific ballot
 def fetch_imageFilename_for_ballot(cur, ballot_id):
+    conn = psycopg.connect(CONNECTION_INFO)
+    cur = conn.cursor()
     cur.execute("""
                 SELECT ImageFilename
                 FROM Images 
@@ -345,3 +347,24 @@ def fetch_imageFilename_for_ballot(cur, ballot_id):
                 """, (ballot_id,))
     records = cur.fetchall()
     return records
+
+def fetch_last_ballot_ctvs(election_id):
+    conn = psycopg.connect(CONNECTION_INFO)
+    cur = conn.cursor()
+    cur.execute("""
+                SELECT DISTINCT ON (p.VoterID)
+                    CtCandidate
+                FROM VoterParticipatesInElection p
+                JOIN VoterCastsBallot c 
+                ON p.ElectionID = c.ElectionID AND p.VoterID = c.VoterID
+                JOIN Ballots b
+                ON b.ID = c.BallotID
+                WHERE p.ElectionID = %s
+                ORDER BY p.VoterID, c.VoteTimestamp DESC;
+                """, (election_id,))
+    rows = cur.fetchall() 
+
+    # to only keep the first element, ctv, of each returned tuple as each tuple is returned as (ctv, )
+    last_ballot_ctvs_json  = [row[0] for row in rows] 
+    
+    return last_ballot_ctvs_json

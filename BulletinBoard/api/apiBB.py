@@ -147,5 +147,14 @@ def fetch_ballot_hashes(
     election_id: int = Query(..., description="ID of the election")
 ):
     ballot_hashes = db.fetch_ballot_hashes(election_id)
+    print("fetching last ballot ctvs:")
+    last_ballot_ctvs_json = db.fetch_last_ballot_ctvs(election_id)
+    print(last_ballot_ctvs_json)
     
     return {"ballot_hashes": ballot_hashes}
+
+@app.get("/fetch_last_ballot_ctvs")
+def fetch_last_ballot_ctvs(election_id):
+    last_ballot_ctvs_json = db.fetch_last_ballot_ctvs(election_id)
+
+    return {"last_ballot_ctvs": last_ballot_ctvs_json}
