@@ -105,13 +105,19 @@ def round_seconds_timestamps(ts: datetime) -> datetime:
 
     return ts.replace(microsecond = 0)
 
+
 async def save_timestamps_for_voter(election_id, voter_id):
     try:
         timestamps = await generate_timestamps(election_id) # returns array of timestamps.
+        _, end = await fetch_electiondates_from_bb(election_id)
+        last_timestamp = end.timestamp() + 60
+        timestamps.append(last_timestamp)
+
         await save_timestamps_to_db(election_id, voter_id, timestamps) 
 
     except Exception as e:
         print(f"{RED}Error saving timestamps for voter {voter_id} in election {election_id}: {e}")
+
 
 async def save_timestamps_to_db(election_id, voter_id, timestamps):
     print(f"{CYAN}Writing timestamps to Duckdb for voter {voter_id}")
