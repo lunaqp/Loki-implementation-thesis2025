@@ -1,10 +1,10 @@
 from fastapi import FastAPI, Query, HTTPException
-from modelsBB import ElGamalParams, NewElectionData, VoterKeyList, Ballot
+from modelsBB import ElGamalParams, NewElectionData, VoterKeyList, Ballot, CandidateResult, ElectionResult
 import base64
 import dbcalls as db
 from notifications import notify_ts_vs_params_saved, notify_ra_public_key_saved
 import asyncio
-from coloursBB import RED, CYAN, GREEN
+from coloursBB import RED, CYAN, GREEN, PURPLE, BLUE
 
 app = FastAPI()
 
@@ -45,9 +45,12 @@ async def receive_params(params: ElGamalParams):
     GENERATOR = base64.b64decode(params.generator)
     ORDER = base64.b64decode(params.order)
 
+    print(f"{BLUE}saving Elgamal parameters to database")
     # Creating an async loop for the database access since psycopg2 only allows syncronized access.
     loop = asyncio.get_event_loop()
-    await loop.run_in_executor(None, db.save_elgamalparams, GROUP, GENERATOR, ORDER)
+    #await loop.run_in_executor(None, db.save_elgamalparams, GROUP, GENERATOR, ORDER)
+    db.save_elgamalparams(GROUP, GENERATOR, ORDER)
+
     await notify_ts_vs_params_saved()
 
     return {"status": "ElGamal parameters saved"}
@@ -57,6 +60,7 @@ async def receive_key(payload: dict):
     service = payload.get("service")
     KEY = base64.b64decode(payload.get("key"))
     db.save_key_to_db(service, KEY)
+    print(f"{BLUE}public key received from {service} and saved to database")
     await notify_ra_public_key_saved(service)
 
     return {"status": f"{service} public key saved"}
@@ -84,7 +88,7 @@ async def receive_ballot0(pyBallot:Ballot):
 async def receive_ballot(pyBallot:Ballot):
     try:
         db.load_ballot_into_db(pyBallot)
-        print(f"{GREEN}Ballot loaded with voter id {pyBallot.voterid}")
+        print(f"{GREEN}Ballot loaded with voter id {pyBallot.voterid}, in election {pyBallot.electionid}")
     
         return {"status": "new ballot loaded into database"}
     except Exception as e:
@@ -94,6 +98,7 @@ async def receive_ballot(pyBallot:Ballot):
 # receives public keys for voters for a given election from RA and loads them into the database.
 @app.post("/receive-voter-keys")
 async def receive_voter_keys(payload: VoterKeyList):
+    print(f"{CYAN}saving voter public keys to database")
     db.save_voter_keys_to_db(payload)
 
 @app.post("/send-election-startdate")
@@ -147,10 +152,6 @@ def fetch_ballot_hashes(
     election_id: int = Query(..., description="ID of the election")
 ):
     ballot_hashes = db.fetch_ballot_hashes(election_id)
-    print("fetching last ballot ctvs:")
-    last_ballot_ctvs_json = db.fetch_last_ballot_ctvs(election_id)
-    print(last_ballot_ctvs_json)
-    
     return {"ballot_hashes": ballot_hashes}
 
 @app.get("/fetch_last_ballot_ctvs")
@@ -158,3 +159,8 @@ def fetch_last_ballot_ctvs(election_id):
     last_ballot_ctvs_json = db.fetch_last_ballot_ctvs(election_id)
 
     return {"last_ballot_ctvs": last_ballot_ctvs_json}
+
+@app.post("/receive-election-result")
+def receive_election_result(election_result: ElectionResult):
+    print(f"{PURPLE}Received election result for {election_result.electionid}. Saving to database...")
+    db.save_election_result(election_result)

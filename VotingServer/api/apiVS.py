@@ -70,7 +70,8 @@ async def receive_ballot(pyBallot: Ballot):
             ctv = json.dumps(pyBallot.ctv) # json string of base64 encoding
             ctlv = json.dumps(pyBallot.ctlv)
             ctlid = json.dumps(pyBallot.ctlid)
-            conn.execute("INSERT INTO PendingVotes (VoterID, ElectionID, PublicKey, ctv, ctlv, ctlid, Proof) VALUES (?, ?, ?, ?, ?, ?, ?)", (pyBallot.voterid, pyBallot.electionid, pyBallot.upk, ctv, ctlv, ctlid, pyBallot.proof)) 
+            conn.execute("INSERT INTO PendingVotes (VoterID, ElectionID, PublicKey, ctv, ctlv, ctlid, Proof) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                         (pyBallot.voterid, pyBallot.electionid, pyBallot.upk, ctv, ctlv, ctlid, pyBallot.proof)) 
             conn.table("PendingVotes").show()
             conn.close()
     except Exception as e:

@@ -1,4 +1,3 @@
-from datetime import datetime, timezone
 import httpx
 import duckdb
 import asyncio
@@ -56,7 +55,6 @@ async def timestamp_management(voter_id, election_id, start, end):
             print(f"{YELLOW}Final obfuscation ballot sent to bb for voter {voter_id}.")
         except Exception as e:
             print(f"{RED}Error creating/sending final obfuscation ballot for voter {voter_id}: {e}")
-
     
 async def cast_vote(voter_id, election_id):
     try:

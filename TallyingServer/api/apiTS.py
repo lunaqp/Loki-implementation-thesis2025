@@ -1,8 +1,7 @@
-from fastapi import FastAPI, Query
+from fastapi import FastAPI
 import asyncio
 from keygen import send_public_key_to_BB
-from coloursTS import PURPLE
-from tallying import tally
+from tallying import handle_election
 
 app = FastAPI()
 
@@ -16,7 +15,11 @@ async def ts_resp():
 def health():
     return {"ok": True}
 
-@app.post("/notify-election-over")
-def notified_election_over(election_id: int = Query(..., description="ID of the election")):
-    print(f"{PURPLE}Election over with ID: {election_id}. \nProceeding to tallying")
-    tally(election_id)
+@app.post("/receive-election")
+async def notified_election_received(payload: dict):
+    election_id = payload.get("electionid")
+    
+    # Background tasks for handling each election
+    asyncio.create_task(handle_election(election_id))
+
+    return {"status": "received", "election_id": election_id}

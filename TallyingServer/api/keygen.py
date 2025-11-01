@@ -1,5 +1,5 @@
 from typing import Optional
-from models import ElGamalParams
+from modelsTS import ElGamalParams
 import httpx
 import base64
 from petlib.bn import Bn # For casting database values to petlib big integer types.

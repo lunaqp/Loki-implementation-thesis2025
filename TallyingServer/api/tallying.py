@@ -1,103 +1,75 @@
 from zksk import Secret, base, DLRep
-from petlib.bn import Bn # For casting database values to petlib big integer types.
 from petlib.ec import EcPt
-from zksk import Secret, DLRep
 import httpx
-from fastapi import HTTPException
-from coloursTS import RED
+from coloursTS import RED, PURPLE
 from keygen import get_elgamal_params
-import os
-import json
 import base64
+from modelsTS import CandidateResult, ElectionResult
+import pytz
+from datetime import datetime
+import asyncio
+from fetchFunctions import fetch_candidates_from_bb, fetch_voters_from_bb, fetch_last_ballot_ctvs_from_bb, fetch_ts_secret_key, fetch_electiondates_from_bb
 
-# Fetching last ballot for each voter:
+# Keeping track of time to trigger tallying once an election ends.
+tz = pytz.timezone('Europe/Copenhagen')
+current_time = datetime.now(tz)
 
-#last_ballots = [sublist[-1][0] for sublist in CBR]
-
-# Calling the tallying function:
-#votes, nizk=tally(g,order,sk_T, last_ballots,candidates,voters)
-
-async def fetch_candidates_from_bb(election_id):
-    try:
-        async with httpx.AsyncClient() as client:
-            response = await client.get(f"http://bb_api:8000/candidates?election_id={election_id}")
-            response.raise_for_status() 
-          
-            data = response.json()
-            candidates_list: list = []
-
-            for candidate in data["candidates"]:
-                candidates_list.append(candidate["id"])
-
-            return candidates_list
-    except Exception as e:
-        print(f"{RED}Error fetching candidates from BB: {e}")
-        raise HTTPException(status_code=500, detail=f"{RED}Error fetching candidates from BB: {str(e)}")     
+async def update_time():
+    global current_time
+    while True:
+        current_time = datetime.now(tz)
+        await asyncio.sleep(1)
 
 
-async def fetch_voters_from_bb(election_id):
-    try:
-        async with httpx.AsyncClient() as client:
-            response = await client.get(f"http://bb_api:8000/voters?election_id={election_id}")
-            response.raise_for_status() 
-          
-            data = response.json()
-            voters = data["voters"]
-            voter_id_list = [v["id"] for v in voters]
-          
-            return voter_id_list
-    except Exception as e:
-        print(f"{RED}Error fetching voters from BB {e}")
-        raise HTTPException(status_code=500, detail=f"{RED}Error fetching voters from BB: {str(e)}")
+async def handle_election(election_id):
+    print(f"{PURPLE}Election with ID {election_id} loaded.")
 
+    # Calculate time until election is over
+    _, election_end = await fetch_electiondates_from_bb(election_id)
+    remaining_time = election_end - current_time
+    print(f"remaining time: {remaining_time}")
 
-async def fetch_last_ballot_ctvs_from_bb(election_id):
-    try:
-        async with httpx.AsyncClient() as client:
-            response = await client.get(f"http://bb_api:8000/fetch_last_ballot_ctvs?election_id={election_id}")
-            response.raise_for_status() 
-          
-            data = response.json()
-            last_ballot_ctvs = data["last_ballot_ctvs"]
-          
-            return last_ballot_ctvs
-    except Exception as e:
-        print(f"{RED}Error fetching voters from BB {e}")
-        raise HTTPException(status_code=500, detail=f"{RED}Error fetching voters from BB: {str(e)}")
+    # Wait until election is over
+    await asyncio.sleep(remaining_time.total_seconds()) # Adding slight delay to ensure voting server wraps up last obfuscation ballot for each voter.
+    grace_period = 10 # seconds
+    print(f"{PURPLE}Election {election_id} has concluded, giving grace period of {grace_period} seconds before tallying begins")
+    await asyncio.sleep(grace_period)
 
+    # Tally the election result
+    print(f"{PURPLE}Tallying election with id {election_id}...")
+    election_result: ElectionResult = await tally(election_id)
+    await send_result_to_bb(election_result)
 
 # Tally function:
 async def tally(election_id):
-    _, GENERATOR, ORDER = await get_elgamal_params()
+    GROUP, GENERATOR, ORDER = await get_elgamal_params()
     candidates = await fetch_candidates_from_bb(election_id)
     candidates_length = len(candidates)
-    voters = len(await fetch_voters_from_bb(election_id))
-    sk_TS = fetch_ts_secret_key
+    voters_length = len(await fetch_voters_from_bb(election_id))
+    sk_TS = fetch_ts_secret_key()
     last_ballots_ctvs_b64: list = await fetch_last_ballot_ctvs_from_bb(election_id)
-    last_ballots_ctvs = convert_to_ecpt(last_ballots_ctvs_b64)
-    print(f" Last ballot ctvs: {last_ballots_ctvs}")
+    last_ballots_ctvs = convert_to_ecpt(last_ballots_ctvs_b64, GROUP)
 
     sk=Secret(value=sk_TS)
     stmt, nizk=[], []
     votes_for_candidate=[0]*candidates_length
     
     for i in range(candidates_length):
-        c0, c1 =(0*GENERATOR), (0*GENERATOR)
+        c0, c1 = (0*GENERATOR), (0*GENERATOR)
 
         #summing up all encrypted votes for a candidate
-        for j in range(voters):
-            c0+= 1 #ballots[j][i][0]
-            c1+= 1 #ballots[j][i][1]
+        for j in range(voters_length):
+            c0+= last_ballots_ctvs[j][i][0]
+            c1+= last_ballots_ctvs[j][i][1]
         sum_votes=dec((c0,c1), sk_TS)
 
         #finding the number of votes for a candidate
-        for j in range(voters):
+        for j in range(voters_length):
             if sum_votes==j*GENERATOR:
                 votes_for_candidate[i]=j
                 break
 
-        print("Votes for Candidate",i+1,":", votes_for_candidate[i])
-        #print("Votes for Candidate", candidates[i]["id"],":", votes_for_candidate[i])
+        print(f"{PURPLE}Votes for Candidate", candidates[i],":", votes_for_candidate[i])
 
         #constructing the statement for the ZK proof
         stmt.append(stmt_tally(GENERATOR, ORDER, j, c0, c1, sk))
@@ -105,8 +77,22 @@ async def tally(election_id):
         #proving the statement
         nizk.append(stmt[-1].prove({sk: sk.value}))
 
-    print("Abstention votes:", voters-sum(votes_for_candidate)) 
-    return votes_for_candidate, nizk
+    print(f"{PURPLE}Abstention votes:", voters_length-sum(votes_for_candidate)) 
+
+    # serialising and base64 encoding NIZK proof:
+    proofs_bin = [base.NIZK.serialize(c_proof) for c_proof in nizk]
+    proofs_b64 = [base64.b64encode(c_proof_bin).decode() for c_proof_bin in proofs_bin]
+
+    # Creating a list of pydantic objects matching each candidate id with the associated result.
+    candidate_results = [CandidateResult(candidateid = cid, votes = v, proof = p) for cid, v, p in zip(candidates, votes_for_candidate, proofs_b64)]
+
+    # Create the ElectionResult model containing both the votes for each candidate and the tallying proof.
+    election_result: ElectionResult = ElectionResult(
+        electionid = election_id,
+        result = candidate_results,
+    )
+
+    return election_result
 
 # Tally statement:
 def stmt_tally(generator, order, votes, c0, c1, sk_TS):
@@ -120,33 +106,36 @@ def dec(ct, sk):
 
     return message
 
-
-def fetch_ts_secret_key():    
-    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-    SECRET_KEY_PATH = os.path.join(BASE_DIR, 'keys.json')
-
-    with open(SECRET_KEY_PATH, 'r') as file:
-        data = json.load(file)
-    
-    sk_VS = Bn.from_binary(base64.b64decode(data["secret_key"]))
-
-    return sk_VS
-
 def convert_to_ecpt(ctv_list, GROUP):
     # Converting to binary
     ctv_bin = []
     for ctvs in ctv_list: # for each voter ctv-list
         decoded_pairs = []
-    for ct0, ct1 in ctvs: # for the ciphertext pairs for each candidate
-        decoded_pairs.append((base64.b64decode(ct0), base64.b64decode(ct1)))
-    ctv_bin.append(decoded_pairs)
+        for ct0, ct1 in ctvs: # for the ciphertext pairs for each candidate
+            decoded_pairs.append((base64.b64decode(ct0), base64.b64decode(ct1)))
+        ctv_bin.append(decoded_pairs)
 
     # Converting to ecpt
     ctv_ecpt = []
     for ctvs in ctv_bin: # for each voter ctv-list
         decoded_pairs = []
-    for ct0, ct1 in ctvs: # for the ciphertext pairs for each candidate
-        decoded_pairs.append((EcPt.from_binary(ct0, GROUP), EcPt.from_binary(ct1, GROUP)))
-    ctv_ecpt.append(decoded_pairs)
+        for ct0, ct1 in ctvs: # for the ciphertext pairs for each candidate
+            decoded_pairs.append((EcPt.from_binary(ct0, GROUP), EcPt.from_binary(ct1, GROUP)))
+        ctv_ecpt.append(decoded_pairs)
     
+    # alternatively:
+    # new_list = [[(EcPt.from_binary(base64.b64decode(ct0), GROUP),EcPt.from_binary(base64.b64decode(ct1), GROUP)) for ct0, ct1 in ctvs] for ctvs in ctv_list]
+
     return ctv_ecpt
+
+
+async def send_result_to_bb(election_result: ElectionResult):
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.post("http://bb_api:8000/receive-election-result", json=election_result.model_dump())
+            response.raise_for_status() 
+
+        return {"status": "ok"}
+    except Exception as e:
+        print(f"{RED}Error sending election result to Bulletin Board: {e}")
+        return {"status": "Error sending election result to Bulletin Board", "error": str(e)}

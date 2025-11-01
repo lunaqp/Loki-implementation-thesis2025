@@ -8,7 +8,6 @@ DROP TABLE IF EXISTS VoterCastsBallot CASCADE;
 DROP TABLE IF EXISTS Images CASCADE;
 DROP TABLE IF EXISTS VotingServer CASCADE;
 DROP TABLE IF EXISTS GlobalInfo CASCADE;
-DROP TYPE IF EXISTS ct_tuple CASCADE;
 
 CREATE TABLE Elections (
     ID INT PRIMARY KEY,
@@ -26,7 +25,8 @@ CREATE TABLE CandidateRunsInElection (
     CandidateID INT REFERENCES Candidates(ID),
     ElectionID INT REFERENCES Elections(ID),
     PRIMARY KEY (CandidateID, ElectionID),
-    RESULT INT
+    RESULT INT,
+    TallyProof BYTEA
 );
 
 CREATE TABLE Voters (
@@ -40,7 +40,6 @@ CREATE TABLE VoterParticipatesInElection (
     VoterID INT REFERENCES Voters(ID),
     PRIMARY KEY (VoterID, ElectionID),
     PublicKey BYTEA NOT NULL
-    -- SecretKey BYTEA NOT NULL -- Currently saved encrypted with a symmetric key.
 );
 
 CREATE TABLE Ballots (
@@ -64,7 +63,7 @@ CREATE TABLE Images (
     BallotID INT PRIMARY KEY REFERENCES Ballots(ID)
 );
 
-CREATE TABLE GlobalInfo ( -- Probably not ints.
+CREATE TABLE GlobalInfo (
     ID INT PRIMARY KEY,
     PublicKeyTallyingServer BYTEA,
     PublicKeyVotingServer BYTEA,
