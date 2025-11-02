@@ -12,18 +12,38 @@ const LoginPage = () => {
     setlogin((f) => ({ ...f, [name]: value }));
   };
 
-  const onSubmit = (e) => {
+  const onSubmit = async (e) => {
     e.preventDefault();
     setError("");
 
-    // Replace this with auth.  Checks if both fields are non-empty.
+    // Checks if both fields are non-empty.
     const ok = login.username.trim() && login.password.trim();
     if (!ok) {
       setError("Please enter both username and password.");
       return;
     }
 
-    navigate("/Mypage");
+    try {
+      const response = await fetch("/api/user-authentication", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          provided_username: login.username.toLowerCase(),
+          provided_password: login.password,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.authenticated) {
+        navigate("/Mypage");
+      } else {
+        setError("Unable to authenticate user.");
+      }
+    } catch (err) {
+      console.error("Error authenticating user:", err);
+      setError("Unable to authenticate user");
+    }
   };
 
   return (

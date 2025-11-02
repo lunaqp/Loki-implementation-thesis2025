@@ -3,7 +3,7 @@ from bulletin_routes import router as bulletin_router
 import base64
 import duckdb
 from contextlib import asynccontextmanager
-from modelsVA import Ballot, VoterBallot
+from modelsVA import Ballot, VoterBallot, AuthRequest
 from vote_casting import vote, send_ballot_to_VS
 from coloursVA import CYAN, RED, GREEN
 
@@ -11,7 +11,7 @@ from coloursVA import CYAN, RED, GREEN
 async def lifespan(app: FastAPI):
     # Initialising DuckDB database:
     conn = duckdb.connect("/duckdb/voter-keys.duckdb")
-    conn.sql("CREATE TABLE VoterKeys(VoterID INTEGER, ElectionID INTEGER, SecretKey BLOB, PublicKey BLOB)")
+    conn.sql("CREATE TABLE VoterKeys(VoterID INTEGER, ElectionID INTEGER, SecretKey BLOB, PublicKey BLOB, Password TEXT)")
     yield  # yielding control back to FastAPI
 
 app = FastAPI(lifespan=lifespan)
@@ -33,17 +33,19 @@ def receive_secret_key(data: dict):
     election_id = data["election_id"]
     enc_secret_key = data["secret_key"]
     public_key = data["public_key"]
+    password = f"{voter_id}pass"
 
     # Public and private keys are saved in internal duckdb database. Secret key is symmetrically encrypted with Fernet.
-    save_keys_to_duckdb(voter_id, election_id, enc_secret_key, public_key)
+    save_keys_to_duckdb(voter_id, election_id, enc_secret_key, public_key, password)
 
     return {"status": "secret key received"}
 
-def save_keys_to_duckdb(voter_id, election_id, enc_secret_key, public_key):
+def save_keys_to_duckdb(voter_id, election_id, enc_secret_key, public_key, password):
     try:
         conn = duckdb.connect("/duckdb/voter-keys.duckdb")
         print(f"{CYAN}inserting keys in duckdb for voter {voter_id}")
-        conn.execute(f"INSERT INTO VoterKeys VALUES (?, ?, ?, ?)", (voter_id, election_id, base64.b64decode(enc_secret_key), base64.b64decode(public_key)))
+        conn.execute(f"INSERT INTO VoterKeys VALUES (?, ?, ?, ?, ?)", (voter_id, election_id, base64.b64decode(enc_secret_key), base64.b64decode(public_key), password))
+        conn.table("VoterKeys").show() 
     except Exception as e:
         print(f"{RED}error inserting keys in duckdb for voter {voter_id}: {e}")
 
@@ -55,3 +57,22 @@ async def send_ballot(voter_ballot: VoterBallot):
     # Sending ballot to voting-server
     print(f"{GREEN}Sending ballot to Voting Server")
     await send_ballot_to_VS(pyBallot)
+
+@app.post("/api/user-authentication")
+def authenticate_user(auth: AuthRequest):
+    try:
+        conn = duckdb.connect("/duckdb/voter-keys.duckdb")
+        result = conn.execute("""
+                SELECT Password
+                FROM VoterKeys
+                WHERE VoterID = ?
+                """, (auth.provided_username,)).fetchone() # Username is voterid for prototype purposes.
+
+        if not result:
+            return {"authenticated": False}
+        
+        password = result[0]
+        return {"authenticated": auth.provided_password == password}
+    
+    except Exception as e:
+        return {"authenticated": False}

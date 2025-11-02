@@ -1,9 +1,8 @@
 from fastapi import FastAPI, Query, HTTPException
-from modelsBB import ElGamalParams, NewElectionData, VoterKeyList, Ballot, CandidateResult, ElectionResult
+from modelsBB import ElGamalParams, NewElectionData, VoterKeyList, Ballot, ElectionResult
 import base64
 import dbcalls as db
 from notifications import notify_ts_vs_params_saved, notify_ra_public_key_saved
-import asyncio
 from coloursBB import RED, CYAN, GREEN, PURPLE, BLUE
 
 app = FastAPI()
@@ -46,11 +45,9 @@ async def receive_params(params: ElGamalParams):
     ORDER = base64.b64decode(params.order)
 
     print(f"{BLUE}saving Elgamal parameters to database")
-    # Creating an async loop for the database access since psycopg2 only allows syncronized access.
-    loop = asyncio.get_event_loop()
-    #await loop.run_in_executor(None, db.save_elgamalparams, GROUP, GENERATOR, ORDER)
     db.save_elgamalparams(GROUP, GENERATOR, ORDER)
 
+    # Send notification to Voting Server and Tallying Server so that they can generate their own keys.
     await notify_ts_vs_params_saved()
 
     return {"status": "ElGamal parameters saved"}

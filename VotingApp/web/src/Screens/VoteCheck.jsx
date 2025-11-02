@@ -3,10 +3,12 @@ import PageTemplate from "../Components/PageTemplate";
 import Button from "../Components/Button";
 import ScreenTemplate from "../Components/ScreenTemplate";
 import { useNavigate, useParams } from "react-router-dom";
+import { useElection } from "../Components/ElectionManager";
 
 const VoteCheck = () => {
   const navigate = useNavigate();
   const { electionId } = useParams();
+  const { setPreviousVotes } = useElection();
 
   const yesRoute = `/${electionId}/PreviousVotes`;
   const noRoute = `/${electionId}/CandidateSelection`;
@@ -26,6 +28,7 @@ const VoteCheck = () => {
             <Button
               variant="primary"
               onClick={() => {
+                setPreviousVotes([]); // Setting previous votes to an empty list if voter has not voted before.
                 navigate(noRoute, {
                   state: {
                     from: `/${electionId}/VoteCheck`,

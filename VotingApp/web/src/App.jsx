@@ -8,6 +8,7 @@ import Confirmation from "./Screens/Confirmation";
 import LoginPage from "./Screens/Login";
 import PreviousVotes from "./Screens/PreviousVotes";
 import { useState, useEffect } from "react";
+import { ElectionManager } from "./Components/ElectionManager";
 
 function App() {
   const [electionId, setElectionId] = useState(0);
@@ -49,18 +50,27 @@ function App() {
         <Routes>
           <Route path="/" element={<LoginPage />} />
           <Route path="/Mypage" element={<MyPage electionId={electionId} />} />
-          <Route path=":electionId/Welcome" element={<Welcome />} />
-          <Route path=":electionId/VoteCheck" element={<VoteCheck />} />
           <Route
-            path=":electionId/CandidateSelection"
-            element={<CandidateSelection candidates={candidates} />}
+            path=":electionId/*"
+            element={
+              <ElectionManager>
+                <Routes>
+                  <Route path="Welcome" element={<Welcome />} />
+                  <Route path="VoteCheck" element={<VoteCheck />} />
+                  <Route
+                    path="CandidateSelection"
+                    element={<CandidateSelection candidates={candidates} />}
+                  />
+                  <Route
+                    path="MemorableInformation"
+                    element={<MemorableInformation />}
+                  />
+                  <Route path="Confirmation" element={<Confirmation />} />
+                  <Route path="PreviousVotes" element={<PreviousVotes />} />
+                </Routes>
+              </ElectionManager>
+            }
           />
-          <Route
-            path=":electionId/MemorableInformation"
-            element={<MemorableInformation />}
-          />
-          <Route path=":electionId/Confirmation" element={<Confirmation />} />
-          <Route path=":electionId/PreviousVotes" element={<PreviousVotes />} />
         </Routes>
       </Router>
     )

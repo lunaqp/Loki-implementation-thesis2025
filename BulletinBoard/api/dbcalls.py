@@ -1,4 +1,3 @@
-import psycopg
 import os
 from modelsBB import NewElectionData, VoterKeyList, Ballot, ElectionResult
 import base64

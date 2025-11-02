@@ -25,3 +25,7 @@ class VoterBallot(BaseModel):
     lv_list: list
     election_id: int
     voter_id: int
+
+class AuthRequest(BaseModel):
+    provided_username: str
+    provided_password: str
