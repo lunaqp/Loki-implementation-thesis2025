@@ -1,5 +1,5 @@
 from fastapi import FastAPI, Query, HTTPException
-from modelsBB import ElGamalParams, NewElectionData, VoterKeyList, Ballot, ElectionResult
+from modelsBB import ElGamalParams, NewElectionData, VoterKeyList, Ballot, ElectionResult, Elections
 import base64
 import dbcalls as db
 from notifications import notify_ts_vs_params_saved, notify_ra_public_key_saved
@@ -107,6 +107,14 @@ async def send_election_startdate(payload: dict):
     formatted_enddate = election_enddate.isoformat()
 
     return {"startdate": formatted_startdate, "enddate": formatted_enddate}
+
+@app.get("/send-elections-for-voter")
+def send_elections_for_voter(
+    voter_id: int = Query(..., description="ID of the voter")
+):
+    elections: Elections = db.fetch_elections_for_voter(voter_id) # fetching id + name of election
+
+    return elections
 
 @app.get("/public-keys-tsvs")
 async def send_public_keys_tsvs():

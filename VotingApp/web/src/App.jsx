@@ -8,7 +8,7 @@ import Confirmation from "./Screens/Confirmation";
 import LoginPage from "./Screens/Login";
 import PreviousVotes from "./Screens/PreviousVotes";
 import { useState, useEffect } from "react";
-import { ElectionManager } from "./Components/ElectionManager";
+import { AppProvider } from "./Components/AppContext";
 
 function App() {
   const [electionId, setElectionId] = useState(0);
@@ -45,15 +45,18 @@ function App() {
 
   return (
     electionId && (
-      <Router>
-        {message && <div style={{ padding: 8 }}>{message}</div>}
-        <Routes>
-          <Route path="/" element={<LoginPage />} />
-          <Route path="/Mypage" element={<MyPage electionId={electionId} />} />
-          <Route
-            path=":electionId/*"
-            element={
-              <ElectionManager>
+      <AppProvider>
+        <Router>
+          {message && <div style={{ padding: 8 }}>{message}</div>}
+          <Routes>
+            <Route path="/" element={<LoginPage />} />
+            <Route
+              path="/Mypage"
+              element={<MyPage electionId={electionId} />}
+            />
+            <Route
+              path=":electionId/*"
+              element={
                 <Routes>
                   <Route path="Welcome" element={<Welcome />} />
                   <Route path="VoteCheck" element={<VoteCheck />} />
@@ -68,11 +71,11 @@ function App() {
                   <Route path="Confirmation" element={<Confirmation />} />
                   <Route path="PreviousVotes" element={<PreviousVotes />} />
                 </Routes>
-              </ElectionManager>
-            }
-          />
-        </Routes>
-      </Router>
+              }
+            />
+          </Routes>
+        </Router>
+      </AppProvider>
     )
   );
 }

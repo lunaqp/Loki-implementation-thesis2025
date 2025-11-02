@@ -6,13 +6,35 @@
     "end": "2025-10-30T13:31Z"
   },
   "candidates": [
-    { "id": 4, "name": "Anna" },
-    { "id": 5, "name": "Bobby" },
-    { "id": 6, "name": "Charlie" }
+    {
+      "id": 4,
+      "name": "Anna"
+    },
+    {
+      "id": 5,
+      "name": "Bobby"
+    },
+    {
+      "id": 6,
+      "name": "Charlie"
+    }
   ],
   "voters": [
-    { "id": 104, "name": "John Doe" },
-    { "id": 105, "name": "Jane Doe" },
-    { "id": 106, "name": "Julian Doe" }
+    {
+      "id": 101,
+      "name": "Luna Q Poulsen"
+    },
+    {
+      "id": 104,
+      "name": "John Doe"
+    },
+    {
+      "id": 105,
+      "name": "Jane Doe"
+    },
+    {
+      "id": 106,
+      "name": "Julian Doe"
+    }
   ]
 }

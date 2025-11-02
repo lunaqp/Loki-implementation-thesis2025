@@ -24,6 +24,9 @@ class Election(BaseModel):
     start: datetime #should be ISO format
     end: datetime
 
+class Elections(BaseModel):
+    elections: List[Election]
+
 #Defines whole request loader expects
 class NewElectionData(BaseModel):
     election: Election

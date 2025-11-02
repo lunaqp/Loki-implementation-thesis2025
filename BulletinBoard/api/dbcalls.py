@@ -1,5 +1,5 @@
 import os
-from modelsBB import NewElectionData, VoterKeyList, Ballot, ElectionResult
+from modelsBB import NewElectionData, VoterKeyList, Ballot, ElectionResult, Elections, Election
 import base64
 from hashBB import hash_ballot
 import json
@@ -368,3 +368,22 @@ def fetch_last_ballot_ctvs(election_id):
     last_ballot_ctvs_json  = [row[0] for row in rows] 
     
     return last_ballot_ctvs_json
+
+# Fetch elections for a given voter
+def fetch_elections_for_voter(voter_id):
+    with pool.connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                        SELECT ID, Name, ElectionStart, ElectionEnd
+                        FROM Elections e
+                        JOIN VoterParticipatesInElection p
+                        ON p.ElectionID = e.ID
+                        WHERE VoterID = %s
+                        """, (voter_id,))
+            records = cur.fetchall()
+
+    elections = Elections(
+        elections = [Election (id=election_id, name=name, start=start, end=end) for election_id, name, start, end in records]
+    ) 
+
+    return elections

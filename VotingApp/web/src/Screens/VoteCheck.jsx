@@ -3,12 +3,12 @@ import PageTemplate from "../Components/PageTemplate";
 import Button from "../Components/Button";
 import ScreenTemplate from "../Components/ScreenTemplate";
 import { useNavigate, useParams } from "react-router-dom";
-import { useElection } from "../Components/ElectionManager";
+import { useApp } from "../Components/AppContext";
 
 const VoteCheck = () => {
   const navigate = useNavigate();
   const { electionId } = useParams();
-  const { setPreviousVotes } = useElection();
+  const { setPreviousVotes } = useApp();
 
   const yesRoute = `/${electionId}/PreviousVotes`;
   const noRoute = `/${electionId}/CandidateSelection`;

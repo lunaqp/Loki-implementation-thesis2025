@@ -1,11 +1,13 @@
 import { useState } from "react";
 import styled from "styled-components";
 import { useNavigate } from "react-router-dom";
+import { useApp } from "../Components/AppContext";
 
 const LoginPage = () => {
   const navigate = useNavigate();
   const [login, setlogin] = useState({ username: "", password: "" });
   const [error, setError] = useState("");
+  const { setUser } = useApp();
 
   const onChange = (e) => {
     const { name, value } = e.target;
@@ -36,6 +38,9 @@ const LoginPage = () => {
       const data = await response.json();
 
       if (data.authenticated) {
+        const match = login.username.match(/voter(\d+)/); // Regex for extracting voter_id from username for further use.
+        const voter_id = match[1];
+        setUser({ user: voter_id });
         navigate("/Mypage");
       } else {
         setError("Unable to authenticate user.");
