@@ -1,29 +1,54 @@
 import { useState } from "react";
 import styled from "styled-components";
 import { useNavigate } from "react-router-dom";
+import { useApp } from "../Components/AppContext";
 
 const LoginPage = () => {
   const navigate = useNavigate();
   const [login, setlogin] = useState({ username: "", password: "" });
   const [error, setError] = useState("");
+  const { setUser } = useApp();
 
   const onChange = (e) => {
     const { name, value } = e.target;
     setlogin((f) => ({ ...f, [name]: value }));
   };
 
-  const onSubmit = (e) => {
+  const onSubmit = async (e) => {
     e.preventDefault();
     setError("");
 
-    // Replace this with auth.  Checks if both fields are non-empty.
+    // Checks if both fields are non-empty.
     const ok = login.username.trim() && login.password.trim();
     if (!ok) {
       setError("Please enter both username and password.");
       return;
     }
 
-    navigate("/Mypage");
+    try {
+      const response = await fetch("/api/user-authentication", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          provided_username: login.username.toLowerCase(),
+          provided_password: login.password,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.authenticated) {
+        const match = login.username.match(/voter(\d+)/); // Regex for extracting voter_id from username for further use.
+        const voter_id = match[1];
+        setUser({ user: voter_id });
+        navigate("/Mypage");
+      } else {
+        setError("Unable to authenticate user.");
+      }
+    } catch (err) {
+      console.error("Error authenticating user:", err);
+      setError("Unable to authenticate user");
+    }
   };
 
   return (

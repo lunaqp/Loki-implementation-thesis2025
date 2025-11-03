@@ -1,12 +1,48 @@
 import styled from "styled-components";
 import { useNavigate } from "react-router-dom";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useApp } from "../Components/AppContext";
 
-const MyPage = ({ electionId }) => {
+const MyPage = ({}) => {
   const navigate = useNavigate();
   const [showPopup, setShowPopup] = useState(false);
+  const { user, setElections, elections } = useApp();
 
-  console.log(electionId);
+  const fetchElections = async (voterId) => {
+    try {
+      const response = await fetch(
+        `/api/fetch-elections-for-voter?voter_id=${voterId}`
+      );
+
+      if (!response.ok) {
+        const errText = await response.text();
+        throw new Error(`Error fetching elections: ${errText}`);
+      }
+
+      const data = await response.json();
+      console.log(data.elections);
+      setElections(data.elections);
+
+      return data.elections;
+    } catch (error) {
+      console.error("Error fetching elections:", error);
+      throw error;
+    }
+  };
+
+  useEffect(() => {
+    const voterId = user.user;
+    const loadElections = async () => {
+      try {
+        await fetchElections(voterId);
+      } catch (err) {
+        console.log(err.message);
+      }
+    };
+    loadElections();
+  }, [user]);
+
+  console.log(user);
   return (
     <Page>
       <Header>
@@ -18,28 +54,21 @@ const MyPage = ({ electionId }) => {
 
       <BodyContainer>
         <ElectionRow>
-          <ElectionBox>
-            <h2>Election 1</h2>
-            <ButtonGroup>
-              <button
-                onClick={() => electionId && navigate(`/${electionId}/Welcome`)}
-              >
-                Vote
-              </button>
-              <button onClick={() => setShowPopup(true)}>Verify</button>
-            </ButtonGroup>
-          </ElectionBox>
-          <ElectionBox>
-            <h2>Election 2</h2>
-            <ButtonGroup>
-              <button
-                onClick={() => electionId && navigate(`/${electionId}/Welcome`)}
-              >
-                Vote
-              </button>
-              <button onClick={() => setShowPopup(true)}>Verify</button>
-            </ButtonGroup>
-          </ElectionBox>
+          {elections.map((election) => (
+            <ElectionBox key={election.id}>
+              <h2>{election.name}</h2>
+              <ButtonGroup>
+                <button
+                  onClick={() =>
+                    election.id && navigate(`/${election.id}/Welcome`)
+                  }
+                >
+                  Vote
+                </button>
+                <button onClick={() => setShowPopup(true)}>Verify</button>
+              </ButtonGroup>
+            </ElectionBox>
+          ))}
         </ElectionRow>
       </BodyContainer>
       {showPopup && (

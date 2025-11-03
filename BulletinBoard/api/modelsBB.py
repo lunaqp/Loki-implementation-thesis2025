@@ -24,6 +24,9 @@ class Election(BaseModel):
     start: datetime #should be ISO format
     end: datetime
 
+class Elections(BaseModel):
+    elections: List[Election]
+
 #Defines whole request loader expects
 class NewElectionData(BaseModel):
     election: Election
@@ -53,3 +56,12 @@ class Ballot(BaseModel):
     timestamp: Optional[datetime] = None
     hash: Optional[str] = None
     imagepath: Optional[str] = None
+
+class CandidateResult(BaseModel):
+    candidateid: int
+    votes: int
+    proof: str # base64-encoded
+
+class ElectionResult(BaseModel):
+    electionid: int
+    result: list[CandidateResult]

@@ -4,7 +4,7 @@ from modelsRA import Ballot
 from modelsRA import BallotPayload
 import httpx
 import base64
-from coloursRA import BLUE, RED
+from coloursRA import CYAN, RED
 
 async def generate_ballot0(voter_id, public_key_voter, candidates): 
     # Build ctbar (ctbar = (ctv, ctlv, ctlid, proof))
@@ -73,7 +73,7 @@ async def send_ballotlist_to_votingserver(election_id, ballot_list):
         electionid=election_id,
         ballot0list=serialised_list
     )
-    print(f"{BLUE}Sending ballot0 list to vs...")
+    print(f"{CYAN}Sending ballot0 list to vs...")
     try:
         async with httpx.AsyncClient(timeout=httpx.Timeout(30.0)) as client:
             response = await client.post("http://vs_api:8000/ballot0list", json=payload.model_dump()) 

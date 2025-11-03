@@ -6,7 +6,7 @@ from generateB0 import generate_ballot0, send_ballotlist_to_votingserver
 from contextlib import asynccontextmanager
 import httpx
 from modelsRA import VoterKeyList, NewElectionData
-from coloursRA import BLUE, RED
+from coloursRA import BLUE, RED, CYAN
 
 DATA_DIR = os.getenv("DATA_DIR", "/app/data") #this is the electionData dir
 
@@ -52,7 +52,7 @@ async def load_election_from_file(name: str = Query(..., description="Filename i
 
             # Define function for ballot0-generation that should happen once keys are ready
             # async def do_generation():
-            print(f"{BLUE}Keys ready! Generating ballot0 for each voter.")
+            print(f"{CYAN}Keys ready! Generating ballot0 for each voter.")
             voter_id_upk_list = [(voter_key.voterid, voter_key.publickey) for voter_key in voter_key_list.voterkeylist]
             ballot0_list = []
             for voter_id, public_key_voter in voter_id_upk_list:
@@ -63,6 +63,16 @@ async def load_election_from_file(name: str = Query(..., description="Filename i
                 )
                 ballot0_list.append(ballot0)
             await send_ballotlist_to_votingserver(payload.election.id, ballot0_list)
+
+            # Notify tallying server of election:
+            async with httpx.AsyncClient() as client:
+                try:
+                    response = await client.post("http://ts_api:8000/receive-election", json={"electionid": payload.election.id})
+                    response.raise_for_status() # gets http status code
+                    print(f"{CYAN}Tallying server notified of election with ID: {payload.election.id}")
+                except Exception as e:
+                    print(f"Error notifying tallying server: {e}")
+                    raise HTTPException(status_code=400, detail=f"Tallying server error: {e}")
 
             return {"status": "loaded", "election_id": payload.election.id, "file": name}
         except Exception as e:

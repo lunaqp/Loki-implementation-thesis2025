@@ -1,4 +1,3 @@
-from datetime import datetime, timezone
 import httpx
 import duckdb
 import asyncio
@@ -10,7 +9,7 @@ from fastapi import HTTPException
 from epochGeneration import fetch_ballot_timestamp_and_imagepath
 import json
 import pytz
-from coloursVS import RED, CYAN, GREEN, PURPLE
+from coloursVS import RED, CYAN, GREEN, PURPLE, YELLOW
 
 tz = pytz.timezone('Europe/Copenhagen')
 current_time = datetime.now(tz)
@@ -35,6 +34,12 @@ async def timestamp_management(voter_id, election_id, start, end):
             print(f"{RED}No timestamps for voter {voter_id}")
             break
 
+        if next_timestamp > end:
+            print(f"{PURPLE}Waiting for election end for voter {voter_id}")
+            time_until_end = (end - current_time).total_seconds()
+            await asyncio.sleep(time_until_end +1)
+            break
+
         time_until_next_timestamp = (next_timestamp-current_time).total_seconds()
         await asyncio.sleep(time_until_next_timestamp)
 
@@ -42,8 +47,14 @@ async def timestamp_management(voter_id, election_id, start, end):
         await cast_vote(voter_id, election_id)
     
     if current_time > end:
-        print(f"{PURPLE}election over")
-
+        print(f"{PURPLE}election over for election {election_id}")
+        print(f"{YELLOW}Casting last obfuscation ballot for voter {voter_id}")
+        try: 
+            last_obf_ballot = await obfuscate(voter_id, election_id)
+            await send_ballot_to_bb(last_obf_ballot)
+            print(f"{YELLOW}Final obfuscation ballot sent to bb for voter {voter_id}.")
+        except Exception as e:
+            print(f"{RED}Error creating/sending final obfuscation ballot for voter {voter_id}: {e}")
     
 async def cast_vote(voter_id, election_id):
     try:

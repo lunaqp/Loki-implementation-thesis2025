@@ -1,6 +1,6 @@
 # Closing and removing docker images
-# Write-Host "Closing and removing Docker images..." -ForegroundColor Green
-# docker compose down
+Write-Host "Closing and removing Docker images..." -ForegroundColor Green
+docker compose down
 
 # Removing data in docker volumes
 Write-Host "Removing Docker data volumes..." -ForegroundColor Green
@@ -50,6 +50,7 @@ do {
         '6' {
             Write-Host "Exiting. Closing and removing Docker images..." -ForegroundColor Green
             docker compose down
+            exit
         }
         default {
             Write-Host "Invalid selection. Choose a number from 1-6"  -ForegroundColor Red

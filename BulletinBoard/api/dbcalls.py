@@ -1,10 +1,9 @@
-import psycopg
 import os
-from modelsBB import NewElectionData, VoterKeyList, Ballot
+from modelsBB import NewElectionData, VoterKeyList, Ballot, ElectionResult, Elections, Election
 import base64
 from hashBB import hash_ballot
 import json
-from coloursBB import BLUE, CYAN
+from psycopg_pool import ConnectionPool
 
 
 DB_NAME = os.getenv("POSTGRES_DB", "appdb")
@@ -14,6 +13,7 @@ DB_HOST = os.getenv("POSTGRES_HOST", "db")  # docker service name
 DB_PORT = int(os.getenv("POSTGRES_PORT", "5432"))
 CONNECTION_INFO = f"dbname={DB_NAME} user={DB_USER} password={DB_PASS} host={DB_HOST} port={DB_PORT}" # all info that psycopg needs to connect to db
 
+pool = ConnectionPool(conninfo=CONNECTION_INFO, open=True)
 
 ## ---------------- WRITING TO DB ---------------- ##
 
@@ -64,11 +64,10 @@ ON CONFLICT (BallotID) DO NOTHING;
 """
 
 def load_election_into_db(payload: NewElectionData):
-
     #Writes the election, candidates, voters and relations to the DB.
     eid = payload.election.id
 
-    with psycopg.connect(CONNECTION_INFO) as conn:
+    with pool.connection() as conn:
         with conn.cursor() as cur:
             # Insert NewElection
             cur.execute(
@@ -101,7 +100,7 @@ def load_ballot_into_db(pyBallot: Ballot):
     hashed_ballot = hash_ballot(pyBallot) 
     timestamp = pyBallot.timestamp
 
-    with psycopg.connect(CONNECTION_INFO) as conn:
+    with pool.connection() as conn:
         with conn.cursor() as cur:
             
             cur.execute(
@@ -121,17 +120,14 @@ def load_ballot_into_db(pyBallot: Ballot):
 
 # saving group, generator and order to database after receiving them from RA.
 def save_elgamalparams(GROUP, GENERATOR, ORDER):
-    print(f"{BLUE}saving Elgamal parameters to database")
-    conn = psycopg.connect(CONNECTION_INFO)
-    cur = conn.cursor()
-    cur.execute("""
-                UPDATE GlobalInfo
-                SET GroupCurve = %s, Generator = %s, OrderP = %s
-                WHERE ID = 0
-                """, (GROUP, GENERATOR, ORDER))
-    conn.commit()
-    cur.close()
-    conn.close()
+    with pool.connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                        UPDATE GlobalInfo
+                        SET GroupCurve = %s, Generator = %s, OrderP = %s
+                        WHERE ID = 0
+                        """, (GROUP, GENERATOR, ORDER))
+
 
 def save_key_to_db(service, KEY):
     if service == "TS":
@@ -139,136 +135,140 @@ def save_key_to_db(service, KEY):
     elif service == "VS":
         column = "PublicKeyVotingServer"
         
-    conn = psycopg.connect(CONNECTION_INFO)
-    cur = conn.cursor()
-    cur.execute(f"""
-        UPDATE GlobalInfo
-        SET {column} = %s
-        WHERE ID = 0
-        """, (KEY,))
-    conn.commit()
-    cur.close()
-    conn.close()
-    print(f"{BLUE}public key received from {service} and saved to database")
+    with pool.connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(f"""
+                        UPDATE GlobalInfo
+                        SET {column} = %s
+                        WHERE ID = 0
+                        """, (KEY,))
+
 
 # Save keymaterial to database for each voter
 def save_voter_keys_to_db(voter_key_list: VoterKeyList):
-    conn = psycopg.connect(CONNECTION_INFO)
-    cur = conn.cursor()
-    print(f"{CYAN}saving voter public keys to database")
-    list = voter_key_list.voterkeylist
-    for voter_key in list:
-        cur.execute("""
-                    INSERT INTO VoterParticipatesInElection (ElectionID, VoterID, PublicKey)
-                    VALUES (%s, %s, %s)
-                    """, (voter_key.electionid, voter_key.voterid, base64.b64decode(voter_key.publickey))) # Decode base64 to retrieve byte object
-    conn.commit()
-    cur.close()
-    conn.close()
+    voter_keys : list = voter_key_list.voterkeylist
+    with pool.connection() as conn:
+        with conn.cursor() as cur:
+            for voter_key in voter_keys:
+                cur.execute("""
+                            INSERT INTO VoterParticipatesInElection (ElectionID, VoterID, PublicKey)
+                            VALUES (%s, %s, %s)
+                            """, (voter_key.electionid, voter_key.voterid, base64.b64decode(voter_key.publickey))) # Decode base64 to retrieve byte object
 
+
+def save_election_result(election_result: ElectionResult):
+    election_id = election_result.electionid
+    
+    # Looping through all candidates to store the votecount and the proof for each candidate individually.
+    for candidate in election_result.result:
+        candidate_id = candidate.candidateid
+        vote_count = candidate.votes
+        proof_bin = base64.b64decode(candidate.proof)  # decoding proof to store as binary
+    
+    with pool.connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                        UPDATE CandidateRunsInElection
+                        SET Result = %s, Tallyproof = %s
+                        WHERE (ElectionID = %s AND CandidateID = %s)
+                        """, (vote_count, proof_bin, election_id, candidate_id) 
+                        )
 
 ## ---------------- READING FROM DB ---------------- ##
 
 
 async def fetch_params():
-    with psycopg.connect(CONNECTION_INFO) as conn:
+    with pool.connection() as conn:
         with conn.cursor() as cur:
             cur.execute("""
-                SELECT GroupCurve, Generator, OrderP
-                FROM GlobalInfo
-                WHERE ID = 0
-            """)
+                        SELECT GroupCurve, Generator, OrderP
+                        FROM GlobalInfo
+                        WHERE ID = 0
+                    """)
             (GROUP, GENERATOR, ORDER) = cur.fetchone()
-            return GROUP, GENERATOR, ORDER
-        cur.close()
-        conn.close()
+    return GROUP, GENERATOR, ORDER
 
 # Query for fetching all voters participating in a given election
 def fetch_voters_for_election(election_id):
-    conn = psycopg.connect(CONNECTION_INFO)
-    cur = conn.cursor()
-    cur.execute("""
-                SELECT v.ID, v.Name
-                FROM Voters v
-                Join VoterParticipatesInElection ve on v.ID = ve.VoterID
-                WHERE ve.ElectionID = %s;"""
-                ,(election_id,))
-    records = cur.fetchall()
+    with pool.connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                        SELECT v.ID, v.Name
+                        FROM Voters v
+                        Join VoterParticipatesInElection ve on v.ID = ve.VoterID
+                        WHERE ve.ElectionID = %s;"""
+                        ,(election_id,))
+            records = cur.fetchall()
     return records
 
 # Query for fetching all candidates running in a given election id:
 def fetch_candidates_for_election(election_id): # Should cursor be given as parameter?
-    conn = psycopg.connect(CONNECTION_INFO)
-    cur = conn.cursor()
-    cur.execute("""
-                SELECT c.ID, c.Name
-                FROM Candidates c
-                JOIN CandidateRunsInElection cr on c.ID = cr.CandidateID
-                WHERE cr.ElectionID = %s;""",
-                (election_id,)
-                )
-    # Retrieve query results
-    records = cur.fetchall()
+    with pool.connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                        SELECT c.ID, c.Name
+                        FROM Candidates c
+                        JOIN CandidateRunsInElection cr on c.ID = cr.CandidateID
+                        WHERE cr.ElectionID = %s;""",
+                        (election_id,)
+                        )
+            # Retrieve query results
+            records = cur.fetchall()
     return records
 
 # Fetch startdate from database
 def fetch_election_dates(election_id):
-    conn = psycopg.connect(CONNECTION_INFO)
-    cur = conn.cursor()
-    cur.execute("""
-                SELECT ElectionStart, ElectionEnd
-                FROM Elections
-                WHERE ID = %s
-                """, (election_id,))
-    election_startdate, election_enddate = cur.fetchone()
+    with pool.connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                        SELECT ElectionStart, ElectionEnd
+                        FROM Elections
+                        WHERE ID = %s
+                        """, (election_id,))
+            election_startdate, election_enddate = cur.fetchone()
     return election_startdate, election_enddate
 
 # Fetch public keys for Tallying Server and Voting Server
 def fetch_public_keys_tsvs():
-    conn = psycopg.connect(CONNECTION_INFO)
-    cur = conn.cursor()
-    cur.execute("""
-                SELECT PublicKeyTallyingServer, PublicKeyVotingServer
-                FROM GlobalInfo
-                WHERE ID = 0
-                """)
-    public_key_ts_bin, public_key_vs_bin = cur.fetchone()
-    cur.close()
-    conn.close()
+    with pool.connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                        SELECT PublicKeyTallyingServer, PublicKeyVotingServer
+                        FROM GlobalInfo
+                        WHERE ID = 0
+                        """)
+            public_key_ts_bin, public_key_vs_bin = cur.fetchone()
 
     return public_key_ts_bin, public_key_vs_bin
 
 # Fetch public key for a given voter in a given election
 def fetch_voter_public_key(voter_id, election_id):
-    conn = psycopg.connect(CONNECTION_INFO)
-    cur = conn.cursor()
-    cur.execute("""
-                SELECT PublicKey
-                FROM VoterParticipatesInElection
-                WHERE VoterID = %s AND ElectionID = %s;
-                """, (voter_id, election_id))
-    (upk,) = cur.fetchone()
-    
-    cur.close()
-    conn.close()
-
+    with pool.connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                        SELECT PublicKey
+                        FROM VoterParticipatesInElection
+                        WHERE VoterID = %s AND ElectionID = %s;
+                        """, (voter_id, election_id))
+            (upk,) = cur.fetchone()
+            
     return upk
 
 def fetch_last_and_previouslast_ballot(voter_id, election_id):
-    conn = psycopg.connect(CONNECTION_INFO)
-    cur = conn.cursor()
-    cur.execute("""
-                SELECT CtCandidate, CtVoterList, CtVotingServerList, Proof
-                FROM VoterParticipatesInElection p
-                JOIN VoterCastsBallot c 
-                ON p.ElectionID = c.ElectionID AND p.VoterID = c.VoterID
-                JOIN Ballots b
-                ON b.ID = c.BallotID
-                WHERE p.ElectionID = %s AND p.VoterID = %s
-                ORDER BY c.VoteTimestamp DESC
-                LIMIT 2;
-                """, (election_id, voter_id))
-    rows = cur.fetchall()
+    with pool.connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                        SELECT CtCandidate, CtVoterList, CtVotingServerList, Proof
+                        FROM VoterParticipatesInElection p
+                        JOIN VoterCastsBallot c 
+                        ON p.ElectionID = c.ElectionID AND p.VoterID = c.VoterID
+                        JOIN Ballots b
+                        ON b.ID = c.BallotID
+                        WHERE p.ElectionID = %s AND p.VoterID = %s
+                        ORDER BY c.VoteTimestamp DESC
+                        LIMIT 2;
+                        """, (election_id, voter_id))
+            rows = cur.fetchall()
 
     # In case only one row is in the database (ballot0):
     if len(rows) == 1:
@@ -286,50 +286,50 @@ def serialise_ballot_cts(ballot_ct):
     ct_lv_b64 = ballot_ct[1]
     ct_lid_b64 = ballot_ct[2]
     
-    # serialising and base64 encoding NIZK proof:
+    # base64 encoding NIZK proof:
     proof_b64 = base64.b64encode(ballot_ct[3]).decode()
     return (ct_v_b64, ct_lv_b64, ct_lid_b64, proof_b64)
 
 def fetch_cbr_length(voter_id, election_id):
-    conn = psycopg.connect(CONNECTION_INFO)
-    cur = conn.cursor()
-    cur.execute("""
-                SELECT COUNT(*)
-                FROM VoterParticipatesInElection p
-                JOIN VoterCastsBallot c 
-                ON p.ElectionID = c.ElectionID AND p.VoterID = c.VoterID
-                WHERE p.ElectionID = %s AND p.VoterID = %s
-                """, (election_id, voter_id))
-    (cbr_length,) = cur.fetchone()  # fetchone returns a tuple like (count,)
+    with pool.connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                        SELECT COUNT(*)
+                        FROM VoterParticipatesInElection p
+                        JOIN VoterCastsBallot c 
+                        ON p.ElectionID = c.ElectionID AND p.VoterID = c.VoterID
+                        WHERE p.ElectionID = %s AND p.VoterID = %s
+                        """, (election_id, voter_id))
+            (cbr_length,) = cur.fetchone()  # fetchone returns a tuple like (count,)
     return cbr_length
 
 # Fetches the CBR for a given voter in a given election sorted by most recent votes at the top.
 def fetch_CBR_for_voter_in_election(voter_id, election_id):
-    conn = psycopg.connect(CONNECTION_INFO)
-    cur = conn.cursor()
-    cur.execute("""
-                SELECT *
-                FROM VoterParticipatesInElection p
-                JOIN VoterCastsBallot c 
-                ON p.ElectionID = c.ElectionID AND p.VoterID = c.VoterID
-                JOIN Ballots b
-                ON b.ID = c.BallotID
-                WHERE p.ElectionID = %s AND p.VoterID = %s
-                ORDER BY c.VoteTimestamp DESC;
-                """, (election_id, voter_id))
-    cbr = cur.fetchall()
+    with pool.connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                        SELECT *
+                        FROM VoterParticipatesInElection p
+                        JOIN VoterCastsBallot c 
+                        ON p.ElectionID = c.ElectionID AND p.VoterID = c.VoterID
+                        JOIN Ballots b
+                        ON b.ID = c.BallotID
+                        WHERE p.ElectionID = %s AND p.VoterID = %s
+                        ORDER BY c.VoteTimestamp DESC;
+                        """, (election_id, voter_id))
+            cbr = cur.fetchall()
     return cbr
 
 def fetch_ballot_hashes(election_id):
-    conn = psycopg.connect(CONNECTION_INFO)
-    cur = conn.cursor()
-    cur.execute("""
-                SELECT BallotHash
-                FROM Ballots
-                Join VoterCastsBallot vcb on vcb.BallotID = Ballots.ID
-                WHERE vcb.ElectionID = %s;"""
-                ,(election_id,))
-    ballot_hashes = cur.fetchall() # returns a list of tuples
+    with pool.connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                        SELECT BallotHash
+                        FROM Ballots
+                        Join VoterCastsBallot vcb on vcb.BallotID = Ballots.ID
+                        WHERE vcb.ElectionID = %s;"""
+                        ,(election_id,))
+            ballot_hashes = cur.fetchall() # returns a list of tuples
 
     # Extracts the first element of each tuple
     ballothash_list = [row[0] for row in ballot_hashes]
@@ -338,10 +338,52 @@ def fetch_ballot_hashes(election_id):
 
 # Fetch image filename for specific ballot
 def fetch_imageFilename_for_ballot(cur, ballot_id):
-    cur.execute("""
-                SELECT ImageFilename
-                FROM Images 
-                WHERE BallotID = %s
-                """, (ballot_id,))
-    records = cur.fetchall()
+    with pool.connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                        SELECT ImageFilename
+                        FROM Images 
+                        WHERE BallotID = %s
+                        """, (ballot_id,))
+            records = cur.fetchall()
     return records
+
+def fetch_last_ballot_ctvs(election_id):
+    with pool.connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                        SELECT DISTINCT ON (p.VoterID)
+                            CtCandidate
+                        FROM VoterParticipatesInElection p
+                        JOIN VoterCastsBallot c 
+                        ON p.ElectionID = c.ElectionID AND p.VoterID = c.VoterID
+                        JOIN Ballots b
+                        ON b.ID = c.BallotID
+                        WHERE p.ElectionID = %s
+                        ORDER BY p.VoterID, c.VoteTimestamp DESC;
+                        """, (election_id,))
+            rows = cur.fetchall() 
+
+    # to only keep the first element, ctv, of each returned tuple as each tuple is returned as (ctv, )
+    last_ballot_ctvs_json  = [row[0] for row in rows] 
+    
+    return last_ballot_ctvs_json
+
+# Fetch elections for a given voter
+def fetch_elections_for_voter(voter_id):
+    with pool.connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                        SELECT ID, Name, ElectionStart, ElectionEnd
+                        FROM Elections e
+                        JOIN VoterParticipatesInElection p
+                        ON p.ElectionID = e.ID
+                        WHERE VoterID = %s
+                        """, (voter_id,))
+            records = cur.fetchall()
+
+    elections = Elections(
+        elections = [Election (id=election_id, name=name, start=start, end=end) for election_id, name, start, end in records]
+    ) 
+
+    return elections
