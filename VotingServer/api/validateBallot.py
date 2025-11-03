@@ -10,6 +10,7 @@ from fastapi import HTTPException
 import base64
 from hashVS import hash_ballot
 import json
+from coloursVS import BLUE, RED, GREEN, CYAN, ORANGE, YELLOW
 
 async def fetch_voters_from_bb(election_id):
     try:
@@ -23,8 +24,8 @@ async def fetch_voters_from_bb(election_id):
           
             return voter_id_list
     except Exception as e:
-        print(f"Error fetching voters from BB {e}")
-        raise HTTPException(status_code=500, detail=f"Error fetching voters from BB: {str(e)}")     
+        print(f"{RED}Error fetching voters from BB {e}")
+        raise HTTPException(status_code=500, detail=f"{RED}Error fetching voters from BB: {str(e)}")     
 
 async def fetch_candidates_from_bb(election_id):
     try:
@@ -40,8 +41,8 @@ async def fetch_candidates_from_bb(election_id):
 
             return candidates_list
     except Exception as e:
-        print(f"Error fetching candidates from BB: {e}")
-        raise HTTPException(status_code=500, detail=f"Error fetching candidates from BB: {str(e)}")     
+        print(f"{RED}Error fetching candidates from BB: {e}")
+        raise HTTPException(status_code=500, detail=f"{RED}Error fetching candidates from BB: {str(e)}")     
 
 async def fetch_public_keys_from_bb():
     GROUP, _, _ = await get_elgamal_params()
@@ -58,7 +59,7 @@ async def fetch_public_keys_from_bb():
 
             return public_key_TS, public_key_VS
     except Exception as e:
-        print(f"Error fetching public keys for TS and VS {e}")
+        print(f"{RED}Error fetching public keys for TS and VS {e}")
 
 async def fetch_voter_public_key_from_bb(voter_id, election_id):
     try:
@@ -71,8 +72,8 @@ async def fetch_voter_public_key_from_bb(voter_id, election_id):
             
             return voter_public_key_bin
     except Exception as e:
-        print(f"Error fetching public key for voter: {e}")
-        raise HTTPException(status_code=500, detail=f"Error fetching public key for voter:  {str(e)}")     
+        print(f"{RED}Error fetching public key for voter: {e}")
+        raise HTTPException(status_code=500, detail=f"{RED}Error fetching public key for voter:  {str(e)}")     
 
 async def fetch_ballot_hash_from_bb(election_id):
     try:
@@ -85,8 +86,8 @@ async def fetch_ballot_hash_from_bb(election_id):
             
             return ballothash_list
     except Exception as e:
-        print(f"Error fetching list of all ballot hashes")
-        raise HTTPException(status_code=500, detail=f"Error fetching list of all ballot hashes:  {str(e)}")     
+        print(f"{RED}Error fetching list of all ballot hashes")
+        raise HTTPException(status_code=500, detail=f"{RED}Error fetching list of all ballot hashes:  {str(e)}")     
 
 async def fetch_last_and_previouslast_ballot_from_bb(election_id, voter_id):
     try:
@@ -100,8 +101,8 @@ async def fetch_last_and_previouslast_ballot_from_bb(election_id, voter_id):
 
             return last_ballot_b64, previous_last_ballot_b64
     except Exception as e:
-        print(f"Error fetching previous ballots from BB: {e}")
-        raise HTTPException(status_code=500, detail=f"Error fetching previous ballots from BB: {str(e)}")     
+        print(f"{RED}Error fetching previous ballots from BB: {e}")
+        raise HTTPException(status_code=500, detail=f"{RED}Error fetching previous ballots from BB: {str(e)}")     
 
 
 async def fetch_cbr_length_from_bb(voter_id, election_id):
@@ -114,8 +115,8 @@ async def fetch_cbr_length_from_bb(voter_id, election_id):
         return data["cbr_length"]
     
     except Exception as e:
-        print(f"Error fetching previous ballots from BB: {e}")
-        raise HTTPException(status_code=500, detail=f"Error fetching previous ballots from BB: {str(e)}")    
+        print(f"{RED}Error fetching previous ballots from BB: {e}")
+        raise HTTPException(status_code=500, detail=f"{RED}Error fetching previous ballots from BB: {str(e)}")    
 
 
 async def validate_ballot(pyballot:Ballot):
@@ -182,10 +183,10 @@ async def verify_proof(election_id, voter_id, pyballot):
     statement_verified = stmt_c.verify(proof_current)
 
     if not statement_verified: 
-        print("verification failed")
+        print(f"{ORANGE}verification failed")
         #NOTE: if failed to verify send message to voting app and display in UI "ballot not valid"
     else:
-        print("\nVerification successful ballot")
+        print(f"{GREEN}\nVerification successful ballot")
 
     return stmt_c.verify(proof_current)
 
@@ -270,11 +271,11 @@ async def obfuscate(voter_id, election_id):
     #if 1 = Dec(sk_vs, (ct_lv-1)-(ct_lid-1)) then we re-randomize the last ballot 
         ct_v=last_ballot[0]
         sim_relation=2
-        print(f"[{cbr_length}] VS obfuscated last ballot")
+        print(f"{YELLOW}[{cbr_length}] VS obfuscated last ballot")
     else : 
         ct_v=previous_last_ballot[0]
         sim_relation=1
-        print(f"\033[31m[{cbr_length}] VS obfuscated previous last ballot\033[0m")
+        print(f"{YELLOW}{cbr_length}] VS obfuscated previous last ballot")
     
     ct_v_new = [re_enc(GENERATOR, pk_TS, ct_v[i], r_v.value) for i in range(len(candidates))]
 
@@ -286,7 +287,6 @@ async def obfuscate(voter_id, election_id):
     nizk = full_stmt.prove({r_v: r_v.value, r_lv: r_lv.value, r_lid: r_lid.value, sk: sk.value})
 
     pyBallot: Ballot = construct_ballot(voter_id, upk, ct_v_new, ct_lv_new, ct_lid_new, nizk, election_id)
-    print("pyballot created from obf")
     return pyBallot
 
 

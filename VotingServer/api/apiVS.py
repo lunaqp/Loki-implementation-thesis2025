@@ -1,17 +1,13 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI
 import asyncio
 from keygen import send_public_key_to_BB
 from modelsVS import BallotPayload, Ballot
-from validateBallot import validate_ballot, obfuscate
-from epochGeneration import save_timestamps_for_voter, fetch_ballot0_timestamp, fetch_ballot_timestamp_and_imagepath, duckdb_lock, fetch_electiondates_from_bb
+from epochGeneration import save_timestamps_for_voter, fetch_ballot0_timestamp, duckdb_lock, fetch_electiondates_from_bb
 from contextlib import asynccontextmanager
 import duckdb
-import httpx
-from hashVS import hash_ballot
 from epochHandling import update_time, send_ballot0_to_bb, timestamp_management
-import base64
 import json
-
+from coloursVS import RED, CYAN
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -37,7 +33,7 @@ async def vs_resp():
 
 @app.post("/ballot0list")
 async def receive_ballotlist(payload: BallotPayload):
-    print(f"Received election {payload.electionid}, {len(payload.ballot0list)} ballots")
+    print(f"{CYAN}Received election {payload.electionid}, {len(payload.ballot0list)} ballots")
     start, end = await fetch_electiondates_from_bb(payload.electionid)
 
     for ballot in payload.ballot0list:
@@ -57,13 +53,10 @@ async def receive_ballotlist(payload: BallotPayload):
             timestamp = ballot0_timestamp,
             imagepath = image_path
         )
-        # pyBallot.hash = hash_ballot(pyBallot) #test, is it the same hash produced
-        # print("VS hash:", pyBallot.hash)
+
         await send_ballot0_to_bb(pyBallot)
     conn = duckdb.connect("/duckdb/voter-data.duckdb") # for printing tables when testing
     conn.table("VoterTimestamps").show() # for printing tables when testing
-
-    # NOTE: Validate ballots before sending to CBR via BB.
 
     return {"status": "ok"}
 
@@ -77,9 +70,10 @@ async def receive_ballot(pyBallot: Ballot):
             ctv = json.dumps(pyBallot.ctv) # json string of base64 encoding
             ctlv = json.dumps(pyBallot.ctlv)
             ctlid = json.dumps(pyBallot.ctlid)
-            conn.execute("INSERT INTO PendingVotes (VoterID, ElectionID, PublicKey, ctv, ctlv, ctlid, Proof) VALUES (?, ?, ?, ?, ?, ?, ?)", (pyBallot.voterid, pyBallot.electionid, pyBallot.upk, ctv, ctlv, ctlid, pyBallot.proof)) 
+            conn.execute("INSERT INTO PendingVotes (VoterID, ElectionID, PublicKey, ctv, ctlv, ctlid, Proof) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                         (pyBallot.voterid, pyBallot.electionid, pyBallot.upk, ctv, ctlv, ctlid, pyBallot.proof)) 
             conn.table("PendingVotes").show()
             conn.close()
     except Exception as e:
-        print(f"error writing ballot to duckdb for voter {pyBallot.voterid} in election {pyBallot.electionid}: {e}")
+        print(f"{RED}error writing ballot to duckdb for voter {pyBallot.voterid} in election {pyBallot.electionid}: {e}")
 

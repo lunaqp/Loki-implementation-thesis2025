@@ -8,6 +8,7 @@ import Confirmation from "./Screens/Confirmation";
 import LoginPage from "./Screens/Login";
 import PreviousVotes from "./Screens/PreviousVotes";
 import { useState, useEffect } from "react";
+import { AppProvider } from "./Components/AppContext";
 
 function App() {
   const [electionId, setElectionId] = useState(0);
@@ -44,25 +45,37 @@ function App() {
 
   return (
     electionId && (
-      <Router>
-        {message && <div style={{ padding: 8 }}>{message}</div>}
-        <Routes>
-          <Route path="/" element={<LoginPage />} />
-          <Route path="/Mypage" element={<MyPage electionId={electionId} />} />
-          <Route path=":electionId/Welcome" element={<Welcome />} />
-          <Route path=":electionId/VoteCheck" element={<VoteCheck />} />
-          <Route
-            path=":electionId/CandidateSelection"
-            element={<CandidateSelection candidates={candidates} />}
-          />
-          <Route
-            path=":electionId/MemorableInformation"
-            element={<MemorableInformation />}
-          />
-          <Route path=":electionId/Confirmation" element={<Confirmation />} />
-          <Route path=":electionId/PreviousVotes" element={<PreviousVotes />} />
-        </Routes>
-      </Router>
+      <AppProvider>
+        <Router>
+          {message && <div style={{ padding: 8 }}>{message}</div>}
+          <Routes>
+            <Route path="/" element={<LoginPage />} />
+            <Route
+              path="/Mypage"
+              element={<MyPage electionId={electionId} />}
+            />
+            <Route
+              path=":electionId/*"
+              element={
+                <Routes>
+                  <Route path="Welcome" element={<Welcome />} />
+                  <Route path="VoteCheck" element={<VoteCheck />} />
+                  <Route
+                    path="CandidateSelection"
+                    element={<CandidateSelection candidates={candidates} />}
+                  />
+                  <Route
+                    path="MemorableInformation"
+                    element={<MemorableInformation />}
+                  />
+                  <Route path="Confirmation" element={<Confirmation />} />
+                  <Route path="PreviousVotes" element={<PreviousVotes />} />
+                </Routes>
+              }
+            />
+          </Routes>
+        </Router>
+      </AppProvider>
     )
   );
 }

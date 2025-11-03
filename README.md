@@ -16,3 +16,14 @@ Load new election file without FastApi: docker exec -it loki-implementation-thes
 Call/load new election file with FastApi: "Invoke-RestMethod -Uri "http://localhost:8002/elections/load-file?name=election1.json" -Method Post" in terminal
 
 Remove data from db: docker volume rm loki-implementation-thesis2025_db_data
+
+# Colour coding
+
+We have colour-coded the log for all of the services based on the following:
+
+- Blue: setup functionality running before any elections are received.
+- Red: errors
+- Cyan: initialisation process once election is loaded
+- Green: all other ballots
+- Yellow: obfuscated ballots
+- Purple: end of election and tallying

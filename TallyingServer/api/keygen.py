@@ -1,22 +1,13 @@
 from typing import Optional
-from models import ElGamalParams
+from modelsTS import ElGamalParams
 import httpx
 import base64
 from petlib.bn import Bn # For casting database values to petlib big integer types.
 from petlib.ec import EcGroup, EcPt, EcGroup
 from fastapi import HTTPException
-
-# elgamal cache for saving group, generator, and order for later use.
-elgamal_params_cache: Optional["ElGamalParams"] = None
-
-def set_cached_params(params: ElGamalParams):
-    global elgamal_params_cache
-    elgamal_params_cache = params
-
-def get_cached_params() -> ElGamalParams:
-    if elgamal_params_cache is None:
-        raise RuntimeError("ElGamal parameters not cached yet")
-    return elgamal_params_cache
+import os
+import json
+from coloursTS import BLUE
 
 async def get_elgamal_params():
     async with httpx.AsyncClient() as client:
@@ -28,15 +19,12 @@ async def get_elgamal_params():
                 generator = data["generator"],
                 order = data["order"]
             )
-            # Saving group, generator, and order for later use (to avoid excessive fetching from database).
-            set_cached_params(params)
 
             # Convert to proper types for cryptographic functions.
             GROUP = EcGroup(params.group)
             GENERATOR = EcPt.from_binary(base64.b64decode(params.generator), GROUP)
             ORDER = Bn.from_binary(base64.b64decode(params.order))
             
-            print(f"elgamal params fetched from BB: {GROUP}, \n {GENERATOR} \n {ORDER}")
             return GROUP, GENERATOR, ORDER
         
         except Exception as e:
@@ -46,8 +34,19 @@ async def keygen():
     _, GENERATOR, ORDER = await get_elgamal_params()
     secret_key = ORDER.random() 
     public_key = secret_key * GENERATOR
-    print("TS public and private key generated")
-    #TODO: save secret key somewhere locally
+    print(f"{BLUE}TS public and private key generated")
+    
+    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+    SECRET_KEY_PATH = os.path.join(BASE_DIR, 'keys.json')
+
+    data = {"public_key": base64.b64encode(public_key.export()).decode(), "secret_key": base64.b64encode(secret_key.binary()).decode()}
+
+    # Saving keys to json-file:
+    with open(SECRET_KEY_PATH, 'w') as file:
+        json.dump(data, file)
+    print(f"{BLUE}Secret key saved to {SECRET_KEY_PATH}")
+
+    
     return public_key
 
 async def send_public_key_to_BB():

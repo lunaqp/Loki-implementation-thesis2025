@@ -6,6 +6,7 @@ from modelsRA import ElGamalParams, VoterKey, VoterKeyList
 import httpx
 import base64
 from fastapi import HTTPException
+from coloursRA import BLUE, RED
 
 def generate_group_order():
     # Using the petlib library group operations to generate group and group values
@@ -20,7 +21,7 @@ print(f"order: {ORDER}")
 print(f"group: {GROUP}")
 
 async def send_params_to_bb():
-    print("sending elgamal params to BB...")
+    print(f"{BLUE}sending elgamal params to BB...")
     
     params = ElGamalParams(
         group = GROUP.nid(),
@@ -62,7 +63,7 @@ async def send_keys_to_bb(voter_info: VoterKeyList):
     async with httpx.AsyncClient() as client:
         response = await client.post("http://bb_api:8000/receive-voter-keys", content = voter_info.model_dump_json())
         response.raise_for_status()
-        print("voter public keys sent to BB")        
+        print(f"{BLUE}voter public keys sent to BB")        
 
 async def send_keys_to_va(voter_id, election_id, secret_key, public_key):
     data = {"voter_id": voter_id, "election_id": election_id, "secret_key": base64.b64encode(secret_key.binary()).decode(), "public_key":base64.b64encode(public_key.export()).decode() } # decode() converts b64 bytes to string
@@ -74,7 +75,7 @@ async def send_keys_to_va(voter_id, election_id, secret_key, public_key):
           
             return response.json()
     except Exception as e:
-        print(f"Error sending keys to VA: {e}")
+        print(f"{RED}Error sending keys to VA: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to send secret key to VA: {str(e)}")     
 
 

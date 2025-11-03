@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 import asyncio
 from keygen import send_public_key_to_BB
+from tallying import handle_election
 
 app = FastAPI()
 
@@ -13,3 +14,12 @@ async def ts_resp():
 @app.get("/health")
 def health():
     return {"ok": True}
+
+@app.post("/receive-election")
+async def notified_election_received(payload: dict):
+    election_id = payload.get("electionid")
+    
+    # Background tasks for handling each election
+    asyncio.create_task(handle_election(election_id))
+
+    return {"status": "received", "election_id": election_id}

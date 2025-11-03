@@ -4,6 +4,7 @@ from modelsRA import Ballot
 from modelsRA import BallotPayload
 import httpx
 import base64
+from coloursRA import CYAN, RED
 
 async def generate_ballot0(voter_id, public_key_voter, candidates): 
     # Build ctbar (ctbar = (ctv, ctlv, ctlid, proof))
@@ -32,7 +33,7 @@ async def fetch_public_keys_from_bb():
 
             return public_key_TS, public_key_VS
     except Exception as e:
-        print(f"Error fetching public keys for TS and VS {e}")
+        print(f"{RED}Error fetching public keys for TS and VS {e}")
 
        
 # Encryption function
@@ -72,10 +73,10 @@ async def send_ballotlist_to_votingserver(election_id, ballot_list):
         electionid=election_id,
         ballot0list=serialised_list
     )
-    print("Sending ballot0 list to vs...")
+    print(f"{CYAN}Sending ballot0 list to vs...")
     try:
         async with httpx.AsyncClient(timeout=httpx.Timeout(30.0)) as client:
             response = await client.post("http://vs_api:8000/ballot0list", json=payload.model_dump()) 
             response.raise_for_status()
     except Exception as e:
-        print("Error sending ballot 0 list", {e})
+        print(f"{RED}Error sending ballot 0 list", {e})

@@ -25,3 +25,16 @@ class VoterBallot(BaseModel):
     lv_list: list
     election_id: int
     voter_id: int
+
+class AuthRequest(BaseModel):
+    provided_username: str
+    provided_password: str
+
+class Election(BaseModel):
+    id: int
+    name: str
+    start: datetime #should be ISO format
+    end: datetime
+
+class Elections(BaseModel):
+    elections: List[Election]

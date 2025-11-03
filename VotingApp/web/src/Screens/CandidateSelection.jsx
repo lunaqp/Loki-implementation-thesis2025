@@ -4,6 +4,7 @@ import { useState } from "react";
 import PopUp from "../Components/PopUp";
 import ScreenTemplate from "../Components/ScreenTemplate";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
+import { useApp } from "../Components/AppContext";
 
 const CandidateSelection = ({ candidates }) => {
   const location = useLocation();
@@ -11,6 +12,10 @@ const CandidateSelection = ({ candidates }) => {
   const navigate = useNavigate();
   const nextRoute = `/${electionId}/MemorableInformation`;
   const prevRoute = location.state?.from || `/${electionId}/PreviousVotes`;
+  const { previousVotes, user } = useApp();
+
+  // Logging for testing purposes.
+  console.log(previousVotes);
 
   const party1Candidates =
     candidates && candidates.map((candidate) => candidate.name);
@@ -33,10 +38,16 @@ const CandidateSelection = ({ candidates }) => {
 
   const handleConfirm = () => {
     setShowPopUp(false);
-    const v = 1;
-    const voter_id = 101;
-    const election_id = 123;
-    const lv_list = [];
+
+    // Finding the relevant index for the chosen candidate
+    const selectedCandidateIndex =
+      candidates.findIndex((c) => c.name === selectedCandidate) + 1; // + 1 to start counting from 1
+
+    // Elements for ballot:
+    const v = selectedCandidateIndex;
+    const voter_id = user.user;
+    const election_id = electionId;
+    const lv_list = previousVotes;
 
     sendBallot(v, lv_list, election_id, voter_id);
 
