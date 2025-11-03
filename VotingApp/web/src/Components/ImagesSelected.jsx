@@ -1,4 +1,3 @@
-import React from "react";
 import styled from "styled-components";
 
 //shows list of selected imgs

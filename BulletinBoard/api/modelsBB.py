@@ -65,3 +65,11 @@ class CandidateResult(BaseModel):
 class ElectionResult(BaseModel):
     electionid: int
     result: list[CandidateResult]
+
+class IndexImage(BaseModel):
+    cbrindex: int
+    image: str
+    timestamp: datetime
+
+class IndexImageCBR(BaseModel):
+    cbrimages: List[IndexImage]

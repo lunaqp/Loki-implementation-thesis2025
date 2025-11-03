@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { useApp } from "../Components/AppContext";
 
-const MyPage = ({}) => {
+const MyPage = () => {
   const navigate = useNavigate();
   const [showPopup, setShowPopup] = useState(false);
   const { user, setElections, elections } = useApp();

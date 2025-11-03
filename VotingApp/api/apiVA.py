@@ -3,7 +3,7 @@ from bulletin_routes import router as bulletin_router
 import base64
 import duckdb
 from contextlib import asynccontextmanager
-from modelsVA import Ballot, VoterBallot, AuthRequest, Elections
+from modelsVA import Ballot, VoterBallot, AuthRequest, Elections, IndexImageCBR
 from vote_casting import vote, send_ballot_to_VS
 from coloursVA import CYAN, RED, GREEN
 import httpx
@@ -43,6 +43,22 @@ async def fetch_elections_for_voter(
     except Exception as e:
         print(f"{RED}Error fetching elections for voter {voter_id}: {e}")
         raise HTTPException(status_code=500, detail=f"{RED}Error fetching elections for voter {voter_id}: {str(e)}")     
+
+@app.get("/api/fetch-cbr-images-for-voter")
+async def fetch_elections_for_voter(
+    election_id: int = Query(..., description="ID of the election"),
+    voter_id: int = Query(..., description="ID of the voter")):
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.get(f"http://bb_api:8000/cbr-for-voter?election_id={election_id}&voter_id={voter_id}")
+            response.raise_for_status() 
+
+            cbr_images: IndexImageCBR = IndexImageCBR.model_validate(response.json())
+            
+            return cbr_images
+    except Exception as e:
+        print(f"{RED}Error fetching cbr images for voter {voter_id}: {e}")
+        raise HTTPException(status_code=500, detail=f"{RED}Error fetching cbr images for voter {voter_id}: {str(e)}")     
 
 
 @app.post("/receive-keys")

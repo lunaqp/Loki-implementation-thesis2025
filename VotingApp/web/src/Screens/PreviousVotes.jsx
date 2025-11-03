@@ -1,43 +1,74 @@
-import React, { useMemo, useState, useCallback } from "react";
+import { useMemo, useState, useCallback, useEffect } from "react";
 import styled from "styled-components";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import PageTemplate from "../Components/PageTemplate";
 import ScreenTemplate from "../Components/ScreenTemplate";
 import PVTimeline from "../Components/PVTimeline";
 import PVImageDisplay from "../Components/PVImageDisplay";
 import ImagesSelected from "../Components/ImagesSelected";
+import { useApp } from "../Components/AppContext";
 
 const PreviousVotes = () => {
   const { electionId } = useParams();
   const nextRoute = `/${electionId}/CandidateSelection`;
   const prevRoute = `/${electionId}/VoteCheck`;
+  const { user, setPreviousVotes } = useApp();
+  const navigate = useNavigate();
 
-  // build image URLs from public/images/<hour>/<index>.jpg
-  // set how many images each hour has = 12 (We should adjust/remake this)
-  const countsPerHour = useMemo(() => {
-    const base = 40;
-    const obj = {};
-    for (let i = 0; i < 24; i++) obj[String(i).padStart(2, "0")] = base; //keys "00".."23"
-    return obj;
-  }, []);
+  const [fetchedImages, setFetchedImages] = useState([]);
+  const [activeHour, setActiveHour] = useState("00"); // state for current active hour
+  const [selected, setSelected] = useState([]); // selected cbrimages (including index, image, and timestamp)
+  const [jumpToken, setJumpToken] = useState(0); // incremented on timeline click, triggers scroll
+  const fetchVoterCBR = async (electionId, voterId) => {
+    try {
+      const response = await fetch(
+        `/api/fetch-cbr-images-for-voter?election_id=${electionId}&voter_id=${voterId}`
+      );
 
-  // const base = import.meta.env.BASE_URL || "/";
+      if (!response.ok) {
+        const errText = await response.text();
+        throw new Error(`Error fetching cbr images: ${errText}`);
+      }
 
-  //map hour to array of img urls
+      const data = await response.json();
+      console.log(data.cbrimages);
+
+      return data.cbrimages;
+    } catch (error) {
+      console.error("Error fetching cbr images:", error);
+      throw error;
+    }
+  };
+
+  useEffect(() => {
+    const voterId = user.user;
+    const fetchcbr = async () => {
+      try {
+        const imgs = await fetchVoterCBR(electionId, voterId);
+        setFetchedImages(imgs);
+      } catch (err) {
+        console.log(err.message);
+      }
+    };
+    fetchcbr();
+  }, [user]);
+
   const imagesByHour = useMemo(() => {
     const map = {};
-    Object.entries(countsPerHour).forEach(([hour, count]) => {
-      map[hour] = Array.from(
-        { length: count },
-        (_, i) => `/images/${hour}/${i + 1}.jpg`
-      );
-    });
-    return map; // { "00": ["/images/00/1.jpg", ...], ... }
-  }, [countsPerHour]);
 
-  const [activeHour, setActiveHour] = useState("00"); //state for current active hour
-  const [selected, setSelected] = useState([]); //selected imgs/urls
-  const [jumpToken, setJumpToken] = useState(0); //incremented on timeline click, triggers scroll
+    for (const img of fetchedImages) {
+      const date = new Date(img.timestamp);
+      const hour = String(date.getHours() + 1).padStart(2, "0"); // date.getHours() +1 to match Copenhagen wintertime
+      if (!map[hour]) map[hour] = [];
+      map[hour].push({
+        index: img.cbrindex,
+        image: img.image,
+        timestamp: img.timestamp,
+      });
+    }
+    console.log(map);
+    return map;
+  }, [fetchedImages]);
 
   //handle radiobutton change, set active hour and increment jumptoken
   const handleTimelineChange = useCallback((h) => {
@@ -47,11 +78,26 @@ const PreviousVotes = () => {
   }, []);
 
   //toggle img selected/unselected
-  const toggleSelect = useCallback((src) => {
-    setSelected((s) =>
-      s.includes(src) ? s.filter((x) => x !== src) : [...s, src]
-    );
+  const toggleSelect = useCallback((cbrimages) => {
+    setSelected((prev) => {
+      const exists = prev.some((x) => x.cbrindex === cbrimages.cbrindex);
+      if (exists) {
+        return prev.filter((x) => x.cbrindex !== cbrimages.cbrindex);
+      } else {
+        return [...prev, cbrimages];
+      }
+    });
   }, []);
+
+  const savePreviousVotes = useCallback(() => {
+    const selectedIndices = selected.map((img) => img.cbrindex);
+    setPreviousVotes(selectedIndices);
+    console.log(selectedIndices);
+
+    if (nextRoute) {
+      navigate(nextRoute);
+    }
+  }, [selected]);
 
   return (
     <PageTemplate progress={3} adjustableHeight>
@@ -60,6 +106,7 @@ const PreviousVotes = () => {
         prevRoute={prevRoute}
         adjustableHeight
         buttonUnselectable={selected.length === 0}
+        onPrimaryClick={savePreviousVotes}
       >
         <Wrap>
           <Top>

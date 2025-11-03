@@ -2,7 +2,7 @@
 
 A prototype implementation the coercion-resistant e-voting scheme Loki as proposed in "Thwarting Last-Minute Voter Coercion" by Rosario Giustolisi, Maryam Sheikhi Garjan, and Carsten Schuermann.
 
-This project has been created using Python version XX and Node version 22.
+This project has been created using Python version 3.11 and Node version 20.
 
 How to run the app:
 To run app:
@@ -22,8 +22,8 @@ Remove data from db: docker volume rm loki-implementation-thesis2025_db_data
 We have colour-coded the log for all of the services based on the following:
 
 - Blue: setup functionality running before any elections are received.
-- Red: errors
 - Cyan: initialisation process once election is loaded
-- Green: all other ballots
 - Yellow: obfuscated ballots
+- Green: all other ballots
 - Purple: end of election and tallying
+- Red: errors

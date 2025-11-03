@@ -1,5 +1,5 @@
 import os
-from modelsBB import NewElectionData, VoterKeyList, Ballot, ElectionResult, Elections, Election
+from modelsBB import NewElectionData, VoterKeyList, Ballot, ElectionResult, Elections, Election, IndexImageCBR, IndexImage
 import base64
 from hashBB import hash_ballot
 import json
@@ -303,22 +303,30 @@ def fetch_cbr_length(voter_id, election_id):
             (cbr_length,) = cur.fetchone()  # fetchone returns a tuple like (count,)
     return cbr_length
 
-# Fetches the CBR for a given voter in a given election sorted by most recent votes at the top.
-def fetch_CBR_for_voter_in_election(voter_id, election_id):
+# Fetches the CBR for a given voter in a given election sorted by oldest votes at the top.
+def fetch_cbr_for_voter_in_election(voter_id, election_id):
     with pool.connection() as conn:
         with conn.cursor() as cur:
             cur.execute("""
-                        SELECT *
+                        SELECT ImageFilename, c.VoteTimestamp
                         FROM VoterParticipatesInElection p
                         JOIN VoterCastsBallot c 
                         ON p.ElectionID = c.ElectionID AND p.VoterID = c.VoterID
                         JOIN Ballots b
                         ON b.ID = c.BallotID
+                        JOIN Images i 
+                        ON i.BallotID = b.ID
                         WHERE p.ElectionID = %s AND p.VoterID = %s
-                        ORDER BY c.VoteTimestamp DESC;
+                        ORDER BY c.VoteTimestamp ASC;
                         """, (election_id, voter_id))
             cbr = cur.fetchall()
-    return cbr
+
+    cbr_images = [
+        IndexImage(cbrindex=idx, image=row[0], timestamp = row[1])
+        for idx, row in enumerate(cbr)
+    ]
+
+    return IndexImageCBR(cbrimages=cbr_images)
 
 def fetch_ballot_hashes(election_id):
     with pool.connection() as conn:

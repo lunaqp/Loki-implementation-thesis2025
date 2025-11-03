@@ -50,10 +50,7 @@ function App() {
           {message && <div style={{ padding: 8 }}>{message}</div>}
           <Routes>
             <Route path="/" element={<LoginPage />} />
-            <Route
-              path="/Mypage"
-              element={<MyPage electionId={electionId} />}
-            />
+            <Route path="/Mypage" element={<MyPage />} />
             <Route
               path=":electionId/*"
               element={
