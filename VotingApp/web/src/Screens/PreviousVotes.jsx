@@ -19,6 +19,7 @@ const PreviousVotes = () => {
   const [activeHour, setActiveHour] = useState("00"); // state for current active hour
   const [selected, setSelected] = useState([]); // selected cbrimages (including index, image, and timestamp)
   const [jumpToken, setJumpToken] = useState(0); // incremented on timeline click, triggers scroll
+
   const fetchVoterCBR = async (electionId, voterId) => {
     try {
       const response = await fetch(
@@ -92,7 +93,7 @@ const PreviousVotes = () => {
   const savePreviousVotes = useCallback(() => {
     const selectedIndices = selected.map((img) => img.cbrindex);
     setPreviousVotes(selectedIndices);
-    console.log(selectedIndices);
+    console.log("selected indices:", selectedIndices);
 
     if (nextRoute) {
       navigate(nextRoute);
@@ -118,12 +119,12 @@ const PreviousVotes = () => {
               it.
             </Directions>
           </Top>
-
           <Timeline>
             <Title2>Election timeline</Title2>
             <PVTimeline
               activeHour={activeHour}
               onChange={handleTimelineChange}
+              electionId={electionId}
             />
           </Timeline>
 
@@ -137,7 +138,6 @@ const PreviousVotes = () => {
               jumpToken={jumpToken}
             />
           </ImgGallery>
-
           <SelectedImgs>
             <SectionTitle>Selected images</SectionTitle>
             <ImagesSelected images={selected} onRemove={toggleSelect} />

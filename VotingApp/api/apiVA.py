@@ -5,8 +5,9 @@ import duckdb
 from contextlib import asynccontextmanager
 from modelsVA import Ballot, VoterBallot, AuthRequest, Elections, IndexImageCBR
 from vote_casting import vote, send_ballot_to_VS
-from coloursVA import CYAN, RED, GREEN
+from coloursVA import RED, GREEN
 import httpx
+import save_to_duckdb as ddb
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -69,30 +70,11 @@ def receive_secret_key(data: dict):
     public_key = data["public_key"]
 
     # Public and private keys are saved in internal duckdb database. Secret key is symmetrically encrypted with Fernet.
-    save_keys_to_duckdb(voter_id, election_id, enc_secret_key, public_key)
-    save_voter_login(voter_id)
+    ddb.save_keys_to_duckdb(voter_id, election_id, enc_secret_key, public_key)
+    ddb.save_voter_login(voter_id)
 
     return {"status": "secret key received"}
 
-def save_keys_to_duckdb(voter_id, election_id, enc_secret_key, public_key):
-    try:
-        conn = duckdb.connect("/duckdb/voter-keys.duckdb")
-        print(f"{CYAN}inserting keys in duckdb for voter {voter_id}")
-        conn.execute(f"INSERT INTO VoterKeys VALUES (?, ?, ?, ?)", (voter_id, election_id, base64.b64decode(enc_secret_key), base64.b64decode(public_key)))
-        conn.table("VoterKeys").show() 
-    except Exception as e:
-        print(f"{RED}error inserting keys in duckdb for voter {voter_id}: {e}")
-
-def save_voter_login(voter_id):
-    username = f"voter{voter_id}"
-    password = f"pass{voter_id}"
-    try:
-        conn = duckdb.connect("/duckdb/voter-keys.duckdb")
-        print(f"{CYAN}inserting login info in duckdb for voter {voter_id}")
-        conn.execute(f"INSERT INTO VoterLogin (Username, Password) VALUES (?, ?) ON CONFLICT(Username) DO NOTHING", (username, password))
-        conn.table("VoterLogin").show() 
-    except Exception as e:
-        print(f"{RED}error inserting login info in duckdb for voter {voter_id}: {e}")
 
 # Sending ballot to Voting Server after receiving it in the Voting App frontend.
 @app.post("/api/send-ballot")
@@ -121,3 +103,19 @@ def authenticate_user(auth: AuthRequest):
     
     except Exception as e:
         return {"authenticated": False}
+
+@app.get("/api/fetch-election-dates")
+async def fetch_elections_for_voter(
+    election_id: int = Query(..., description="ID of the election")):
+    try:
+        async with httpx.AsyncClient() as client:
+            payload = {"electionid": election_id} 
+            response = await client.post(f"http://bb_api:8000/send-election-startdate", json = payload)
+            response.raise_for_status() 
+
+            election_dates = response.json()
+
+            return election_dates
+    except Exception as e:
+        print(f"{RED}Error fetching election dates for election {election_id}: {e}")
+        raise HTTPException(status_code=500, detail=f"{RED}Error fetching election dates for election {election_id}: {str(e)}")     

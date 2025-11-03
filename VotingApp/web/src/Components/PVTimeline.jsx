@@ -1,9 +1,58 @@
-import { useMemo } from "react";
+import { useMemo, useEffect, useState } from "react";
 import styled from "styled-components";
 
 //Timeline component, 24 hours
-const PVTimeline = ({ activeHour, onChange }) => {
-  const hours = useMemo(() => Array.from({ length: 24 }, (_, i) => i), []); //builds array from 0 to 24 once and uses memo to memorize it
+const PVTimeline = ({ activeHour, onChange, electionId }) => {
+  const [startdate, setStartdate] = useState();
+  const [enddate, setEnddate] = useState();
+
+  // Fetch election start and enddate
+  const fetchElectionDates = async (electionId) => {
+    try {
+      const response = await fetch(
+        `/api/fetch-election-dates?election_id=${electionId}`
+      );
+
+      if (!response.ok) {
+        const errText = await response.text();
+        throw new Error(`Error fetching electiondates: ${errText}`);
+      }
+
+      // Response has structure: {"startdate": DATE, "enddate": DATE}
+      const dates = await response.json();
+      console.log("election start and end date:", dates);
+      setStartdate(dates.startdate);
+      setEnddate(dates.enddate);
+    } catch (error) {
+      console.error("Error fetching electiondates:", error);
+      throw error;
+    }
+  };
+
+  useEffect(() => {
+    const fetchdates = async () => {
+      try {
+        await fetchElectionDates(electionId);
+      } catch (err) {
+        console.log(err.message);
+      }
+    };
+    fetchdates();
+  }, []);
+
+  // ONLY WORKS FOR SAME DAY ELECTIONS. TODO: Rework if we want to support elections spanning multiple days.
+  // Creating an array of all hour-intervals in the election for populating the timeline with data.
+  const hours = useMemo(() => {
+    const startHour = new Date(startdate).getHours();
+    const endHour = new Date(enddate).getHours();
+    const intervalArray = Array.from(
+      { length: endHour - startHour + 1 },
+      (_, i) => startHour + i
+    );
+    console.log("interval array", intervalArray);
+    return intervalArray;
+  }, [startdate, enddate]);
+
   //reder labels 00-01 wraps at 24
   const label = (h) =>
     `${String(h).padStart(2, "0")}-${String((h + 1) % 24).padStart(2, "0")}`;

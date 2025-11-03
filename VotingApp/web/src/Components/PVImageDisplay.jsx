@@ -125,7 +125,7 @@ const PVImageDisplay = ({
                       type="button"
                     >
                       <Img
-                        src={`./public/${image}`}
+                        src={`/images/${image}.png`}
                         alt={`${image}`}
                         loading="lazy"
                       />
@@ -227,7 +227,7 @@ const Img = styled.img`
   display: block;
   width: 100%;
   height: 110px;
-  object-fit: cover;
+  object-fit: contain;
   border-radius: 8px;
 `;
 
