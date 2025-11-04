@@ -1,5 +1,5 @@
 from fastapi import FastAPI, Query, HTTPException
-from modelsBB import ElGamalParams, NewElectionData, VoterKeyList, Ballot, ElectionResult, Elections
+from modelsBB import ElGamalParams, NewElectionData, VoterKeyList, Ballot, ElectionResult, Elections, IndexImageCBR
 import base64
 import dbcalls as db
 from notifications import notify_ts_vs_params_saved, notify_ra_public_key_saved
@@ -151,6 +151,15 @@ def get_cbr_lenghth(
     cbr_length = db.fetch_cbr_length(voter_id, election_id)
 
     return {"cbr_length": cbr_length}
+
+@app.get("/cbr-for-voter")
+def send_cbr_for_voter_in_election(
+    election_id: int = Query(..., description="ID of the election"),
+    voter_id: int = Query(..., description="ID of the voter")
+):
+    voter_cbr: IndexImageCBR = db.fetch_cbr_for_voter_in_election(voter_id, election_id)
+    print(f"voter cbr images: {voter_cbr}")
+    return voter_cbr
 
 @app.get("/fetch-ballot-hashes")
 def fetch_ballot_hashes(

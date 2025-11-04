@@ -1,21 +1,26 @@
-import React from "react";
 import styled from "styled-components";
 
 //shows list of selected imgs
 const ImagesSelected = ({ images, onRemove }) => {
+  console.log("Selected images:", images);
   if (!images.length) return <Empty>(none yet)</Empty>;
   return (
     <Row>
-      {images.map((src) => (
-        <ImgInList key={src} onClick={() => onRemove(src)} title="Remove">
+      {images.map((cbrimage) => (
+        <ImgInList
+          key={cbrimage.cbrindex}
+          onClick={() => onRemove(cbrimage)}
+          title="Remove"
+        >
           {" "}
           {/*click removes*/}
-          <Image src={src} alt="" />
+          <Image src={`/images/${cbrimage.image}.png`} alt={cbrimage.image} />
         </ImgInList>
       ))}
     </Row>
   );
 };
+
 export default ImagesSelected;
 
 const Empty = styled.div`
@@ -45,6 +50,6 @@ const Image = styled.img`
   display: block;
   width: 72px;
   height: 65px;
-  object-fit: cover;
+  object-fit: contain;
   border-radius: 6px;
 `;

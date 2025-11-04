@@ -1,10 +1,12 @@
 import React, { useEffect, useMemo, useRef } from "react";
 import styled from "styled-components";
 
+// TODO: change createRef usage to match modern React.
+
 //renders scrollable gallery of imgs
 //keeps timeline (radios) in sync both when you scroll and when you click
 const PVImageDisplay = ({
-  imagesByHour, //url mapped to hour "00"
+  imagesByHour, //Mapping of CBR index to image filename to timestamp
   selected, //array of selected imgs
   onToggleSelect,
   activeHour, // current hour active
@@ -110,17 +112,23 @@ const PVImageDisplay = ({
               <HourHeader>{hourLabel}</HourHeader>
               {/*grid of imgs for this hour*/}
               <Grid>
-                {imgs.map((src) => {
-                  const isSel = selected.includes(src);
+                {imgs.map(({ index, image, timestamp }) => {
+                  const isSelected = selected.some((x) => x.cbrindex === index);
                   return (
                     <Clickableimg
-                      key={src}
-                      $active={isSel}
-                      onClick={() => onToggleSelect(src)}
-                      title={isSel ? "Deselect" : "Select"}
+                      key={index}
+                      $active={isSelected}
+                      onClick={() =>
+                        onToggleSelect({ cbrindex: index, image, timestamp })
+                      }
+                      title={isSelected ? "Deselect" : "Select"}
                       type="button"
                     >
-                      <Img src={src} alt="" loading="lazy" />
+                      <Img
+                        src={`/images/${image}.png`}
+                        alt={`${image}`}
+                        loading="lazy"
+                      />
                     </Clickableimg>
                   );
                 })}
@@ -219,7 +227,7 @@ const Img = styled.img`
   display: block;
   width: 100%;
   height: 110px;
-  object-fit: cover;
+  object-fit: contain;
   border-radius: 8px;
 `;
 
