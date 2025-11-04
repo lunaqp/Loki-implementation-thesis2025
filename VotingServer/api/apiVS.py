@@ -2,7 +2,7 @@ from fastapi import FastAPI
 import asyncio
 from keygen import send_public_key_to_BB
 from modelsVS import BallotPayload, Ballot
-from epochGeneration import save_timestamps_for_voter, fetch_ballot0_timestamp, duckdb_lock, fetch_electiondates_from_bb
+from epochGeneration import create_timestamps, fetch_ballot0_timestamp, duckdb_lock, fetch_electiondates_from_bb
 from contextlib import asynccontextmanager
 import duckdb
 from epochHandling import update_time, send_ballot0_to_bb, timestamp_management
@@ -36,9 +36,13 @@ async def receive_ballotlist(payload: BallotPayload):
     print(f"{CYAN}Received election {payload.electionid}, {len(payload.ballot0list)} ballots")
     start, end = await fetch_electiondates_from_bb(payload.electionid)
 
+<<<<<<< Updated upstream
     create_timestamps(payload.ballot0list, payload.election_id)
+=======
+    asyncio.create_task(create_timestamps(payload.ballot0list, payload.electionid))
+
+>>>>>>> Stashed changes
     for ballot in payload.ballot0list:
-        await save_timestamps_for_voter(payload.electionid, ballot.voterid)
         asyncio.create_task(timestamp_management(ballot.voterid, payload.electionid, start, end))
        
         ballot0_timestamp, image_path = await fetch_ballot0_timestamp(payload.electionid, ballot.voterid)

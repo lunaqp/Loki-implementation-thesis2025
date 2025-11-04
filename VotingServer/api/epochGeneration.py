@@ -106,34 +106,45 @@ def round_seconds_timestamps(ts: datetime) -> datetime:
     return ts.replace(microsecond = 0)
 
 async def create_timestamps(ballot0list, election_id):
+<<<<<<< Updated upstream
     for ballot in ballot0list:
         await save_timestamps_for_voter(election_id, ballot.voterid)
+=======
+    voter_timestamps = []
+    for ballot in ballot0list:
+        voter_timestamps.append(await generate_timestamps_for_voter(election_id, ballot.voterid))
+>>>>>>> Stashed changes
 
-async def save_timestamps_for_voter(election_id, voter_id):
+    await save_timestamps_to_db(election_id, voter_timestamps) 
+
+async def generate_timestamps_for_voter(election_id, voter_id):
     try:
         timestamps = await generate_timestamps(election_id) # returns array of timestamps.
         _, end = await fetch_electiondates_from_bb(election_id)
         last_timestamp = end.timestamp() + 60
+        print(f"last timestamp: {last_timestamp}")
         timestamps.append(last_timestamp)
-
-        await save_timestamps_to_db(election_id, voter_id, timestamps) 
+        print(f"timestamps: {timestamps}")
+        return (voter_id, timestamps)
 
     except Exception as e:
         print(f"{RED}Error saving timestamps for voter {voter_id} in election {election_id}: {e}")
 
 
-async def save_timestamps_to_db(election_id, voter_id, timestamps):
-    print(f"{CYAN}Writing timestamps to Duckdb for voter {voter_id}")
+async def save_timestamps_to_db(election_id, voter_timestamps):
+    print(f"{CYAN}Writing timestamps to Duckdb for election {election_id}")
     try:
         async with duckdb_lock: # lock is acquired to check if access should be allowed, lock while accessing ressource and is then released before returning  
             conn = duckdb.connect("/duckdb/voter-data.duckdb")
-            image_paths = assign_images_for_timestamps(len(timestamps))
-            rows = [] #list to collect all rows we want to insert in DB in one batch
-            for timestamp, img in zip(timestamps, image_paths):
-                dt_timestamp = datetime.fromtimestamp(timestamp, tz=timezone.utc) # convert to datetime to store in DB as TIMESTAMPTZ
-                timestamp_rounded = round_seconds_timestamps(dt_timestamp)
-                rows.append((voter_id, election_id, timestamp_rounded, False, img))
-            conn.executemany("INSERT INTO VoterTimestamps (VoterID, ElectionID, Timestamp, Processed, ImagePath) VALUES (?, ?, ?, ?, ?)", rows) #inserts all rows in one operation
+            for voter_id, timestamps in voter_timestamps:
+                print(f"voterid: {voter_id}, timestamps length: {len(timestamps)}")
+                image_paths = assign_images_for_timestamps(len(timestamps))
+                rows = [] #list to collect all rows we want to insert in DB in one batch
+                for timestamp, img in zip(timestamps, image_paths):
+                    dt_timestamp = datetime.fromtimestamp(timestamp, tz=timezone.utc) # convert to datetime to store in DB as TIMESTAMPTZ
+                    timestamp_rounded = round_seconds_timestamps(dt_timestamp)
+                    rows.append((voter_id, election_id, timestamp_rounded, False, img))
+                conn.executemany("INSERT INTO VoterTimestamps (VoterID, ElectionID, Timestamp, Processed, ImagePath) VALUES (?, ?, ?, ?, ?)", rows) #inserts all rows in one operation
         conn.close()
     except Exception as e:
         print(f"{RED}error writing to duckdb for voter {voter_id} in election {election_id}: {e}")
