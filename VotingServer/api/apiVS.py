@@ -36,6 +36,7 @@ async def receive_ballotlist(payload: BallotPayload):
     print(f"{CYAN}Received election {payload.electionid}, {len(payload.ballot0list)} ballots")
     start, end = await fetch_electiondates_from_bb(payload.electionid)
 
+    create_timestamps(payload.ballot0list, payload.election_id)
     for ballot in payload.ballot0list:
         await save_timestamps_for_voter(payload.electionid, ballot.voterid)
         asyncio.create_task(timestamp_management(ballot.voterid, payload.electionid, start, end))
