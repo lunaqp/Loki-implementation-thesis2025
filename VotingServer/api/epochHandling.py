@@ -179,36 +179,16 @@ def round_seconds_timestamps(ts: datetime) -> datetime:
     return ts.replace(microsecond = 0)
 
 async def create_timestamps(ballot0list, election_id):
-    voter_timestamps = []
+    try:
+        voter_timestamps = []
 
-    tasks = [generate_timestamps_for_voter(election_id, ballot.voterid) for ballot in ballot0list]
-    voter_timestamps = await asyncio.gather(*tasks, return_exceptions=True)
+        tasks = [generate_timestamps_for_voter(election_id, ballot.voterid) for ballot in ballot0list]
+        voter_timestamps = await asyncio.gather(*tasks) # asterisk unpacks the list of generated timestamps for each voter
 
-    # for ballot in ballot0list:1
-    #     voter_timestamps.append(await generate_timestamps_for_voter(election_id, ballot.voterid))
-
-    print("voter_timestamps before saving:", voter_timestamps)
-    await save_timestamps_to_db(election_id, voter_timestamps)
-
-    start, end = await fetch_electiondates_from_bb(election_id)
-    for ballot in ballot0list:
-        asyncio.create_task(timestamp_management(ballot.voterid, election_id, start, end))
+        await save_timestamps_to_db(election_id, voter_timestamps)
+    except Exception as e:
+        print("error creating timestamps", str(e))
        
-        ballot0_timestamp, image_path = await fetch_ballot0_timestamp(election_id, ballot.voterid)
-
-        pyBallot = Ballot(
-            voterid = ballot.voterid,
-            upk = ballot.upk,
-            ctv = ballot.ctv,
-            ctlv = ballot.ctlv, 
-            ctlid = ballot.ctlid, 
-            proof = ballot.proof,
-            electionid = election_id,
-            timestamp = ballot0_timestamp,
-            imagepath = image_path
-        )
-
-        await send_ballot0_to_bb(pyBallot)
 
 async def generate_timestamps_for_voter(election_id, voter_id):
     try:
@@ -216,7 +196,6 @@ async def generate_timestamps_for_voter(election_id, voter_id):
         _, end = await fetch_electiondates_from_bb(election_id)
         last_timestamp = end.timestamp() + 60
         timestamps.append(last_timestamp)
-        print(f"voterid: {voter_id}, timestamps length: {len(timestamps)}")
         return (voter_id, timestamps)
 
     except Exception as e:
@@ -229,9 +208,9 @@ async def save_timestamps_to_db(election_id, voter_timestamps):
         async with duckdb_lock: # lock is acquired to check if access should be allowed, lock while accessing ressource and is then released before returning  
             conn = duckdb.connect("/duckdb/voter-data.duckdb")
             for voter_id, timestamps in voter_timestamps:
-                print(f"voterid: {voter_id}, timestamps length: {len(timestamps)}")
                 image_paths = assign_images_for_timestamps(len(timestamps))
                 rows = [] #list to collect all rows we want to insert in DB in one batch
+                print(f"timestamps matched with images: {len(timestamps)}, {len(image_paths)}")
                 for timestamp, img in zip(timestamps, image_paths):
                     dt_timestamp = datetime.fromtimestamp(timestamp, tz=timezone.utc) # convert to datetime to store in DB as TIMESTAMPTZ
                     timestamp_rounded = round_seconds_timestamps(dt_timestamp)
@@ -259,7 +238,7 @@ async def fetch_ballot0_timestamp(election_id, voter_id):
                 SET Processed = TRUE
                 WHERE VoterID = ? AND ElectionID = ? AND Timestamp = ?
             """, (voter_id, election_id, ballot0_timestamp))
-
+            
             return ballot0_timestamp, image_path
     except Exception as e:
         print(f"{RED}error fetching timestamp from duckdb for voter {voter_id} in election {election_id}: {e}")

@@ -20,7 +20,6 @@ def generate_voteamount():
 
     # Discrete uniform distribution from 900-1100. Size=None means that a single value is returned.
     voteamount = generator.integers(low=100, high=200, size=None, dtype=np.int64, endpoint=True) # endpoint=true makes both low and high inclusive. Range is therefore 800-1200.
-    print("voteamount", voteamount)
     return voteamount
 
 def generate_epochs(election_duration_secs, voteamount):
@@ -70,7 +69,6 @@ async def generate_timestamps(election_id):
             break
         timestamp = first_timestamp + sum
         timestamps.append(timestamp)
-    print("unassigned timestamps:", timestamps)
     return timestamps
 
 
