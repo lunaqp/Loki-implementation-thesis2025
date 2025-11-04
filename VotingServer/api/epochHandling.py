@@ -9,10 +9,8 @@ import json
 import pytz
 from coloursVS import RED, CYAN, GREEN, PURPLE, YELLOW
 from lock import duckdb_lock
-import os, glob, random
-from itertools import cycle
 from fetch_functions import fetch_electiondates_from_bb
-from epochGeneration import generate_timestamps
+from epochGeneration import generate_timestamps, assign_images_for_timestamps
 
 tz = pytz.timezone('Europe/Copenhagen')
 current_time = datetime.now(tz)
@@ -51,7 +49,6 @@ async def timestamp_management(voter_id, election_id, start, end):
     
     if current_time > end:
         print(f"{PURPLE}election over for election {election_id}")
-        print(f"{YELLOW}Casting last obfuscation ballot for voter {voter_id}")
         try: 
             last_obf_ballot = await obfuscate(voter_id, election_id)
             await send_ballot_to_bb(last_obf_ballot)
@@ -170,8 +167,6 @@ async def fetch_ballot_timestamp_and_imagepath(election_id, voter_id):
     except Exception as e:
         print(f"{RED}error fetching timestamp from duckdb for voter {voter_id} in election {election_id}: {e}")
 
-
-
 def round_seconds_timestamps(ts: datetime) -> datetime:
     if ts.microsecond >= 500_000:
         ts += timedelta(seconds = 1)
@@ -220,6 +215,18 @@ async def save_timestamps_to_db(election_id, voter_timestamps):
     except Exception as e:
         print(f"{RED}error writing to duckdb for voter {voter_id} in election {election_id}: {e}")
 
+
+async def send_ballot0_to_bb(pyBallot: Ballot):
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.post("http://bb_api:8000/receive-ballot0", content = pyBallot.model_dump_json())
+            response.raise_for_status() # gets http status code
+            print(f"{CYAN}ballot0 sent to BB for voter {pyBallot.voterid}")
+            return response.json()
+    except Exception as e:
+        print(f"{RED}Error sending ballot0: {e}")
+        raise HTTPException(status_code=500, detail=f"{RED}Failed to send ballot0 to BB: {str(e)}") 
+    
 async def fetch_ballot0_timestamp(election_id, voter_id):
     try:
         async with duckdb_lock: # lock is acquired to check if access should be allowed, lock while accessing ressource and is then released before returning  
@@ -242,26 +249,4 @@ async def fetch_ballot0_timestamp(election_id, voter_id):
             return ballot0_timestamp, image_path
     except Exception as e:
         print(f"{RED}error fetching timestamp from duckdb for voter {voter_id} in election {election_id}: {e}")
-
-
-async def send_ballot0_to_bb(pyBallot: Ballot):
-    try:
-        async with httpx.AsyncClient() as client:
-            response = await client.post("http://bb_api:8000/receive-ballot0", content = pyBallot.model_dump_json())
-            response.raise_for_status() # gets http status code
-            print(f"{CYAN}ballot0 sent to BB for voter {pyBallot.voterid}")
-            return response.json()
-    except Exception as e:
-        print(f"{RED}Error sending ballot0: {e}")
-        raise HTTPException(status_code=500, detail=f"{RED}Failed to send ballot0 to BB: {str(e)}") 
-
-#NOTE: Remove cycle once we have images enough
-def assign_images_for_timestamps(length: int): #assigns imgs, returns list of length x imgpaths, one per timestamp
-    #Return list of image paths length, shuffled for each voter. If fewer images than length, cycle through.
-    #imgs = load_image_paths()
-    imgs = ["a", "b", "c", "d", "e", "f"]
-    random.shuffle(imgs)
-    return [p for _, p in zip(range(length), cycle(imgs))] #Creates an infinite repeating iterator of images, pairs it with a length, takes second element from each pair(img path) and builds a list
-
- 
 

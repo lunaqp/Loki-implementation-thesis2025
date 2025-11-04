@@ -2,13 +2,14 @@ from fastapi import FastAPI
 import asyncio
 from keygen import send_public_key_to_BB
 from modelsVS import BallotPayload, Ballot
-from epochHandling import create_timestamps, timestamp_management, fetch_ballot0_timestamp, send_ballot0_to_bb, fetch_electiondates_from_bb
+from epochHandling import create_timestamps, timestamp_management, send_ballot0_to_bb, fetch_ballot0_timestamp
 from contextlib import asynccontextmanager
 import duckdb
 from epochHandling import update_time
 import json
 from coloursVS import RED, CYAN
 from lock import duckdb_lock
+from fetch_functions import fetch_image_filename, fetch_electiondates_from_bb
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -72,6 +73,8 @@ async def receive_ballot(pyBallot: Ballot):
             conn.execute("INSERT INTO PendingVotes (VoterID, ElectionID, PublicKey, ctv, ctlv, ctlid, Proof) VALUES (?, ?, ?, ?, ?, ?, ?)",
                          (pyBallot.voterid, pyBallot.electionid, pyBallot.upk, ctv, ctlv, ctlid, pyBallot.proof)) 
             conn.close()
+        image_filename = await fetch_image_filename(pyBallot.electionid, pyBallot.voterid)
+        return {"image": image_filename}
     except Exception as e:
         print(f"{RED}error writing ballot to duckdb for voter {pyBallot.voterid} in election {pyBallot.electionid}: {e}")
 

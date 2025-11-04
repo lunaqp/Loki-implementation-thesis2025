@@ -162,11 +162,11 @@ async def obfuscate(voter_id, election_id):
     #if 1 = Dec(sk_vs, (ct_lv-1)-(ct_lid-1)) then we re-randomize the last ballot 
         ct_v=last_ballot[0]
         sim_relation=2
-        print(f"{YELLOW}[{cbr_length}] VS obfuscated last ballot")
+        print(f"{YELLOW}[{cbr_length}] VS obfuscated last ballot for voter {voter_id}")
     else : 
         ct_v=previous_last_ballot[0]
         sim_relation=1
-        print(f"{YELLOW}{cbr_length}] VS obfuscated previous last ballot")
+        print(f"{YELLOW}[{cbr_length}] VS obfuscated previous last ballot for voter {voter_id}")
     
     ct_v_new = [re_enc(GENERATOR, pk_TS, ct_v[i], r_v.value) for i in range(len(candidates))]
 

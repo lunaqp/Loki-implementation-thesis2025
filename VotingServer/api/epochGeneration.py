@@ -17,27 +17,13 @@ def assign_images_for_timestamps(length: int): #assigns imgs, returns list of le
     return [p for _, p in zip(range(length), imgs)] #Creates an infinite repeating iterator of images, pairs it with a length, takes second element from each pair(img path) and builds a list
 
 
-async def fetch_electiondates_from_bb(election_id):
-    payload = {"electionid": election_id}
-    try:
-        async with httpx.AsyncClient() as client:
-            response = await client.post("http://bb_api:8000/send-election-startdate", json=payload)
-            response.raise_for_status() # gets http status code
-
-            election_start = datetime.fromisoformat(response.json().get("startdate")) # recreate datetime object from iso 8601 format.
-            election_end = datetime.fromisoformat(response.json().get("enddate"))
-
-        return election_start, election_end
-    except Exception as e:
-        print(f"{RED}Error fetching election start date: {e}")
-
 # Generating the total amount of votes for a single voter based on a discrete uniform distribution
 def generate_voteamount():
 
     generator = np.random.default_rng(seed=None)
 
     # Discrete uniform distribution from 900-1100. Size=None means that a single value is returned.
-    voteamount = generator.integers(low=100, high=200, size=None, dtype=np.int64, endpoint=True) # endpoint=true makes both low and high inclusive. Range is therefore 800-1200.
+    voteamount = generator.integers(low=20, high=25, size=None, dtype=np.int64, endpoint=True) # endpoint=true makes both low and high inclusive. Range is therefore 800-1200.
     return voteamount
 
 def generate_epochs(election_duration_secs, voteamount):

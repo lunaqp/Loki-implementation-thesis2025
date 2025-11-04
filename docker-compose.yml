@@ -91,7 +91,6 @@ services:
       dockerfile: Dockerfile
     volumes:
       - vs_data:/duckdb
-      - ./VotingApp/web/public/images:/images:ro
       - ./VotingServer/api/keys.json:/app/keys.json
       - ./VotingServer/api/images.txt:/app/images.txt:ro
     environment:

@@ -9,6 +9,8 @@ import httpx
 import base64
 from petlib.bn import Bn # For casting database values to petlib big integer types.
 from petlib.ec import EcGroup, EcPt, EcGroup
+import duckdb
+from lock import duckdb_lock
 
 async def fetch_electiondates_from_bb(election_id):
     payload = {"electionid": election_id}
@@ -154,3 +156,32 @@ async def fetch_cbr_length_from_bb(voter_id, election_id):
         print(f"{RED}Error fetching previous ballots from BB: {e}")
         raise HTTPException(status_code=500, detail=f"{RED}Error fetching previous ballots from BB: {str(e)}")    
 
+async def fetch_image_filename(election_id, voter_id):
+    try:
+        async with duckdb_lock: # lock is acquired to check if access should be allowed, lock while accessing ressource and is then released before returning  
+            conn = duckdb.connect("/duckdb/voter-data.duckdb")
+            (image_filename,) = conn.execute("""
+                    SELECT ImagePath
+                    FROM VoterTimestamps
+                    WHERE VoterID = ? AND ElectionID = ? AND Processed = false
+                    ORDER BY Timestamp ASC
+                    LIMIT 1
+                    """, (voter_id, election_id)).fetchone()
+        return image_filename
+    except Exception as e:
+        print(f"{RED}error fetching timestamp from duckdb for voter {voter_id} in election {election_id}: {e}")
+
+
+async def fetch_electiondates_from_bb(election_id):
+    payload = {"electionid": election_id}
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.post("http://bb_api:8000/send-election-startdate", json=payload)
+            response.raise_for_status() # gets http status code
+
+            election_start = datetime.fromisoformat(response.json().get("startdate")) # recreate datetime object from iso 8601 format.
+            election_end = datetime.fromisoformat(response.json().get("enddate"))
+
+        return election_start, election_end
+    except Exception as e:
+        print(f"{RED}Error fetching election start date: {e}")
