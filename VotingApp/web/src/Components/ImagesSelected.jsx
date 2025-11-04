@@ -14,7 +14,7 @@ const ImagesSelected = ({ images, onRemove }) => {
         >
           {" "}
           {/*click removes*/}
-          <Image src={`/images/${cbrimage.image}.png`} alt={cbrimage.image} />
+          <Image src={`/images/${cbrimage.image}`} alt={cbrimage.image} />
         </ImgInList>
       ))}
     </Row>
@@ -49,7 +49,7 @@ const ImgInList = styled.button`
 const Image = styled.img`
   display: block;
   width: 72px;
-  height: 65px;
-  object-fit: contain;
+  height: 70px;
+  object-fit: cover;
   border-radius: 6px;
 `;

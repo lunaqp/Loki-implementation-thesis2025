@@ -3,26 +3,20 @@ from datetime import datetime, timezone, timedelta
 import httpx
 import duckdb
 import asyncio
-import os, glob, random
-from itertools import cycle
+import random
 from coloursVS import RED, CYAN
 
 duckdb_lock = asyncio.Lock()
-IMG_DIR = "/images" #where img are located, defined in docker compose
-
-def load_image_paths(img_dir: str = IMG_DIR):
-    paths = glob.glob(os.path.join(img_dir, "*.jpg")) #Use Python glob module to search for files that match pattern *.jpg inside the img_dir
-    if not paths:
-        raise RuntimeError(f"{RED}No images found in {img_dir}")
-    return paths #return list of img paths
 
 #NOTE: Remove cycle once we have images enough
 def assign_images_for_timestamps(length: int): #assigns imgs, returns list of length x imgpaths, one per timestamp
     #Return list of image paths length, shuffled for each voter. If fewer images than length, cycle through.
-    #imgs = load_image_paths()
-    imgs = ["a", "b", "c", "d", "e", "f"]
+
+    with open("/app/images.txt", "r", encoding="utf-8") as f:
+        imgs = [line.strip() for line in f if line.strip()]
+
     random.shuffle(imgs)
-    return [p for _, p in zip(range(length), cycle(imgs))] #Creates an infinite repeating iterator of images, pairs it with a length, takes second element from each pair(img path) and builds a list
+    return [p for _, p in zip(range(length), imgs)] #Creates an infinite repeating iterator of images, pairs it with a length, takes second element from each pair(img path) and builds a list
 
 
 async def fetch_electiondates_from_bb(election_id):

@@ -233,7 +233,6 @@ def constructBallot(voter_id, public_key, ct_v, ct_lv, ct_lid, proof, election_i
     
     # serialising and base64 encoding NIZK proof:
     proof_ser = base.NIZK.serialize(proof)
-   # print(f"serialised proof: {proof_ser}")
     proof_b64 = base64.b64encode(proof_ser).decode()
 
     pyBallot = Ballot(
