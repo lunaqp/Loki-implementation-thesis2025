@@ -45,11 +45,12 @@ const PVTimeline = ({ activeHour, onChange, electionId }) => {
   const hours = useMemo(() => {
     const startHour = new Date(startdate).getHours();
     const endHour = new Date(enddate).getHours();
-    const intervalArray = Array.from(
-      { length: endHour - startHour + 1 },
-      (_, i) => startHour + i
-    );
-    console.log("interval array", intervalArray);
+    const hoursToShow = endHour - startHour + 1;
+    const intervalArray = [];
+    for (let index = 0; index < hoursToShow; index++) {
+      intervalArray.push(startHour + index);
+    }
+
     return intervalArray;
   }, [startdate, enddate]);
 
