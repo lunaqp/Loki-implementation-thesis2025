@@ -1,17 +1,35 @@
 import numpy as np
-from fetch_functions import fetch_electiondates_from_bb
-import os, glob
+from datetime import datetime
+import httpx
+import random
 from coloursVS import RED
+from fetch_functions import fetch_electiondates_from_bb
 
 
-IMG_DIR = "/images" #where img are located, defined in docker compose
+#NOTE: Remove cycle once we have images enough
+def assign_images_for_timestamps(length: int): #assigns imgs, returns list of length x imgpaths, one per timestamp
+    #Return list of image paths length, shuffled for each voter. If fewer images than length, cycle through.
 
-def load_image_paths(img_dir: str = IMG_DIR):
-    paths = glob.glob(os.path.join(img_dir, "*.jpg")) #Use Python glob module to search for files that match pattern *.jpg inside the img_dir
-    if not paths:
-        raise RuntimeError(f"{RED}No images found in {img_dir}")
-    return paths #return list of img paths
+    with open("/app/images.txt", "r", encoding="utf-8") as f:
+        imgs = [line.strip() for line in f if line.strip()]
 
+    random.shuffle(imgs)
+    return [p for _, p in zip(range(length), imgs)] #Creates an infinite repeating iterator of images, pairs it with a length, takes second element from each pair(img path) and builds a list
+
+
+async def fetch_electiondates_from_bb(election_id):
+    payload = {"electionid": election_id}
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.post("http://bb_api:8000/send-election-startdate", json=payload)
+            response.raise_for_status() # gets http status code
+
+            election_start = datetime.fromisoformat(response.json().get("startdate")) # recreate datetime object from iso 8601 format.
+            election_end = datetime.fromisoformat(response.json().get("enddate"))
+
+        return election_start, election_end
+    except Exception as e:
+        print(f"{RED}Error fetching election start date: {e}")
 
 # Generating the total amount of votes for a single voter based on a discrete uniform distribution
 def generate_voteamount():

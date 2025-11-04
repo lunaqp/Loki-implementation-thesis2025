@@ -133,8 +133,8 @@ async def send_ballot_to_bb(pyBallot:Ballot):
     pyBallot.timestamp = ballot_timestamp
     pyBallot.imagepath = image_path
 
-    conn = duckdb.connect("/duckdb/voter-data.duckdb") # for printing tables when testing
-    conn.table("VoterTimestamps").show() # for printing tables when testing
+    # conn = duckdb.connect("/duckdb/voter-data.duckdb") # for printing tables when testing
+    # conn.table("VoterTimestamps").show() # for printing tables when testing
 
     try:
         async with httpx.AsyncClient() as client:
