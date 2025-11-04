@@ -32,7 +32,7 @@ const PreviousVotes = () => {
       }
 
       const data = await response.json();
-      console.log(data.cbrimages);
+      console.log("cbrimages", data.cbrimages);
 
       return data.cbrimages;
     } catch (error) {

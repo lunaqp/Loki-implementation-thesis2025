@@ -2,7 +2,7 @@ import styled from "styled-components";
 
 //shows list of selected imgs
 const ImagesSelected = ({ images, onRemove }) => {
-  console.log("images:", images);
+  console.log("Selected images:", images);
   if (!images.length) return <Empty>(none yet)</Empty>;
   return (
     <Row>
