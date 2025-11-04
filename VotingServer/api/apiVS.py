@@ -2,12 +2,13 @@ from fastapi import FastAPI
 import asyncio
 from keygen import send_public_key_to_BB
 from modelsVS import BallotPayload, Ballot
-from epochGeneration import create_timestamps, fetch_ballot0_timestamp, duckdb_lock, fetch_electiondates_from_bb
+from epochHandling import create_timestamps
 from contextlib import asynccontextmanager
 import duckdb
-from epochHandling import update_time, send_ballot0_to_bb, timestamp_management
+from epochHandling import update_time
 import json
 from coloursVS import RED, CYAN
+from lock import duckdb_lock
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -34,30 +35,28 @@ async def vs_resp():
 @app.post("/ballot0list")
 async def receive_ballotlist(payload: BallotPayload):
     print(f"{CYAN}Received election {payload.electionid}, {len(payload.ballot0list)} ballots")
-    start, end = await fetch_electiondates_from_bb(payload.electionid)
+    # start, end = await fetch_electiondates_from_bb(payload.electionid)
 
     asyncio.create_task(create_timestamps(payload.ballot0list, payload.electionid))
 
-    for ballot in payload.ballot0list:
-        asyncio.create_task(timestamp_management(ballot.voterid, payload.electionid, start, end))
+    # for ballot in payload.ballot0list:
+    #     asyncio.create_task(timestamp_management(ballot.voterid, payload.electionid, start, end))
        
-        ballot0_timestamp, image_path = await fetch_ballot0_timestamp(payload.electionid, ballot.voterid)
+    #     ballot0_timestamp, image_path = await fetch_ballot0_timestamp(payload.electionid, ballot.voterid)
 
-        pyBallot = Ballot(
-            voterid = ballot.voterid,
-            upk = ballot.upk,
-            ctv = ballot.ctv,
-            ctlv = ballot.ctlv, 
-            ctlid = ballot.ctlid, 
-            proof = ballot.proof,
-            electionid = payload.electionid,
-            timestamp = ballot0_timestamp,
-            imagepath = image_path
-        )
+    #     pyBallot = Ballot(
+    #         voterid = ballot.voterid,
+    #         upk = ballot.upk,
+    #         ctv = ballot.ctv,
+    #         ctlv = ballot.ctlv, 
+    #         ctlid = ballot.ctlid, 
+    #         proof = ballot.proof,
+    #         electionid = payload.electionid,
+    #         timestamp = ballot0_timestamp,
+    #         imagepath = image_path
+    #     )
 
-        await send_ballot0_to_bb(pyBallot)
-    conn = duckdb.connect("/duckdb/voter-data.duckdb") # for printing tables when testing
-    conn.table("VoterTimestamps").show() # for printing tables when testing
+    #     await send_ballot0_to_bb(pyBallot)
 
     return {"status": "ok"}
 
