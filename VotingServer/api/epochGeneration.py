@@ -105,10 +105,6 @@ def round_seconds_timestamps(ts: datetime) -> datetime:
 
     return ts.replace(microsecond = 0)
 
-async def create_timestamps(ballot0list, election_id):
-    for ballot in ballot0list:
-        await save_timestamps_for_voter(election_id, ballot.voterid)
-
 async def save_timestamps_for_voter(election_id, voter_id):
     try:
         timestamps = await generate_timestamps(election_id) # returns array of timestamps.
