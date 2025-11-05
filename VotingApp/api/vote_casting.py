@@ -233,7 +233,6 @@ def constructBallot(voter_id, public_key, ct_v, ct_lv, ct_lid, proof, election_i
     
     # serialising and base64 encoding NIZK proof:
     proof_ser = base.NIZK.serialize(proof)
-   # print(f"serialised proof: {proof_ser}")
     proof_b64 = base64.b64encode(proof_ser).decode()
 
     pyBallot = Ballot(
@@ -253,7 +252,7 @@ async def send_ballot_to_VS(pyBallot:Ballot):
             response = await client.post("http://vs_api:8000/receive-ballot", json=pyBallot.model_dump()) 
             response.raise_for_status()
             # TODO: Get response from Voting server and then -> if status = validated return success to frontend, else return ballot invalid
-            return {"status": "success"}
+            return response.json()
     except Exception as e:
         print(f"{RED}Error sending ballot", {e})
 

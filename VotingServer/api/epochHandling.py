@@ -1,15 +1,16 @@
 import httpx
 import duckdb
 import asyncio
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 from validateBallot import obfuscate, validate_ballot
-from epochGeneration import duckdb_lock, round_seconds_timestamps
 from modelsVS import Ballot
 from fastapi import HTTPException 
-from epochGeneration import fetch_ballot_timestamp_and_imagepath
 import json
 import pytz
 from coloursVS import RED, CYAN, GREEN, PURPLE, YELLOW
+from lock import duckdb_lock
+from fetch_functions import fetch_electiondates_from_bb
+from epochGeneration import generate_timestamps, assign_images_for_timestamps
 
 tz = pytz.timezone('Europe/Copenhagen')
 current_time = datetime.now(tz)
@@ -48,7 +49,6 @@ async def timestamp_management(voter_id, election_id, start, end):
     
     if current_time > end:
         print(f"{PURPLE}election over for election {election_id}")
-        print(f"{YELLOW}Casting last obfuscation ballot for voter {voter_id}")
         try: 
             last_obf_ballot = await obfuscate(voter_id, election_id)
             await send_ballot_to_bb(last_obf_ballot)
@@ -130,8 +130,8 @@ async def send_ballot_to_bb(pyBallot:Ballot):
     pyBallot.timestamp = ballot_timestamp
     pyBallot.imagepath = image_path
 
-    conn = duckdb.connect("/duckdb/voter-data.duckdb") # for printing tables when testing
-    conn.table("VoterTimestamps").show() # for printing tables when testing
+    # conn = duckdb.connect("/duckdb/voter-data.duckdb") # for printing tables when testing
+    # conn.table("VoterTimestamps").show() # for printing tables when testing
 
     try:
         async with httpx.AsyncClient() as client:
@@ -142,6 +142,78 @@ async def send_ballot_to_bb(pyBallot:Ballot):
     except Exception as e:
         print(f"{RED}Error sending ballot: {e}")
         raise HTTPException(status_code=500, detail=f"{RED}Failed to send ballot to BB: {str(e)}") 
+    
+
+async def fetch_ballot_timestamp_and_imagepath(election_id, voter_id):
+    try:
+        async with duckdb_lock: # lock is acquired to check if access should be allowed, lock while accessing ressource and is then released before returning  
+            conn = duckdb.connect("/duckdb/voter-data.duckdb")
+            ballot_timestamp, image_path = conn.execute("""
+                    SELECT Timestamp, ImagePath
+                    FROM VoterTimestamps
+                    WHERE VoterID = ? AND ElectionID = ? AND Processed = false
+                    ORDER BY Timestamp ASC
+                    LIMIT 1
+                    """, (voter_id, election_id)).fetchone()
+            
+            # Set processed column to true for the fetched timestamp:
+            conn.execute("""
+                UPDATE VoterTimestamps
+                SET Processed = TRUE
+                WHERE VoterID = ? AND ElectionID = ? AND Timestamp = ?
+            """, (voter_id, election_id, ballot_timestamp))
+
+            return ballot_timestamp, image_path
+    except Exception as e:
+        print(f"{RED}error fetching timestamp from duckdb for voter {voter_id} in election {election_id}: {e}")
+
+def round_seconds_timestamps(ts: datetime) -> datetime:
+    if ts.microsecond >= 500_000:
+        ts += timedelta(seconds = 1)
+
+    return ts.replace(microsecond = 0)
+
+async def create_timestamps(ballot0list, election_id):
+    try:
+        voter_timestamps = []
+
+        tasks = [generate_timestamps_for_voter(election_id, ballot.voterid) for ballot in ballot0list]
+        voter_timestamps = await asyncio.gather(*tasks) # asterisk unpacks the list of generated timestamps for each voter
+
+        await save_timestamps_to_db(election_id, voter_timestamps)
+    except Exception as e:
+        print("error creating timestamps", str(e))
+       
+
+async def generate_timestamps_for_voter(election_id, voter_id):
+    try:
+        timestamps = await generate_timestamps(election_id) # returns array of timestamps.
+        _, end = await fetch_electiondates_from_bb(election_id)
+        last_timestamp = end.timestamp() + 60
+        timestamps.append(last_timestamp)
+        return (voter_id, timestamps)
+
+    except Exception as e:
+        print(f"{RED}Error saving timestamps for voter {voter_id} in election {election_id}: {e}")
+
+
+async def save_timestamps_to_db(election_id, voter_timestamps):
+    print(f"{CYAN}Writing timestamps to Duckdb for election {election_id}")
+    try:
+        async with duckdb_lock: # lock is acquired to check if access should be allowed, lock while accessing ressource and is then released before returning  
+            conn = duckdb.connect("/duckdb/voter-data.duckdb")
+            for voter_id, timestamps in voter_timestamps:
+                image_paths = assign_images_for_timestamps(len(timestamps))
+                rows = [] #list to collect all rows we want to insert in DB in one batch
+                print(f"timestamps matched with images: {len(timestamps)}, {len(image_paths)}")
+                for timestamp, img in zip(timestamps, image_paths):
+                    dt_timestamp = datetime.fromtimestamp(timestamp, tz=timezone.utc) # convert to datetime to store in DB as TIMESTAMPTZ
+                    timestamp_rounded = round_seconds_timestamps(dt_timestamp)
+                    rows.append((voter_id, election_id, timestamp_rounded, False, img))
+                conn.executemany("INSERT INTO VoterTimestamps (VoterID, ElectionID, Timestamp, Processed, ImagePath) VALUES (?, ?, ?, ?, ?)", rows) #inserts all rows in one operation
+        conn.close()
+    except Exception as e:
+        print(f"{RED}error writing to duckdb for voter {voter_id} in election {election_id}: {e}")
 
 
 async def send_ballot0_to_bb(pyBallot: Ballot):
@@ -153,6 +225,28 @@ async def send_ballot0_to_bb(pyBallot: Ballot):
             return response.json()
     except Exception as e:
         print(f"{RED}Error sending ballot0: {e}")
-        raise HTTPException(status_code=500, detail=f"{RED}Failed to send ballot0 to BB: {str(e)}")  
-
+        raise HTTPException(status_code=500, detail=f"{RED}Failed to send ballot0 to BB: {str(e)}") 
+    
+async def fetch_ballot0_timestamp(election_id, voter_id):
+    try:
+        async with duckdb_lock: # lock is acquired to check if access should be allowed, lock while accessing ressource and is then released before returning  
+            conn = duckdb.connect("/duckdb/voter-data.duckdb")
+            ballot0_timestamp, image_path = conn.execute("""
+                    SELECT Timestamp, ImagePath
+                    FROM VoterTimestamps
+                    WHERE VoterID = ? AND ElectionID = ?
+                    ORDER BY Timestamp ASC
+                    LIMIT 1
+                    """, (voter_id, election_id)).fetchone()
+            
+            # Set processed column to true for the fetched timestamp:
+            conn.execute("""
+                UPDATE VoterTimestamps
+                SET Processed = TRUE
+                WHERE VoterID = ? AND ElectionID = ? AND Timestamp = ?
+            """, (voter_id, election_id, ballot0_timestamp))
+            
+            return ballot0_timestamp, image_path
+    except Exception as e:
+        print(f"{RED}error fetching timestamp from duckdb for voter {voter_id} in election {election_id}: {e}")
 

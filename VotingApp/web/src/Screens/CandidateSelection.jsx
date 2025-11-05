@@ -12,7 +12,7 @@ const CandidateSelection = ({ candidates }) => {
   const navigate = useNavigate();
   const nextRoute = `/${electionId}/MemorableInformation`;
   const prevRoute = location.state?.from || `/${electionId}/PreviousVotes`;
-  const { previousVotes, user } = useApp();
+  const { previousVotes, user, setImageFilename } = useApp();
 
   // Logging for testing purposes.
   console.log(previousVotes);
@@ -78,6 +78,7 @@ const CandidateSelection = ({ candidates }) => {
       }
 
       const data = await response.json();
+      setImageFilename(data.image);
       console.log("API response:", data);
     } catch (err) {
       console.error("API error:", err);

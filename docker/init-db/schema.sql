@@ -59,7 +59,7 @@ CREATE TABLE VoterCastsBallot (
 );
 
 CREATE TABLE Images (
-    ImageFilename VARCHAR(20) NOT NULL,
+    ImageFilename VARCHAR(50) NOT NULL,
     BallotID INT PRIMARY KEY REFERENCES Ballots(ID)
 );
 

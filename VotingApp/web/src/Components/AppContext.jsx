@@ -21,6 +21,11 @@ export const AppProvider = ({ children }) => {
     return saved ? JSON.parse(saved) : [];
   });
 
+  const [imageFilename, setImageFilename] = useState(() => {
+    const saved = localStorage.getItem("imageFilename");
+    return saved ? JSON.parse(saved) : null;
+  });
+
   //   const [choices, setChoices] = useState(() => {
   //     const saved = localStorage.getItem("choices");
   //     return saved ? JSON.parse(saved) : {};
@@ -40,6 +45,10 @@ export const AppProvider = ({ children }) => {
     localStorage.setItem("previousVotes", JSON.stringify(previousVotes));
   }, [previousVotes]);
 
+  useEffect(() => {
+    localStorage.setItem("imageFilename", JSON.stringify(imageFilename));
+  }, [imageFilename]);
+
   //   useEffect(() => {
   //     localStorage.setItem("choices", JSON.stringify(choices));
   //   }, [choices]);
@@ -53,6 +62,8 @@ export const AppProvider = ({ children }) => {
   const clearSession = () => {
     setUser(null);
     setElections([]);
+    setPreviousVotes([]);
+    setImageFilename(null);
     // setChoices({});
     localStorage.clear();
   };
@@ -66,6 +77,8 @@ export const AppProvider = ({ children }) => {
         setElections,
         previousVotes,
         setPreviousVotes,
+        imageFilename,
+        setImageFilename,
         //   choices, setChoices,
         //   updateChoice,
         clearSession,

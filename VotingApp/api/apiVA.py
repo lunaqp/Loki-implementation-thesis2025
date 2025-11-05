@@ -83,7 +83,8 @@ async def send_ballot(voter_ballot: VoterBallot):
     pyBallot: Ballot = await vote(voter_ballot.v, voter_ballot.lv_list, voter_ballot.election_id, voter_ballot.voter_id)
     # Sending ballot to voting-server
     print(f"{GREEN}Sending ballot to Voting Server")
-    await send_ballot_to_VS(pyBallot)
+    image_response = await send_ballot_to_VS(pyBallot) # Image response in format: {"image": image_filename.jpg}
+    return image_response
 
 @app.post("/api/user-authentication")
 def authenticate_user(auth: AuthRequest):

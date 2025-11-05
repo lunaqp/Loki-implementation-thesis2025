@@ -158,7 +158,6 @@ def send_cbr_for_voter_in_election(
     voter_id: int = Query(..., description="ID of the voter")
 ):
     voter_cbr: IndexImageCBR = db.fetch_cbr_for_voter_in_election(voter_id, election_id)
-    print(f"voter cbr images: {voter_cbr}")
     return voter_cbr
 
 @app.get("/fetch-ballot-hashes")
