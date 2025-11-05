@@ -75,7 +75,7 @@ async def send_ballotlist_to_votingserver(election_id, ballot_list):
     )
     print(f"{CYAN}Sending ballot0 list to vs...")
     try:
-        async with httpx.AsyncClient(timeout=httpx.Timeout(30.0)) as client:
+        async with httpx.AsyncClient() as client:
             response = await client.post("http://vs_api:8000/ballot0list", json=payload.model_dump()) 
             response.raise_for_status()
     except Exception as e:

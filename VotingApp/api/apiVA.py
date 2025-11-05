@@ -74,7 +74,6 @@ def receive_secret_key(data: dict):
     ddb.save_keys_to_duckdb(voter_id, election_id, enc_secret_key, public_key)
     ddb.save_voter_login(voter_id)
     conn = duckdb.connect("/duckdb/voter-keys.duckdb")
-    conn.table("VoterKeys").show() 
     conn.table("VoterLogin").show() 
 
     return {"status": "secret key received"}

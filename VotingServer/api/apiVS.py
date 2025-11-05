@@ -2,14 +2,13 @@ from fastapi import FastAPI
 import asyncio
 from keygen import send_public_key_to_BB
 from modelsVS import BallotPayload, Ballot
-from epochHandling import create_timestamps, timestamp_management, send_ballot0_to_bb, fetch_ballot0_timestamp
 from contextlib import asynccontextmanager
 import duckdb
-from epochHandling import update_time
+from epochHandling import update_time, prepare_election
 import json
 from coloursVS import RED, CYAN
 from lock import duckdb_lock
-from fetch_functions import fetch_image_filename, fetch_electiondates_from_bb
+from fetch_functions import fetch_image_filename
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -36,29 +35,7 @@ async def vs_resp():
 @app.post("/ballot0list")
 async def receive_ballotlist(payload: BallotPayload):
     print(f"{CYAN}Received election {payload.electionid}, {len(payload.ballot0list)} ballots")
-    await asyncio.create_task(create_timestamps(payload.ballot0list, payload.electionid))
-
-    for ballot in payload.ballot0list:
-        ballot0_timestamp, image_path = await fetch_ballot0_timestamp(payload.electionid, ballot.voterid)
-
-        pyBallot = Ballot(
-            voterid = ballot.voterid,
-            upk = ballot.upk,
-            ctv = ballot.ctv,
-            ctlv = ballot.ctlv, 
-            ctlid = ballot.ctlid, 
-            proof = ballot.proof,
-            electionid = payload.electionid,
-            timestamp = ballot0_timestamp,
-            imagepath = image_path
-        )
-
-        await send_ballot0_to_bb(pyBallot)
-    
-    # After sending ballot 0 we create an asynchronous task for handling vote-casting to each voters CBR.
-    start, end = await fetch_electiondates_from_bb(payload.electionid)
-    for ballot in payload.ballot0list:
-        asyncio.create_task(timestamp_management(ballot.voterid, payload.electionid, start, end))
+    asyncio.create_task(prepare_election(payload))
 
     return {"status": "ok"}
 
