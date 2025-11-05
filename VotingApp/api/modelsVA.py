@@ -46,3 +46,12 @@ class IndexImage(BaseModel):
     
 class IndexImageCBR(BaseModel):
     cbrimages: List[IndexImage]
+
+class CandidateResult(BaseModel):
+    candidateid: int
+    votes: int
+    proof: str # base64-encoded
+
+class ElectionResult(BaseModel):
+    electionid: int
+    result: list[CandidateResult]

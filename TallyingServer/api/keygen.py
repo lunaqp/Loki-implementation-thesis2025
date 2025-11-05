@@ -1,37 +1,12 @@
-from typing import Optional
-from modelsTS import ElGamalParams
 import httpx
 import base64
-from petlib.bn import Bn # For casting database values to petlib big integer types.
-from petlib.ec import EcGroup, EcPt, EcGroup
-from fastapi import HTTPException
 import os
 import json
 from coloursTS import BLUE
-
-async def get_elgamal_params():
-    async with httpx.AsyncClient() as client:
-        try:
-            resp = await client.get("http://bb_api:8000/elgamalparams")
-            data = resp.json()
-            params = ElGamalParams(
-                group = data["group"],
-                generator = data["generator"],
-                order = data["order"]
-            )
-
-            # Convert to proper types for cryptographic functions.
-            GROUP = EcGroup(params.group)
-            GENERATOR = EcPt.from_binary(base64.b64decode(params.generator), GROUP)
-            ORDER = Bn.from_binary(base64.b64decode(params.order))
-            
-            return GROUP, GENERATOR, ORDER
-        
-        except Exception as e:
-            raise HTTPException(status_code=502, detail=f"Unable to fetch elgamal params: {e}") #NOTE: What would be the most correct status_codes for different scenarios?
+from fetchFunctions import fetch_elgamal_params
 
 async def keygen():
-    _, GENERATOR, ORDER = await get_elgamal_params()
+    _, GENERATOR, ORDER = await fetch_elgamal_params()
     secret_key = ORDER.random() 
     public_key = secret_key * GENERATOR
     print(f"{BLUE}TS public and private key generated")

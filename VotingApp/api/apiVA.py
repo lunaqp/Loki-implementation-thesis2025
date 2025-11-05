@@ -5,9 +5,10 @@ import duckdb
 from contextlib import asynccontextmanager
 from modelsVA import Ballot, VoterBallot, AuthRequest, Elections, IndexImageCBR
 from vote_casting import vote, send_ballot_to_VS
-from coloursVA import RED, GREEN
+from coloursVA import RED, GREEN, PURPLE
 import httpx
 import save_to_duckdb as ddb
+from tally_verification import verify_tally
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -72,6 +73,9 @@ def receive_secret_key(data: dict):
     # Public and private keys are saved in internal duckdb database. Secret key is symmetrically encrypted with Fernet.
     ddb.save_keys_to_duckdb(voter_id, election_id, enc_secret_key, public_key)
     ddb.save_voter_login(voter_id)
+    conn = duckdb.connect("/duckdb/voter-keys.duckdb")
+    conn.table("VoterKeys").show() 
+    conn.table("VoterLogin").show() 
 
     return {"status": "secret key received"}
 
@@ -119,4 +123,11 @@ async def fetch_elections_for_voter(
             return election_dates
     except Exception as e:
         print(f"{RED}Error fetching election dates for election {election_id}: {e}")
-        raise HTTPException(status_code=500, detail=f"{RED}Error fetching election dates for election {election_id}: {str(e)}")     
+        raise HTTPException(status_code=500, detail=f"{RED}Error fetching election dates for election {election_id}: {str(e)}")
+    
+@app.get("/api/verify_tally")
+async def verify_election_tally(election_id: int = Query(..., description="ID of the election")):
+    verification_status = await verify_tally(election_id)
+    print(f"{PURPLE}Tally verification request received for election {election_id}. Verification status:", verification_status)
+    return {"verified": verification_status}
+
