@@ -70,21 +70,13 @@ const ScreenWrapper = styled.div`
   padding: 30px 60px 60px 60px;
   background-color: var(--secondary-color);
   border: 1px solid black;
+  ${({ $adjustableHeight }) =>
+    $adjustableHeight
+      ? `min-height: 600px;
+        height: auto;
+        padding-bottom: 100px;`
+      : `height: 600px;`}
 `;
-
-// const ScreenWrapper = styled.div`
-//   width: 1100px;
-//   ${({ $adjustableHeight }) =>
-//     $adjustableHeight
-//       ? `min-height: 600px;
-//         height: auto;
-//         padding-bottom: 70px;`
-//       : `height: 600px;`}
-//   border-radius: 20px;
-//   display: flex;
-//   align-items: center;
-//   justify-content: center;
-// `;
 
 const ButtonContainer = styled.div`
   width: 100%;

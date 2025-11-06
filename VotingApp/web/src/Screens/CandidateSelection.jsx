@@ -1,31 +1,33 @@
 import styled from "styled-components";
 import PageTemplate from "../Components/PageTemplate";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import PopUp from "../Components/PopUp";
 import ScreenTemplate from "../Components/ScreenTemplate";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { useApp } from "../Components/AppContext";
 
-const CandidateSelection = ({ candidates }) => {
+const CandidateSelection = () => {
   const location = useLocation();
   const { electionId } = useParams();
   const navigate = useNavigate();
   const nextRoute = `/${electionId}/MemorableInformation`;
   const prevRoute = location.state?.from || `/${electionId}/PreviousVotes`;
   const { previousVotes, user, setImageFilename } = useApp();
+  const [candidates, setCandidates] = useState();
 
-  // Logging for testing purposes.
-  console.log(previousVotes);
+  const navigateToMypage = () => navigate("/mypage");
+
+  useEffect(() => {
+    fetch("/api/bulletin/candidates")
+      .then((res) => res.json())
+      .then((data) => {
+        setCandidates(data.candidates);
+      })
+      .catch((err) => console.error("Error fetching candidates:", err));
+  }, []);
 
   const party1Candidates =
     candidates && candidates.map((candidate) => candidate.name);
-
-  const party2Candidates = [
-    "Sheldon Cooper",
-    "Amy Farrah Fowler",
-    "Raj Koothrappali",
-    "Penny",
-  ];
 
   const [showPopUp, setShowPopUp] = useState(false);
 
@@ -79,7 +81,7 @@ const CandidateSelection = ({ candidates }) => {
 
       const data = await response.json();
       setImageFilename(data.image);
-      console.log("API response:", data);
+      console.log("API response from Voting Server:", data);
     } catch (err) {
       console.error("API error:", err);
     }
@@ -87,7 +89,7 @@ const CandidateSelection = ({ candidates }) => {
 
   return (
     candidates && (
-      <PageTemplate progress={4} adjustableHeight={true}>
+      <PageTemplate progress={4} onButtonClick={navigateToMypage}>
         <ScreenTemplate
           nextRoute={null}
           onPrimaryClick={handleNextClick}
@@ -99,24 +101,8 @@ const CandidateSelection = ({ candidates }) => {
           <ContentWrapper>
             <Wrapper>
               <Title>Choose one candidate</Title>
-              <Parties>Party 1: "Friends"</Parties>
+              <Parties>Party 1:</Parties>
               {party1Candidates.map((candidate) => {
-                return (
-                  <CandidateContainer>
-                    <StyledInput
-                      type="radio"
-                      id={`${candidate}`}
-                      name="candidate"
-                      value={`${candidate}`}
-                      onChange={handleChange}
-                      checked={selectedCandidate === `${candidate}`}
-                    />
-                    <StyledLabel htmlFor={candidate}>{candidate}</StyledLabel>
-                  </CandidateContainer>
-                );
-              })}
-              <Parties>Party 2: "Big Bang Theory"</Parties>
-              {party2Candidates.map((candidate) => {
                 return (
                   <CandidateContainer>
                     <StyledInput

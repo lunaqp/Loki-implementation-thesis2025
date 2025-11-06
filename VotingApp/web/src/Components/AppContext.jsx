@@ -26,13 +26,6 @@ export const AppProvider = ({ children }) => {
     return saved ? JSON.parse(saved) : null;
   });
 
-  //   const [choices, setChoices] = useState(() => {
-  //     const saved = localStorage.getItem("choices");
-  //     return saved ? JSON.parse(saved) : {};
-  //   });
-
-  // Persist to localStorage
-
   const [hasUnread, setHasUnread] = useState(true);
 
   useEffect(() => {
@@ -52,22 +45,12 @@ export const AppProvider = ({ children }) => {
     localStorage.setItem("imageFilename", JSON.stringify(imageFilename));
   }, [imageFilename]);
 
-  //   useEffect(() => {
-  //     localStorage.setItem("choices", JSON.stringify(choices));
-  //   }, [choices]);
-
-  //   // Utility: update a single choice
-  //   const updateChoice = (electionId, candidateId) => {
-  //     setChoices(prev => ({ ...prev, [electionId]: candidateId }));
-  //   };
-
-  // Utility: clear all user data (on logout)
+  // Clearing all user data
   const clearSession = () => {
     setUser(null);
     setElections([]);
     setPreviousVotes([]);
     setImageFilename(null);
-    // setChoices({});
     localStorage.clear();
   };
 
@@ -82,8 +65,6 @@ export const AppProvider = ({ children }) => {
         setPreviousVotes,
         imageFilename,
         setImageFilename,
-        //   choices, setChoices,
-        //   updateChoice,
         clearSession,
         hasUnread,
         setHasUnread,

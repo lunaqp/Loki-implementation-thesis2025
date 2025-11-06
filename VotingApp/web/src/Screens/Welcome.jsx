@@ -1,15 +1,18 @@
 import PageTemplate from "../Components/PageTemplate";
 import ScreenTemplate from "../Components/ScreenTemplate";
 import styled from "styled-components";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 
 const Welcome = () => {
   const { electionId } = useParams();
+  const navigate = useNavigate();
   const nextRoute = `/${electionId}/VoteCheck`;
   const prevRoute = "/Mypage";
 
+  const navigateToMypage = () => navigate("/mypage");
+
   return (
-    <PageTemplate progress={1}>
+    <PageTemplate progress={1} onButtonClick={navigateToMypage}>
       <ScreenTemplate
         nextRoute={nextRoute}
         prevRoute={prevRoute}

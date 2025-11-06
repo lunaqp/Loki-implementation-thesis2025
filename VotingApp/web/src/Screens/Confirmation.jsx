@@ -1,12 +1,15 @@
 import styled from "styled-components";
 import PageTemplate from "../Components/PageTemplate";
 import ScreenTemplate from "../Components/ScreenTemplate";
+import { useNavigate } from "react-router-dom";
 
 const Confirmation = () => {
   const nextRoute = "/Mypage";
+  const navigate = useNavigate();
+  const navigateToMypage = () => navigate("/mypage");
 
   return (
-    <PageTemplate progress={6}>
+    <PageTemplate progress={6} onButtonClick={navigateToMypage}>
       <ScreenTemplate
         nextRoute={nextRoute}
         showSecondaryButton={false}

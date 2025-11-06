@@ -12,8 +12,9 @@ const MemorableInformation = () => {
   const nextRoute = `/${electionId}/Confirmation`;
   const prevRoute = `/${electionId}/CandidateSelection`;
   const [showPopUp, setShowPopUp] = useState(false);
-  const navigate = useNavigate();
   const { setImageFilename, imageFilename } = useApp();
+  const navigate = useNavigate();
+  const navigateToMypage = () => navigate("/mypage");
 
   // generating word from image filename. For example "hockey_stick_11s.jpg".
   const createImageText = (imageFilename) => {
@@ -40,7 +41,11 @@ const MemorableInformation = () => {
 
   return (
     imageFilename && (
-      <PageTemplate progress={5} adjustableHeight={true}>
+      <PageTemplate
+        progress={5}
+        adjustableHeight={true}
+        onButtonClick={navigateToMypage}
+      >
         <ScreenTemplate
           nextRoute={nextRoute}
           onPrimaryClick={handleNextClick}

@@ -14,6 +14,7 @@ const PreviousVotes = () => {
   const prevRoute = `/${electionId}/VoteCheck`;
   const { user, setPreviousVotes } = useApp();
   const navigate = useNavigate();
+  const navigateToMypage = () => navigate("/mypage");
 
   const [fetchedImages, setFetchedImages] = useState([]);
   const [activeHour, setActiveHour] = useState("00"); // state for current active hour
@@ -32,8 +33,6 @@ const PreviousVotes = () => {
       }
 
       const data = await response.json();
-      console.log("cbrimages", data.cbrimages);
-
       return data.cbrimages;
     } catch (error) {
       console.error("Error fetching cbr images:", error);
@@ -67,7 +66,6 @@ const PreviousVotes = () => {
         timestamp: img.timestamp,
       });
     }
-    console.log(map);
     return map;
   }, [fetchedImages]);
 
@@ -93,7 +91,7 @@ const PreviousVotes = () => {
   const savePreviousVotes = useCallback(() => {
     const selectedIndices = selected.map((img) => img.cbrindex);
     setPreviousVotes(selectedIndices);
-    console.log("selected indices:", selectedIndices);
+    console.log("Previous votes list registered as:", selectedIndices);
 
     if (nextRoute) {
       navigate(nextRoute);
@@ -101,7 +99,7 @@ const PreviousVotes = () => {
   }, [selected]);
 
   return (
-    <PageTemplate progress={3} adjustableHeight>
+    <PageTemplate progress={3} onButtonClick={navigateToMypage}>
       <ScreenTemplate
         nextRoute={nextRoute}
         prevRoute={prevRoute}
