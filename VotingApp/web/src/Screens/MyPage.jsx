@@ -5,7 +5,31 @@ import { useApp } from "../Components/AppContext";
 
 const MyPage = () => {
   const navigate = useNavigate();
-  const { user, setElections, elections, hasUnread, setHasUnread } = useApp();
+  const {
+    user,
+    setElections,
+    elections,
+    hasUnread,
+    setHasUnread,
+    getRemainingMs,
+  } = useApp();
+
+  // tick every second to count down
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setTick((t) => t + 1), 1000);
+    return () => clearInterval(id);
+  }, []);
+
+  //format miliseconds to clock format eg. 06:00
+  const format_ms = (ms) => {
+    const s = Math.ceil(ms / 1000); //seconds
+    const m = Math.floor(s / 60) //min
+      .toString()
+      .padStart(2, "0");
+    const r = (s % 60).toString().padStart(2, "0");
+    return `${m}:${r}`;
+  };
 
   const handleRead = () => {
     setHasUnread(false);
@@ -70,20 +94,32 @@ const MyPage = () => {
             </ButtonGroup>
           </InstructionBox>
 
-          {elections.map((election) => (
-            <ElectionBox key={election.id}>
-              <h2>{election.name}</h2>
-              <ButtonGroup>
-                <button
-                  onClick={() =>
-                    election.id && navigate(`/${election.id}/Welcome`)
-                  }
-                >
-                  Vote
-                </button>
-              </ButtonGroup>
-            </ElectionBox>
-          ))}
+          {elections.map((election) => {
+            const remaining = getRemainingMs(election.id);
+            const locked = remaining > 0;
+
+            return (
+              <ElectionBox key={election.id}>
+                <h2>{election.name}</h2>
+                {locked && (
+                  <TimeoutNote>
+                    You are able to vote again in: <b>{format_ms(remaining)}</b>
+                  </TimeoutNote>
+                )}
+
+                <ButtonGroup>
+                  <button
+                    disabled={locked}
+                    onClick={() =>
+                      election.id && navigate(`/${election.id}/Welcome`)
+                    }
+                  >
+                    {locked ? "Vote (locked)" : "Vote"}
+                  </button>
+                </ButtonGroup>
+              </ElectionBox>
+            );
+          })}
         </ElectionRow>
       </BodyContainer>
     </Page>
@@ -180,6 +216,12 @@ const ButtonGroup = styled.div`
     background: rgb(50, 50, 50);
     color: white;
   }
+
+  button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    background: #9aa0a6;
+  }
 `;
 
 const LogoutButton = styled.button`
@@ -207,4 +249,9 @@ const NotificationDot = styled.div`
   background: #da4b4b;
   border-radius: 50%;
   border: 2px solid white;
+`;
+
+const TimeoutNote = styled.p`
+  margin: 6px 0 12px;
+  font-size: 14px;
 `;
