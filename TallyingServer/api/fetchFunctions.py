@@ -6,6 +6,30 @@ import os
 import base64
 import json
 from petlib.bn import Bn # For casting database values to petlib big integer types.
+from petlib.ec import EcGroup, EcPt, EcGroup
+from modelsTS import ElGamalParams
+
+async def fetch_elgamal_params():
+    async with httpx.AsyncClient() as client:
+        try:
+            resp = await client.get("http://bb_api:8000/elgamalparams")
+            data = resp.json()
+            params = ElGamalParams(
+                group = data["group"],
+                generator = data["generator"],
+                order = data["order"]
+            )
+
+            # Convert to proper types for cryptographic functions.
+            GROUP = EcGroup(params.group)
+            GENERATOR = EcPt.from_binary(base64.b64decode(params.generator), GROUP)
+            ORDER = Bn.from_binary(base64.b64decode(params.order))
+            
+            return GROUP, GENERATOR, ORDER
+        
+        except Exception as e:
+            raise HTTPException(status_code=502, detail=f"Unable to fetch elgamal params: {e}") #NOTE: What would be the most correct status_codes for different scenarios?
+
 
 async def fetch_last_ballot_ctvs_from_bb(election_id):
     try:

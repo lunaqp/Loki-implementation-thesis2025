@@ -3,7 +3,7 @@ import duckdb
 import asyncio
 from datetime import datetime, timezone, timedelta
 from validateBallot import obfuscate, validate_ballot
-from modelsVS import Ballot
+from modelsVS import Ballot, BallotPayload
 from fastapi import HTTPException 
 import json
 import pytz
@@ -18,15 +18,39 @@ current_time = datetime.now(tz)
 async def update_time():
     global current_time
     while True:
-        tz = pytz.timezone('Europe/Copenhagen')
         current_time = round_seconds_timestamps(datetime.now(tz))
         await asyncio.sleep(1)
+
+async def prepare_election(payload: BallotPayload):
+    await create_timestamps(payload.ballot0list, payload.electionid)
+
+    for ballot in payload.ballot0list:
+        ballot0_timestamp, image_path = await fetch_ballot0_timestamp(payload.electionid, ballot.voterid)
+
+        pyBallot = Ballot(
+            voterid = ballot.voterid,
+            upk = ballot.upk,
+            ctv = ballot.ctv,
+            ctlv = ballot.ctlv, 
+            ctlid = ballot.ctlid, 
+            proof = ballot.proof,
+            electionid = payload.electionid,
+            timestamp = ballot0_timestamp,
+            imagepath = image_path
+        )
+        await send_ballot0_to_bb(pyBallot)
+    
+    # After sending ballot 0 we create an asynchronous task for handling vote-casting to each voters CBR.
+    start, end = await fetch_electiondates_from_bb(payload.electionid)
+    for ballot in payload.ballot0list:
+        asyncio.create_task(timestamp_management(ballot.voterid, payload.electionid, start, end))
+
 
 async def timestamp_management(voter_id, election_id, start, end):
     time_until_start_election = (start-current_time).total_seconds()
     print(f"{CYAN}Time until election starts: {time_until_start_election}")
     
-    await asyncio.sleep(time_until_start_election)
+    await asyncio.sleep(time_until_start_election+1) # adding one second to ensure we don't check until after election start date
 
     while current_time >= start and current_time <= end: 
         next_timestamp = await fetch_next_timestamp_for_voter(voter_id, election_id)
@@ -38,7 +62,7 @@ async def timestamp_management(voter_id, election_id, start, end):
         if next_timestamp > end:
             print(f"{PURPLE}Waiting for election end for voter {voter_id}")
             time_until_end = (end - current_time).total_seconds()
-            await asyncio.sleep(time_until_end +1)
+            await asyncio.sleep(time_until_end +1) # adding one second to ensure we are outside of the election period
             break
 
         time_until_next_timestamp = (next_timestamp-current_time).total_seconds()
@@ -179,7 +203,6 @@ async def create_timestamps(ballot0list, election_id):
 
         tasks = [generate_timestamps_for_voter(election_id, ballot.voterid) for ballot in ballot0list]
         voter_timestamps = await asyncio.gather(*tasks) # asterisk unpacks the list of generated timestamps for each voter
-
         await save_timestamps_to_db(election_id, voter_timestamps)
     except Exception as e:
         print("error creating timestamps", str(e))
