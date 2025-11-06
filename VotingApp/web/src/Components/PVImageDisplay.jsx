@@ -113,23 +113,32 @@ const PVImageDisplay = ({
               {/*grid of imgs for this hour*/}
               <Grid>
                 {imgs.map(({ index, image, timestamp }) => {
+                  // generating word from image filename. For example "hockey_stick_11s.jpg".
+                  const imagetext = image
+                    .replace(/^./, (c) => c.toUpperCase()) // -> Hockey_stick_11s.jpg
+                    .slice(0, -8) // -> hockey_stick
+                    .replaceAll("_", " ") // -> hockey stick
+                    .replace(/\d+$/, ""); // removing ekstra digit. For example in bow1, bow2, and bow3.
                   const isSelected = selected.some((x) => x.cbrindex === index);
                   return (
-                    <Clickableimg
-                      key={index}
-                      $active={isSelected}
-                      onClick={() =>
-                        onToggleSelect({ cbrindex: index, image, timestamp })
-                      }
-                      title={isSelected ? "Deselect" : "Select"}
-                      type="button"
-                    >
-                      <Img
-                        src={`/images/${image}`}
-                        alt={`${image}`}
-                        loading="lazy"
-                      />
-                    </Clickableimg>
+                    <TextImageBox>
+                      <ImageText>{imagetext}</ImageText>
+                      <Clickableimg
+                        key={index}
+                        $active={isSelected}
+                        onClick={() =>
+                          onToggleSelect({ cbrindex: index, image, timestamp })
+                        }
+                        title={isSelected ? "Deselect" : "Select"}
+                        type="button"
+                      >
+                        <Img
+                          src={`/images/${image}`}
+                          alt={`${image}`}
+                          loading="lazy"
+                        />
+                      </Clickableimg>
+                    </TextImageBox>
                   );
                 })}
               </Grid>
@@ -203,7 +212,7 @@ const HourHeader = styled.div`
 
 const Grid = styled.div`
   display: grid;
-  grid-template-columns: repeat(8, minmax(0, 1fr));
+  grid-template-columns: repeat(7, minmax(0, 1fr));
   gap: 10px;
   padding: 12px 2px 8px;
 `;
@@ -226,7 +235,7 @@ const Clickableimg = styled.button`
 const Img = styled.img`
   display: block;
   width: 100%;
-  height: 118px;
+  height: 134px;
   object-fit: contain;
   border-radius: 8px;
 `;
@@ -235,4 +244,17 @@ const Divider = styled.div`
   height: 18px;
   border-bottom: 2px dashed rgba(0, 0, 0, 0.2);
   margin: 6px 0 14px 0;
+`;
+
+const TextImageBox = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  border-radius: 10px;
+  background-color: #f2f2f2;
+`;
+
+const ImageText = styled.p`
+  line-height: 0;
+  font-size: 9;
 `;

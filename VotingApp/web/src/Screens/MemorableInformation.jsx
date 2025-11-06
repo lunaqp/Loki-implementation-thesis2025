@@ -13,8 +13,17 @@ const MemorableInformation = () => {
   const prevRoute = `/${electionId}/CandidateSelection`;
   const [showPopUp, setShowPopUp] = useState(false);
   const navigate = useNavigate();
-  const { imageFilename } = useApp();
+  const { setImageFilename, imageFilename } = useApp();
 
+  // generating word from image filename. For example "hockey_stick_11s.jpg".
+  const createImageText = (imageFilename) => {
+    const imagetext = imageFilename
+      .replace(/^./, (c) => c.toUpperCase()) // -> Hockey_stick_11s.jpg
+      .slice(0, -8) // -> hockey_stick
+      .replaceAll("_", " ") // -> hockey stick
+      .replace(/\d+$/, ""); // removing ekstra digit. For example in bow1, bow2, and bow3.
+    return imagetext;
+  };
   const handleNextClick = () => {
     setShowPopUp(true);
   };
@@ -22,6 +31,7 @@ const MemorableInformation = () => {
   const handleConfirm = () => {
     setShowPopUp(false);
     navigate(nextRoute);
+    setImageFilename(null);
   };
 
   const handleCancel = () => {
@@ -43,13 +53,9 @@ const MemorableInformation = () => {
               <MemorableInfoComponent
                 title="IMPORTANT!"
                 message={`You have to remember the below image in case you want to change your vote later.`}
-              >
-                <img
-                  src={`/images/${imageFilename}`}
-                  alt={`${imageFilename}`}
-                  style={{ maxWidth: "100%", maxHeight: "100%" }}
-                />
-              </MemorableInfoComponent>
+                imageFilename={imageFilename}
+                imagetext={createImageText(imageFilename)}
+              />
             </ContentWrapper>
           </Container>
         </ScreenTemplate>

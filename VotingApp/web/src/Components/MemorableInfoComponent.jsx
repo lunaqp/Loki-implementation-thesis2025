@@ -1,13 +1,21 @@
 import styled from "styled-components";
 import TextBox from "./TextBox";
 
-const MemorableInfoComponent = ({ title, message, children }) => {
+const MemorableInfoComponent = ({
+  title,
+  message,
+  imageFilename,
+  imagetext,
+}) => {
   return (
     <Container>
       <TextContainer>
         <TextBox title={title} message={message} />
       </TextContainer>
-      <InfoSpace>{children}</InfoSpace>
+      <InfoSpace>
+        <MemImage src={`/images/${imageFilename}`} alt={`${imageFilename}`} />
+        <ImageText>{imagetext}</ImageText>
+      </InfoSpace>
     </Container>
   );
 };
@@ -30,13 +38,20 @@ const TextContainer = styled.div`
 `;
 
 const InfoSpace = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+`;
+
+const MemImage = styled.img`
   width: 350px;
   height: 350px;
   border: 3px solid black;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+`;
+
+const ImageText = styled.p`
+  line-height: 0;
+  font-size: 40px;
   font-weight: bold;
-  font-size: 100%;
-  margin-bottom: 40px;
 `;
