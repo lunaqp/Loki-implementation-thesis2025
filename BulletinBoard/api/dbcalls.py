@@ -1,5 +1,5 @@
 import os
-from modelsBB import NewElectionData, VoterKeyList, Ballot, ElectionResult, Elections, Election, IndexImageCBR, IndexImage
+from modelsBB import NewElectionData, VoterKeyList, Ballot, ElectionResult, Elections, Election, IndexImageCBR, IndexImage, CandidateResult
 import base64
 from hashBB import hash_ballot
 import json
@@ -165,14 +165,14 @@ def save_election_result(election_result: ElectionResult):
         vote_count = candidate.votes
         proof_bin = base64.b64decode(candidate.proof)  # decoding proof to store as binary
     
-    with pool.connection() as conn:
-        with conn.cursor() as cur:
-            cur.execute("""
-                        UPDATE CandidateRunsInElection
-                        SET Result = %s, Tallyproof = %s
-                        WHERE (ElectionID = %s AND CandidateID = %s)
-                        """, (vote_count, proof_bin, election_id, candidate_id) 
-                        )
+        with pool.connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute("""
+                            UPDATE CandidateRunsInElection
+                            SET Result = %s, Tallyproof = %s
+                            WHERE (ElectionID = %s AND CandidateID = %s)
+                            """, (vote_count, proof_bin, election_id, candidate_id) 
+                            )
 
 ## ---------------- READING FROM DB ---------------- ##
 
@@ -395,3 +395,37 @@ def fetch_elections_for_voter(voter_id):
     ) 
 
     return elections
+
+
+# Fetch elections for a given voter
+def fetch_election_result(election_id):
+    with pool.connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                        SELECT CandidateID, Result, TallyProof
+                        FROM CandidateRunsInElection 
+                        WHERE ElectionID = %s
+                        """, (election_id,))
+            records = cur.fetchall()
+
+    # If result is not available return None.
+    if not records or any(result is None or proof is None for _, result, proof in records):
+        return None
+
+    # If result is available build and return a pydantic model.
+    candidate_result: CandidateResult = []
+
+    for candidate_id, result, proof in records:
+        proof_b64 = base64.b64encode(proof).decode()
+        candidate_result.append(CandidateResult (
+            candidateid = candidate_id,
+            votes = result,
+            proof = proof_b64
+        ))
+    
+    election_result : ElectionResult = ElectionResult (
+        electionid = election_id,
+        result = candidate_result
+    )
+
+    return election_result

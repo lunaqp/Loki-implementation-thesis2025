@@ -158,7 +158,6 @@ def send_cbr_for_voter_in_election(
     voter_id: int = Query(..., description="ID of the voter")
 ):
     voter_cbr: IndexImageCBR = db.fetch_cbr_for_voter_in_election(voter_id, election_id)
-    print(f"voter cbr images: {voter_cbr}")
     return voter_cbr
 
 @app.get("/fetch-ballot-hashes")
@@ -178,3 +177,10 @@ def fetch_last_ballot_ctvs(election_id):
 def receive_election_result(election_result: ElectionResult):
     print(f"{PURPLE}Received election result for {election_result.electionid}. Saving to database...")
     db.save_election_result(election_result)
+
+@app.get("/election-result")
+def send_election_result(
+    election_id: int = Query(..., description="ID of the election")
+):
+    election_result = db.fetch_election_result(election_id) # either a pydantic ElectionResult or None
+    return election_result

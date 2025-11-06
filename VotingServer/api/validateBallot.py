@@ -4,125 +4,16 @@ from zksk import Secret, base
 from petlib.bn import Bn # For casting database values to petlib big integer types.
 from petlib.ec import EcPt
 from statement import stmt
-from keygen import get_elgamal_params
-import httpx
-from fastapi import HTTPException
 import base64
 from hashVS import hash_ballot
 import json
-from coloursVS import BLUE, RED, GREEN, CYAN, ORANGE, YELLOW
-
-async def fetch_voters_from_bb(election_id):
-    try:
-        async with httpx.AsyncClient() as client:
-            response = await client.get(f"http://bb_api:8000/voters?election_id={election_id}")
-            response.raise_for_status() 
-          
-            data = response.json()
-            voters = data["voters"]
-            voter_id_list = [v["id"] for v in voters]
-          
-            return voter_id_list
-    except Exception as e:
-        print(f"{RED}Error fetching voters from BB {e}")
-        raise HTTPException(status_code=500, detail=f"{RED}Error fetching voters from BB: {str(e)}")     
-
-async def fetch_candidates_from_bb(election_id):
-    try:
-        async with httpx.AsyncClient() as client:
-            response = await client.get(f"http://bb_api:8000/candidates?election_id={election_id}")
-            response.raise_for_status() 
-          
-            data = response.json()
-            candidates_list: list = []
-
-            for candidate in data["candidates"]:
-                candidates_list.append(candidate["id"])
-
-            return candidates_list
-    except Exception as e:
-        print(f"{RED}Error fetching candidates from BB: {e}")
-        raise HTTPException(status_code=500, detail=f"{RED}Error fetching candidates from BB: {str(e)}")     
-
-async def fetch_public_keys_from_bb():
-    GROUP, _, _ = await get_elgamal_params()
-    try:
-        async with httpx.AsyncClient() as client:
-            response = await client.get("http://bb_api:8000/public-keys-tsvs")
-            response.raise_for_status() # gets http status code
-
-            data: dict = response.json()
-            public_key_ts_bin = base64.b64decode(data["publickey_ts"]) # recreates binary representation of key
-            public_key_vs_bin = base64.b64decode(data["publickey_vs"])
-            public_key_TS = EcPt.from_binary(public_key_ts_bin, GROUP) # recreates EcPt representation of key
-            public_key_VS = EcPt.from_binary(public_key_vs_bin, GROUP)
-
-            return public_key_TS, public_key_VS
-    except Exception as e:
-        print(f"{RED}Error fetching public keys for TS and VS {e}")
-
-async def fetch_voter_public_key_from_bb(voter_id, election_id):
-    try:
-        async with httpx.AsyncClient() as client:
-            response = await client.get(f"http://bb_api:8000/voter-public-key?election_id={election_id}&voter_id={voter_id}")
-            response.raise_for_status() 
-          
-            data = response.json()
-            voter_public_key_bin = base64.b64decode(data["voter_public_key"])
-            
-            return voter_public_key_bin
-    except Exception as e:
-        print(f"{RED}Error fetching public key for voter: {e}")
-        raise HTTPException(status_code=500, detail=f"{RED}Error fetching public key for voter:  {str(e)}")     
-
-async def fetch_ballot_hash_from_bb(election_id):
-    try:
-        async with httpx.AsyncClient() as client:
-            response = await client.get(f"http://bb_api:8000/fetch-ballot-hashes?election_id={election_id}")
-            response.raise_for_status() 
-          
-            data = response.json()
-            ballothash_list = data["ballot_hashes"]
-            
-            return ballothash_list
-    except Exception as e:
-        print(f"{RED}Error fetching list of all ballot hashes")
-        raise HTTPException(status_code=500, detail=f"{RED}Error fetching list of all ballot hashes:  {str(e)}")     
-
-async def fetch_last_and_previouslast_ballot_from_bb(election_id, voter_id):
-    try:
-        async with httpx.AsyncClient() as client:
-            response = await client.get(f"http://bb_api:8000/last_previous_last_ballot?election_id={election_id}&voter_id={voter_id}")
-            response.raise_for_status() 
-
-            data = response.json()
-            last_ballot_b64 = data["last_ballot"]
-            previous_last_ballot_b64 = data["previous_last_ballot"]
-
-            return last_ballot_b64, previous_last_ballot_b64
-    except Exception as e:
-        print(f"{RED}Error fetching previous ballots from BB: {e}")
-        raise HTTPException(status_code=500, detail=f"{RED}Error fetching previous ballots from BB: {str(e)}")     
-
-
-async def fetch_cbr_length_from_bb(voter_id, election_id):
-    try:
-        async with httpx.AsyncClient() as client:
-            response = await client.get(f"http://bb_api:8000/cbr_length?election_id={election_id}&voter_id={voter_id}")
-            response.raise_for_status() 
-            data = response.json()
-
-        return data["cbr_length"]
-    
-    except Exception as e:
-        print(f"{RED}Error fetching previous ballots from BB: {e}")
-        raise HTTPException(status_code=500, detail=f"{RED}Error fetching previous ballots from BB: {str(e)}")    
-
+from coloursVS import GREEN, ORANGE, YELLOW
+import fetch_functions as ff
 
 async def validate_ballot(pyballot:Ballot):
     election_id = pyballot.electionid
-    ballot_hash: list = await fetch_ballot_hash_from_bb(election_id) #NOTE Do we need compare the hash of the new ballot with all ballot hashes in an election or only the ballot hashes for that voter id. ot whole BB
-    voter_list: list = await fetch_voters_from_bb(election_id)
+    ballot_hash: list = await ff.fetch_ballot_hash_from_bb(election_id) #NOTE Do we need compare the hash of the new ballot with all ballot hashes in an election or only the ballot hashes for that voter id. ot whole BB
+    voter_list: list = await ff.fetch_voters_from_bb(election_id)
 
     hashed_ballot = hash_ballot(pyballot) #hash the ballot
     uid_exists = False
@@ -156,10 +47,10 @@ async def verify_proof(election_id, voter_id, pyballot):
     
     # Fetch last ballot and previous last ballot
     if cbr_length >= 2:
-        last_ballot_b64, previous_last_ballot_b64 = await fetch_last_and_previouslast_ballot_from_bb(election_id, voter_id)
+        last_ballot_b64, previous_last_ballot_b64 = await ff.fetch_last_and_previouslast_ballot_from_bb(election_id, voter_id)
     else:
         # if there is no last previous ballot then we use the last ballot as the previous ballot
-        last_ballot_b64, _ = await fetch_last_and_previouslast_ballot_from_bb(election_id, voter_id)
+        last_ballot_b64, _ = await ff.fetch_last_and_previouslast_ballot_from_bb(election_id, voter_id)
         previous_last_ballot_b64 = last_ballot_b64
 
     last_ballot = convert_to_ecpt(last_ballot_b64, GROUP)
@@ -231,7 +122,7 @@ def dec(ct, sk):
     
 async def obfuscate(voter_id, election_id):
     GROUP, GENERATOR, ORDER, cbr_length, candidates, pk_TS, pk_VS = await fetch_data(election_id, voter_id)
-    voter_public_key_bin = await fetch_voter_public_key_from_bb(voter_id, election_id)
+    voter_public_key_bin = await ff.fetch_voter_public_key_from_bb(voter_id, election_id)
     upk = EcPt.from_binary(voter_public_key_bin, GROUP)
 
     # fetch VS secret key from json file keys.json
@@ -239,10 +130,10 @@ async def obfuscate(voter_id, election_id):
 
     # Fetch last ballot and previous last ballot
     if cbr_length >= 2:
-        last_ballot_b64, previous_last_ballot_b64 = await fetch_last_and_previouslast_ballot_from_bb(election_id, voter_id)
+        last_ballot_b64, previous_last_ballot_b64 = await ff.fetch_last_and_previouslast_ballot_from_bb(election_id, voter_id)
     else:
         # if there is no last previous ballot then we use the last ballot as the previous ballot
-        last_ballot_b64, _ = await fetch_last_and_previouslast_ballot_from_bb(election_id, voter_id)
+        last_ballot_b64, _ = await ff.fetch_last_and_previouslast_ballot_from_bb(election_id, voter_id)
         previous_last_ballot_b64 = last_ballot_b64
 
     last_ballot = convert_to_ecpt(last_ballot_b64, GROUP)
@@ -271,11 +162,11 @@ async def obfuscate(voter_id, election_id):
     #if 1 = Dec(sk_vs, (ct_lv-1)-(ct_lid-1)) then we re-randomize the last ballot 
         ct_v=last_ballot[0]
         sim_relation=2
-        print(f"{YELLOW}[{cbr_length}] VS obfuscated last ballot")
+        print(f"{YELLOW}[{cbr_length}] VS obfuscated last ballot for voter {voter_id}")
     else : 
         ct_v=previous_last_ballot[0]
         sim_relation=1
-        print(f"{YELLOW}{cbr_length}] VS obfuscated previous last ballot")
+        print(f"{YELLOW}[{cbr_length}] VS obfuscated previous last ballot for voter {voter_id}")
     
     ct_v_new = [re_enc(GENERATOR, pk_TS, ct_v[i], r_v.value) for i in range(len(candidates))]
 
@@ -301,7 +192,6 @@ def construct_ballot(voter_id, public_key, ct_v, ct_lv, ct_lid, proof, election_
     
     # serialising and base64 encoding NIZK proof:
     proof_ser = base.NIZK.serialize(proof)
-   # print(f"serialised proof: {proof_ser}")
     proof_b64 = base64.b64encode(proof_ser).decode()
 
     pyBallot = Ballot(
@@ -327,9 +217,9 @@ def fetch_vs_secret_key():
     return sk_VS
 
 async def fetch_data(election_id, voter_id):
-    GROUP, GENERATOR, ORDER = await get_elgamal_params()
-    cbr_length = await fetch_cbr_length_from_bb(voter_id, election_id)
-    candidates: list = await fetch_candidates_from_bb(election_id)
-    pk_TS, pk_VS = await fetch_public_keys_from_bb()
+    GROUP, GENERATOR, ORDER = await ff.fetch_elgamal_params()
+    cbr_length = await ff.fetch_cbr_length_from_bb(voter_id, election_id)
+    candidates: list = await ff.fetch_candidates_from_bb(election_id)
+    pk_TS, pk_VS = await ff.fetch_public_keys_from_bb()
 
     return GROUP, GENERATOR, ORDER, cbr_length, candidates, pk_TS, pk_VS

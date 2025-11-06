@@ -2,12 +2,13 @@ from fastapi import FastAPI
 import asyncio
 from keygen import send_public_key_to_BB
 from modelsVS import BallotPayload, Ballot
-from epochGeneration import save_timestamps_for_voter, fetch_ballot0_timestamp, duckdb_lock, fetch_electiondates_from_bb
 from contextlib import asynccontextmanager
 import duckdb
-from epochHandling import update_time, send_ballot0_to_bb, timestamp_management
+from epochHandling import update_time, prepare_election
 import json
 from coloursVS import RED, CYAN
+from lock import duckdb_lock
+from fetch_functions import fetch_image_filename
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -34,29 +35,7 @@ async def vs_resp():
 @app.post("/ballot0list")
 async def receive_ballotlist(payload: BallotPayload):
     print(f"{CYAN}Received election {payload.electionid}, {len(payload.ballot0list)} ballots")
-    start, end = await fetch_electiondates_from_bb(payload.electionid)
-
-    for ballot in payload.ballot0list:
-        await save_timestamps_for_voter(payload.electionid, ballot.voterid)
-        asyncio.create_task(timestamp_management(ballot.voterid, payload.electionid, start, end))
-       
-        ballot0_timestamp, image_path = await fetch_ballot0_timestamp(payload.electionid, ballot.voterid)
-
-        pyBallot = Ballot(
-            voterid = ballot.voterid,
-            upk = ballot.upk,
-            ctv = ballot.ctv,
-            ctlv = ballot.ctlv, 
-            ctlid = ballot.ctlid, 
-            proof = ballot.proof,
-            electionid = payload.electionid,
-            timestamp = ballot0_timestamp,
-            imagepath = image_path
-        )
-
-        await send_ballot0_to_bb(pyBallot)
-    conn = duckdb.connect("/duckdb/voter-data.duckdb") # for printing tables when testing
-    conn.table("VoterTimestamps").show() # for printing tables when testing
+    asyncio.create_task(prepare_election(payload))
 
     return {"status": "ok"}
 
@@ -65,15 +44,14 @@ async def receive_ballot(pyBallot: Ballot):
     try:
         async with duckdb_lock: # lock is acquired to check if access should be allowed, lock while accessing ressource and is then released before returning  
             conn = duckdb.connect("/duckdb/voter-data.duckdb")
-            #public_key = base64.b64decode(pyBallot.upk)
-            #proof = base64.b64decode(pyBallot.proof)
             ctv = json.dumps(pyBallot.ctv) # json string of base64 encoding
             ctlv = json.dumps(pyBallot.ctlv)
             ctlid = json.dumps(pyBallot.ctlid)
             conn.execute("INSERT INTO PendingVotes (VoterID, ElectionID, PublicKey, ctv, ctlv, ctlid, Proof) VALUES (?, ?, ?, ?, ?, ?, ?)",
                          (pyBallot.voterid, pyBallot.electionid, pyBallot.upk, ctv, ctlv, ctlid, pyBallot.proof)) 
-            conn.table("PendingVotes").show()
             conn.close()
+        image_filename = await fetch_image_filename(pyBallot.electionid, pyBallot.voterid)
+        return {"image": image_filename}
     except Exception as e:
         print(f"{RED}error writing ballot to duckdb for voter {pyBallot.voterid} in election {pyBallot.electionid}: {e}")
 
