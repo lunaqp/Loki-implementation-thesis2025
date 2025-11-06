@@ -2,8 +2,8 @@
   "election": {
     "id": 123,
     "name": "Student Council President",
-    "start": "2025-11-04T20:22Z",
-    "end": "2025-11-04T21:59Z"
+    "start": "2025-11-06T14:00Z",
+    "end": "2025-11-06T15:00Z"
   },
   "candidates": [
     {
@@ -17,6 +17,62 @@
     {
       "id": 3,
       "name": "Mallory"
+    },
+    {
+      "id": 4,
+      "name": "Egon"
+    },
+    {
+      "id": 5,
+      "name": "Børge"
+    },
+    {
+      "id": 6,
+      "name": "Kjeld"
+    },
+    {
+      "id": 7,
+      "name": "Anton"
+    },
+    {
+      "id": 8,
+      "name": "Priscilla"
+    },
+    {
+      "id": 9,
+      "name": "Tina"
+    },
+    {
+      "id": 10,
+      "name": "Kjeld"
+    },
+    {
+      "id": 11,
+      "name": "Anton"
+    },
+    {
+      "id": 12,
+      "name": "Priscilla"
+    },
+    {
+      "id": 13,
+      "name": "Tina"
+    },
+    {
+      "id": 14,
+      "name": "Kjeld"
+    },
+    {
+      "id": 15,
+      "name": "Anton"
+    },
+    {
+      "id": 16,
+      "name": "Priscilla"
+    },
+    {
+      "id": 17,
+      "name": "Tina"
     }
   ],
   "voters": [
