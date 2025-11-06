@@ -32,6 +32,9 @@ export const AppProvider = ({ children }) => {
   //   });
 
   // Persist to localStorage
+
+  const [hasUnread, setHasUnread] = useState(true);
+
   useEffect(() => {
     if (user) localStorage.setItem("user", JSON.stringify(user));
     else localStorage.removeItem("user");
@@ -82,6 +85,8 @@ export const AppProvider = ({ children }) => {
         //   choices, setChoices,
         //   updateChoice,
         clearSession,
+        hasUnread,
+        setHasUnread,
       }}
     >
       {children}

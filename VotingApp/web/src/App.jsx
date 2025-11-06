@@ -9,6 +9,7 @@ import LoginPage from "./Screens/Login";
 import PreviousVotes from "./Screens/PreviousVotes";
 import { useState, useEffect } from "react";
 import { AppProvider } from "./Components/AppContext";
+import Instructions from "./Screens/Instructions";
 
 function App() {
   const [electionId, setElectionId] = useState(0);
@@ -51,6 +52,8 @@ function App() {
           <Routes>
             <Route path="/" element={<LoginPage />} />
             <Route path="/Mypage" element={<MyPage />} />
+            <Route path="/instructions" element={<Instructions />} />
+
             <Route
               path=":electionId/*"
               element={
