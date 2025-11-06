@@ -12,9 +12,13 @@ const PreviousVotes = () => {
   const { electionId } = useParams();
   const nextRoute = `/${electionId}/CandidateSelection`;
   const prevRoute = `/${electionId}/VoteCheck`;
-  const { user, setPreviousVotes } = useApp();
+  const { user, setPreviousVotes, electionName, clearFlow } = useApp();
   const navigate = useNavigate();
-  const navigateToMypage = () => navigate("/mypage");
+
+  const navigateToMypage = () => {
+    clearFlow();
+    navigate("/mypage");
+  };
 
   const [fetchedImages, setFetchedImages] = useState([]);
   const [activeHour, setActiveHour] = useState("00"); // state for current active hour
@@ -99,7 +103,11 @@ const PreviousVotes = () => {
   }, [selected]);
 
   return (
-    <PageTemplate progress={3} onButtonClick={navigateToMypage}>
+    <PageTemplate
+      progress={3}
+      onButtonClick={navigateToMypage}
+      electionName={electionName}
+    >
       <ScreenTemplate
         nextRoute={nextRoute}
         prevRoute={prevRoute}

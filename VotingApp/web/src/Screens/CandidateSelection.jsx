@@ -12,10 +12,14 @@ const CandidateSelection = () => {
   const navigate = useNavigate();
   const nextRoute = `/${electionId}/MemorableInformation`;
   const prevRoute = location.state?.from || `/${electionId}/PreviousVotes`;
-  const { previousVotes, user, setImageFilename } = useApp();
+  const { previousVotes, user, setImageFilename, electionName, clearFlow } =
+    useApp();
   const [candidates, setCandidates] = useState();
 
-  const navigateToMypage = () => navigate("/mypage");
+  const navigateToMypage = () => {
+    clearFlow();
+    navigate("/mypage");
+  };
 
   useEffect(() => {
     fetch("/api/bulletin/candidates")
@@ -89,7 +93,11 @@ const CandidateSelection = () => {
 
   return (
     candidates && (
-      <PageTemplate progress={4} onButtonClick={navigateToMypage}>
+      <PageTemplate
+        progress={4}
+        onButtonClick={navigateToMypage}
+        electionName={electionName}
+      >
         <ScreenTemplate
           nextRoute={null}
           onPrimaryClick={handleNextClick}
@@ -100,8 +108,12 @@ const CandidateSelection = () => {
         >
           <ContentWrapper>
             <Wrapper>
-              <Title>Choose one candidate</Title>
-              <Parties>Party 1:</Parties>
+              <Title>Candidate Selection</Title>
+              <Text>
+                Vote for a candidate by clicking their name or their associated
+                button.
+                <br /> You can only vote for <strong>one</strong> candidate.
+              </Text>
               {party1Candidates.map((candidate) => {
                 return (
                   <CandidateContainer>
@@ -148,7 +160,9 @@ const Title = styled.h1`
   margin-top: 0;
 `;
 
-const Parties = styled.h3``;
+const Text = styled.p`
+  font-size: 20px;
+`;
 
 const ContentWrapper = styled.div`
   width: 100%;

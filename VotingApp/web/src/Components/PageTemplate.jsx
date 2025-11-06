@@ -17,6 +17,7 @@ const PageTemplate = ({
   columnLayout,
   adjustableHeight,
   onButtonClick,
+  electionName,
   steps = [
     "Welcome",
     "Vote Check",
@@ -30,7 +31,7 @@ const PageTemplate = ({
     <Page>
       <Header>
         <HeaderContent>
-          <Title>Election Process</Title>
+          <Title>{electionName}</Title>
           <Button variant="primary" onClick={onButtonClick}>
             Exit voting process
           </Button>

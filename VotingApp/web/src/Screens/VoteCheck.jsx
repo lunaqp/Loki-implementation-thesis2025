@@ -8,16 +8,22 @@ import { useApp } from "../Components/AppContext";
 const VoteCheck = () => {
   const navigate = useNavigate();
   const { electionId } = useParams();
-  const { setPreviousVotes, previousVotes } = useApp();
-
+  const { setPreviousVotes, previousVotes, electionName, clearFlow } = useApp();
   const yesRoute = `/${electionId}/PreviousVotes`;
   const noRoute = `/${electionId}/CandidateSelection`;
   const prevRoute = `/${electionId}/Welcome`;
 
-  const navigateToMypage = () => navigate("/mypage");
+  const navigateToMypage = () => {
+    clearFlow();
+    navigate("/mypage");
+  };
 
   return (
-    <PageTemplate progress={2} onButtonClick={navigateToMypage}>
+    <PageTemplate
+      progress={2}
+      onButtonClick={navigateToMypage}
+      electionName={electionName}
+    >
       <ScreenTemplate showPrimaryButton={false} prevRoute={prevRoute}>
         <ContentWrapper>
           <Question>Did you already cast a vote in this election?</Question>

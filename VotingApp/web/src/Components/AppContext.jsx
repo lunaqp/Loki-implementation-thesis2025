@@ -26,6 +26,11 @@ export const AppProvider = ({ children }) => {
     return saved ? JSON.parse(saved) : null;
   });
 
+  const [electionName, setElectionName] = useState(() => {
+    const saved = localStorage.getItem("electionName");
+    return saved ? JSON.parse(saved) : null;
+  });
+
   const [hasUnread, setHasUnread] = useState(true);
 
   useEffect(() => {
@@ -45,6 +50,10 @@ export const AppProvider = ({ children }) => {
     localStorage.setItem("imageFilename", JSON.stringify(imageFilename));
   }, [imageFilename]);
 
+  useEffect(() => {
+    localStorage.setItem("electionName", JSON.stringify(electionName));
+  }, [electionName]);
+
   // Clearing all user data
   const clearSession = () => {
     setUser(null);
@@ -52,6 +61,12 @@ export const AppProvider = ({ children }) => {
     setPreviousVotes([]);
     setImageFilename(null);
     localStorage.clear();
+  };
+
+  const clearFlow = () => {
+    setPreviousVotes([]);
+    setImageFilename(null);
+    setElectionName(null);
   };
 
   return (
@@ -65,7 +80,10 @@ export const AppProvider = ({ children }) => {
         setPreviousVotes,
         imageFilename,
         setImageFilename,
+        electionName,
+        setElectionName,
         clearSession,
+        clearFlow,
         hasUnread,
         setHasUnread,
       }}

@@ -2,18 +2,28 @@ import styled from "styled-components";
 import PageTemplate from "../Components/PageTemplate";
 import ScreenTemplate from "../Components/ScreenTemplate";
 import { useNavigate } from "react-router-dom";
+import { useApp } from "../Components/AppContext";
 
 const Confirmation = () => {
   const nextRoute = "/Mypage";
   const navigate = useNavigate();
-  const navigateToMypage = () => navigate("/mypage");
+  const { electionName, clearFlow } = useApp();
+
+  const navigateToMypage = () => {
+    clearFlow();
+    navigate("/mypage");
+  };
 
   return (
-    <PageTemplate progress={6} onButtonClick={navigateToMypage}>
+    <PageTemplate
+      progress={6}
+      onButtonClick={navigateToMypage}
+      electionName={electionName}
+    >
       <ScreenTemplate
-        nextRoute={nextRoute}
         showSecondaryButton={false}
         primaryButtonText="Finish"
+        onPrimaryClick={navigateToMypage}
       >
         <Container>
           <Question>You have now completed the voting process.</Question>
