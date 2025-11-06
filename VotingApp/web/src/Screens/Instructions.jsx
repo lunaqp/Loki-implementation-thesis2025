@@ -14,8 +14,8 @@ const InstructionsPage = () => {
             coercion resistance and Frequently Asked Questions.
           </PageIntro>
 
-          {/* Instructions */}
-          <Card accent="blue">
+          {/* Voting process */}
+          <Card>
             <SectionHeader>The voting process - Step by step</SectionHeader>
             <StepList>
               <li>
@@ -140,36 +140,121 @@ const InstructionsPage = () => {
           </Card>
 
           {/* FAQ */}
-          <Card accent="slate">
+          <Card>
             <SectionHeader>FAQ</SectionHeader>
             <FAQItem q="What does coercion mean?">
-              blablablaaaaa............
+              Coercion, in this context, refers to a situation where someone
+              tries to force or pressure you into voting for a specific
+              candidate, often in exchange for a reward, under threat, or due to
+              social/personal pressure.
+              <br />
+              <br />
+              In short, coercion means your vote is not truly free or private,
+              because another person is trying to control your choice in an
+              election.
             </FAQItem>
             <FAQItem q="Why do we need coercion resistance in electronic voting systems? ?">
-              blablablaaaaa.............
+              When introducing electronic or remote voting, it comes with a
+              number of important advantages, such as greater accessibility,
+              convenience, and faster election processing.
+              <br />
+              <br />
+              However, remote voting also introduces new challenges. Unlike
+              traditional polling stations, remote environments are not
+              controlled, which means voters may be more vulnerable to coercion
+              attempts.
+              <br />
+              <br />
+              That’s why coercion resistance is essential in electronic voting
+              systems. It ensures that even if someone tries to coerce a voter,
+              the system is designed so that:
+              <br />
+              - The voter can safely mislead a coercer without revealing their
+              true choice.
+              <br />
+              - Only the voter’s final, genuine vote is counted.
+              <br />
+              - No one can prove how they voted, protecting them from threats or
+              manipulation.
+              <br />
+              <br />
+              In short, coercion resistance protects both the integrity of the
+              election and the free choice of the voter.
             </FAQItem>
             <FAQItem q="How does LOKI Coercion resistance work?">
               blablablaaaaa............
             </FAQItem>
-            <FAQItem q="Why is there a timeout after I have voted?">
-              blablablaaaaa............
-            </FAQItem>
-            <FAQItem q="How can I verify my vote is correctly cast?">
-              blablablaaaaa............
-            </FAQItem>
-            <FAQItem q="What do I do if I receive an email saying my vote is not included?">
-              blablablaaaaa............
-            </FAQItem>
-            <FAQItem q="What if I forgot my memorable information/image?">
-              blablablaaaaa............
-            </FAQItem>
-            <FAQItem q="Should I only remember the image for the most recent vote I cast or all of the images if i revoted multiple times?">
-              blablablaaaaa............
-            </FAQItem>
             <FAQItem q="What if I am coerced after I have already cast a vote with my true candidate choice?">
-              blablablaaaaa............
+              If you have already submitted a vote for your intended candidate
+              before being coerced, don’t worry.
+              <br />
+              <br />
+              In this situation, you can safely pretend to comply with the
+              coercer:
+              <br />
+              - In Step 2, select “NO”. The system will recognize that you have
+              already voted and secretly mark this new, coerced vote as invalid.
+              <br />
+              - Alternatively, if you select “YES” in Step 2, you can choose an
+              incorrect image. The system will again detect this and secretly
+              invalidate the coerced vote.
+              <br />
+              <br />
+              In both cases, your original, genuine vote remains valid, and the
+              coerced one will not be counted.
             </FAQItem>
             <FAQItem q="What if I am coerced before I have managed to cast a vote my true candidate choice?">
+              Don’t panic, you’re still protected.
+              <br />
+              <br />
+              If you’re forced to vote by a coercer before you can make your
+              real choice:
+              <br />
+              - Complete the coerced vote as instructed and memorize the image
+              that appears with it.
+              <br />
+              - Later, when you are alone, you can revote for your true
+              candidate by entering that same image in “Step 3 – YES”.
+              <br />
+              <br />
+              This ensures that your final vote reflects your real choice.
+            </FAQItem>
+            <FAQItem q="Do I need to remember all the images from my previous votes, or just the last one if I revoted multiple times?">
+              If you have revoted multiple times, you must remember all the
+              images from your previous votes.
+              <br />
+              When you revote, you’ll need to provide every image from your
+              earlier votes in order to submit a valid new vote.
+            </FAQItem>
+            <FAQItem q="Why is there a timeout after I have voted?">
+              The timeout exists for security and anti-coercion reasons. It
+              helps ensure that the system’s coercion resistant mechanisms work
+              properly and prevents a coercer from repeatedly forcing you to
+              vote.
+              <br />
+              <br />
+              It also limits the number of votes you can cast in a short period,
+              which helps you remember your images more easily when revoting
+              later. Be aware that if a coercer sees that you are on timeout,
+              they may realize you’ve already voted.
+            </FAQItem>
+            <FAQItem q="How can I verify my vote is correctly cast?">
+              The system will automatically verify that your vote is properly
+              included in the election. For security reasons, you will not be
+              able to directly confirm which candidate you voted for.
+              <br />
+              This ensures that your vote remains confidential and coercion
+              resistant.
+            </FAQItem>
+            <FAQItem q="What do I do if I receive an email saying my vote is not included?">
+              If you receive an email from the election officials stating that
+              your vote was not included, simply revote.
+              <br />
+              The image associated with the invalid vote will no longer matter
+              and you can forget about it. Just make sure to remember the new
+              image displayed when you cast your new, valid vote.
+            </FAQItem>
+            <FAQItem q="What if I forgot my memorable information/image?">
               blablablaaaaa............
             </FAQItem>
           </Card>
