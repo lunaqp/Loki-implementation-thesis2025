@@ -1,5 +1,5 @@
 from fastapi import FastAPI, Query, HTTPException
-from modelsBB import ElGamalParams, NewElectionData, VoterKeyList, Ballot, ElectionResult, Elections
+from modelsBB import ElGamalParams, NewElectionData, VoterKeyList, Ballot, ElectionResult, Elections, IndexImageCBR
 import base64
 import dbcalls as db
 from notifications import notify_ts_vs_params_saved, notify_ra_public_key_saved
@@ -11,10 +11,10 @@ app = FastAPI()
 def health():
     return{"ok": True}
 
-@app.get("/hello") #Defines HTTP Get route at /hello
-#a function that runs when client requests /hello
-def hello():
-    return {"message": "Hello World from BulletinBoard!"}
+# @app.get("/hello") #Defines HTTP Get route at /hello
+# #a function that runs when client requests /hello
+# def hello():
+#     return {"message": "Hello World from BulletinBoard!"}
 
 @app.get("/candidates")
 def candidates(election_id: int = Query(..., description = "id of the election")):
@@ -152,6 +152,14 @@ def get_cbr_lenghth(
 
     return {"cbr_length": cbr_length}
 
+@app.get("/cbr-for-voter")
+def send_cbr_for_voter_in_election(
+    election_id: int = Query(..., description="ID of the election"),
+    voter_id: int = Query(..., description="ID of the voter")
+):
+    voter_cbr: IndexImageCBR = db.fetch_cbr_for_voter_in_election(voter_id, election_id)
+    return voter_cbr
+
 @app.get("/fetch-ballot-hashes")
 def fetch_ballot_hashes(
     election_id: int = Query(..., description="ID of the election")
@@ -169,3 +177,10 @@ def fetch_last_ballot_ctvs(election_id):
 def receive_election_result(election_result: ElectionResult):
     print(f"{PURPLE}Received election result for {election_result.electionid}. Saving to database...")
     db.save_election_result(election_result)
+
+@app.get("/election-result")
+def send_election_result(
+    election_id: int = Query(..., description="ID of the election")
+):
+    election_result = db.fetch_election_result(election_id) # either a pydantic ElectionResult or None
+    return election_result

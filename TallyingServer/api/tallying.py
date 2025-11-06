@@ -1,14 +1,13 @@
 from zksk import Secret, base, DLRep
 from petlib.ec import EcPt
 import httpx
-from coloursTS import RED, PURPLE
-from keygen import get_elgamal_params
+from coloursTS import RED, PURPLE, CYAN
 import base64
 from modelsTS import CandidateResult, ElectionResult
 import pytz
 from datetime import datetime
 import asyncio
-from fetchFunctions import fetch_candidates_from_bb, fetch_voters_from_bb, fetch_last_ballot_ctvs_from_bb, fetch_ts_secret_key, fetch_electiondates_from_bb
+from fetchFunctions import fetch_candidates_from_bb, fetch_voters_from_bb, fetch_last_ballot_ctvs_from_bb, fetch_ts_secret_key, fetch_electiondates_from_bb, fetch_elgamal_params
 
 # Keeping track of time to trigger tallying once an election ends.
 tz = pytz.timezone('Europe/Copenhagen')
@@ -22,7 +21,7 @@ async def update_time():
 
 
 async def handle_election(election_id):
-    print(f"{PURPLE}Election with ID {election_id} loaded.")
+    print(f"{CYAN}Election with ID {election_id} loaded.")
 
     # Calculate time until election is over
     _, election_end = await fetch_electiondates_from_bb(election_id)
@@ -42,7 +41,7 @@ async def handle_election(election_id):
 
 # Tally function:
 async def tally(election_id):
-    GROUP, GENERATOR, ORDER = await get_elgamal_params()
+    GROUP, GENERATOR, ORDER = await fetch_elgamal_params()
     candidates = await fetch_candidates_from_bb(election_id)
     candidates_length = len(candidates)
     voters_length = len(await fetch_voters_from_bb(election_id))

@@ -3,10 +3,14 @@ import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { useApp } from "../Components/AppContext";
 
-const MyPage = ({}) => {
+const MyPage = () => {
   const navigate = useNavigate();
-  const [showPopup, setShowPopup] = useState(false);
-  const { user, setElections, elections } = useApp();
+  const { user, setElections, elections, hasUnread, setHasUnread } = useApp();
+
+  const handleRead = () => {
+    setHasUnread(false);
+    navigate("/instructions");
+  };
 
   const fetchElections = async (voterId) => {
     try {
@@ -31,6 +35,8 @@ const MyPage = ({}) => {
   };
 
   useEffect(() => {
+    if (!user) return;
+
     const voterId = user.user;
     const loadElections = async () => {
       try {
@@ -47,13 +53,23 @@ const MyPage = ({}) => {
     <Page>
       <Header>
         <HeaderContent>
-          <Title>Welcome Aja!</Title>
+          <Title>Welcome to MyPage!</Title>
           <LogoutButton>Log out</LogoutButton>
         </HeaderContent>
       </Header>
 
       <BodyContainer>
         <ElectionRow>
+          <InstructionBox>
+            {hasUnread && <NotificationDot />}
+            <h2>Instructions & FAQ</h2>
+            <ButtonGroup>
+              <button className="secondary" onClick={handleRead}>
+                Read
+              </button>
+            </ButtonGroup>
+          </InstructionBox>
+
           {elections.map((election) => (
             <ElectionBox key={election.id}>
               <h2>{election.name}</h2>
@@ -65,23 +81,11 @@ const MyPage = ({}) => {
                 >
                   Vote
                 </button>
-                <button onClick={() => setShowPopup(true)}>Verify</button>
               </ButtonGroup>
             </ElectionBox>
           ))}
         </ElectionRow>
       </BodyContainer>
-      {showPopup && (
-        <PopupOverlay>
-          <PopupBox>
-            <PopupHeader>
-              <h2>Verify Vote</h2>
-              <CloseButton onClick={() => setShowPopup(false)}>×</CloseButton>
-            </PopupHeader>
-            <PopupContent>Your vote has been included!</PopupContent>
-          </PopupBox>
-        </PopupOverlay>
-      )}
     </Page>
   );
 };
@@ -135,18 +139,26 @@ const ElectionRow = styled.div`
   justify-content: flex-start;
 `;
 
-const ElectionBox = styled.div`
+const BaseBox = styled.div`
   width: 300px;
-  padding: 20px;
+  padding: 20px 20px 30px;
   border-radius: 12px;
-  background: #f9f9f9;
+  background: var(--secondary-color);
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
   text-align: center;
-  border: 3px solid rgba(0, 0, 0, 0.2);
+  border: 3px solid var(--primary-color);
 
   h2 {
-    margin-bottom: 20px;
+    margin-bottom: 12px;
   }
+`;
+
+const ElectionBox = styled(BaseBox)``;
+
+const InstructionBox = styled(BaseBox)`
+  position: relative;
+  background-color: var(--primary-color);
+  border-color: var(--primary-color);
 `;
 
 const ButtonGroup = styled.div`
@@ -158,86 +170,41 @@ const ButtonGroup = styled.div`
     padding: 10px 16px;
     border: none;
     border-radius: 8px;
-    background: var(--primary-color, #2563eb);
+    background: var(--primary-color);
     color: white;
     font-weight: 600;
     cursor: pointer;
   }
 
-  button:last-child {
-    background: #6b7280;
-  }
-`;
-
-const LogoutButton = styled.button`
-  padding: 8px 20px;
-  border: none;
-  border-radius: 8px;
-  background: var(white);
-  color: black;
-  font-weight: 600;
-  cursor: pointer;
-
-  &:hover {
-    background: #374151;
+  button.secondary {
+    background: rgb(50, 50, 50);
     color: white;
   }
 `;
 
-const PopupOverlay = styled.div`
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 3;
-`;
-
-const PopupBox = styled.div`
-  width: 500px;
-  height: 300px;
-  background: white;
-  border-radius: 12px;
-  padding: 24px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
-  text-align: center;
-`;
-
-const PopupHeader = styled.div`
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  position: relative;
-  font-size: 25px;
-
-  h2 {
-    margin: 0px;
-    text-align: center;
-  }
-`;
-
-const PopupContent = styled.p`
-  margin-top: 26px;
-  font-size: 20px;
-  text-align: center;
-`;
-
-const CloseButton = styled.button`
-  position: absolute;
-  right: 0;
-  top: 0;
-  background: none;
+const LogoutButton = styled.button`
+  padding: 10px 20px;
   border: none;
-  font-size: 30px;
-  font-weight: bold;
+  border-radius: 8px;
+  background: rgb(50, 50, 50);
+  color: white;
+  font-weight: 600;
   cursor: pointer;
-  color: #333;
 
   &:hover {
-    color: red;
+    background-color: rgb(225, 225, 225);
+    color: black;
+    border-color: rgb(50, 50, 50);
   }
+`;
+
+const NotificationDot = styled.div`
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 18px;
+  height: 18px;
+  background: #da4b4b;
+  border-radius: 50%;
+  border: 2px solid white;
 `;

@@ -1,5 +1,5 @@
 import os
-from modelsBB import NewElectionData, VoterKeyList, Ballot, ElectionResult, Elections, Election
+from modelsBB import NewElectionData, VoterKeyList, Ballot, ElectionResult, Elections, Election, IndexImageCBR, IndexImage, CandidateResult
 import base64
 from hashBB import hash_ballot
 import json
@@ -165,14 +165,14 @@ def save_election_result(election_result: ElectionResult):
         vote_count = candidate.votes
         proof_bin = base64.b64decode(candidate.proof)  # decoding proof to store as binary
     
-    with pool.connection() as conn:
-        with conn.cursor() as cur:
-            cur.execute("""
-                        UPDATE CandidateRunsInElection
-                        SET Result = %s, Tallyproof = %s
-                        WHERE (ElectionID = %s AND CandidateID = %s)
-                        """, (vote_count, proof_bin, election_id, candidate_id) 
-                        )
+        with pool.connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute("""
+                            UPDATE CandidateRunsInElection
+                            SET Result = %s, Tallyproof = %s
+                            WHERE (ElectionID = %s AND CandidateID = %s)
+                            """, (vote_count, proof_bin, election_id, candidate_id) 
+                            )
 
 ## ---------------- READING FROM DB ---------------- ##
 
@@ -303,22 +303,30 @@ def fetch_cbr_length(voter_id, election_id):
             (cbr_length,) = cur.fetchone()  # fetchone returns a tuple like (count,)
     return cbr_length
 
-# Fetches the CBR for a given voter in a given election sorted by most recent votes at the top.
-def fetch_CBR_for_voter_in_election(voter_id, election_id):
+# Fetches the CBR for a given voter in a given election sorted by oldest votes at the top.
+def fetch_cbr_for_voter_in_election(voter_id, election_id):
     with pool.connection() as conn:
         with conn.cursor() as cur:
             cur.execute("""
-                        SELECT *
+                        SELECT ImageFilename, c.VoteTimestamp
                         FROM VoterParticipatesInElection p
                         JOIN VoterCastsBallot c 
                         ON p.ElectionID = c.ElectionID AND p.VoterID = c.VoterID
                         JOIN Ballots b
                         ON b.ID = c.BallotID
+                        JOIN Images i 
+                        ON i.BallotID = b.ID
                         WHERE p.ElectionID = %s AND p.VoterID = %s
-                        ORDER BY c.VoteTimestamp DESC;
+                        ORDER BY c.VoteTimestamp ASC;
                         """, (election_id, voter_id))
             cbr = cur.fetchall()
-    return cbr
+
+    cbr_images = [
+        IndexImage(cbrindex=idx, image=row[0], timestamp = row[1])
+        for idx, row in enumerate(cbr)
+    ]
+
+    return IndexImageCBR(cbrimages=cbr_images)
 
 def fetch_ballot_hashes(election_id):
     with pool.connection() as conn:
@@ -387,3 +395,37 @@ def fetch_elections_for_voter(voter_id):
     ) 
 
     return elections
+
+
+# Fetch elections for a given voter
+def fetch_election_result(election_id):
+    with pool.connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                        SELECT CandidateID, Result, TallyProof
+                        FROM CandidateRunsInElection 
+                        WHERE ElectionID = %s
+                        """, (election_id,))
+            records = cur.fetchall()
+
+    # If result is not available return None.
+    if not records or any(result is None or proof is None for _, result, proof in records):
+        return None
+
+    # If result is available build and return a pydantic model.
+    candidate_result: CandidateResult = []
+
+    for candidate_id, result, proof in records:
+        proof_b64 = base64.b64encode(proof).decode()
+        candidate_result.append(CandidateResult (
+            candidateid = candidate_id,
+            votes = result,
+            proof = proof_b64
+        ))
+    
+    election_result : ElectionResult = ElectionResult (
+        electionid = election_id,
+        result = candidate_result
+    )
+
+    return election_result

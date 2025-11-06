@@ -38,3 +38,20 @@ class Election(BaseModel):
 
 class Elections(BaseModel):
     elections: List[Election]
+
+class IndexImage(BaseModel):
+    cbrindex: int
+    image: str
+    timestamp: datetime
+    
+class IndexImageCBR(BaseModel):
+    cbrimages: List[IndexImage]
+
+class CandidateResult(BaseModel):
+    candidateid: int
+    votes: int
+    proof: str # base64-encoded
+
+class ElectionResult(BaseModel):
+    electionid: int
+    result: list[CandidateResult]
