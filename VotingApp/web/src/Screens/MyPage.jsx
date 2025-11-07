@@ -36,6 +36,30 @@ const MyPage = () => {
     navigate("/instructions");
   };
 
+  const [tallyStatus, setTallyStatus] = useState(null);
+
+  const fetchTallyVerification = async (electionId) => {
+    try {
+      const response = await fetch(
+        `/api/verify_tally?election_id=${electionId}`
+      );
+
+      if (!response.ok) {
+        const errText = await response.text();
+        throw new Error(
+          `Error fetching result of tally verification: ${errText}`
+        );
+      }
+
+      const data = await response.json();
+
+      return data.verified;
+    } catch (error) {
+      console.error("Error fetching result of tally verification:", error);
+      throw error;
+    }
+  };
+
   const fetchElections = async (voterId) => {
     try {
       const response = await fetch(
@@ -101,10 +125,11 @@ const MyPage = () => {
     setResultLoading(true);
     setResultError("");
     setResultData(null);
+    setTallyStatus(null);
 
     try {
       const res = await fetch(
-        `/api/bulletin/election-result?election_id=${election.id}`
+        `/api/election-result?election_id=${election.id}`
       );
       if (!res.ok) throw new Error(await res.text());
       const data = await res.json();
@@ -191,9 +216,11 @@ const MyPage = () => {
           ))}
         </ElectionRow>
       </BodyContainer>
-      {/* Results modal */}
+
+      {/* Modal */}
       {resultOpen && (
         <ModalOverlay onClick={closeResults}>
+          {/*to be able to close by clicking background*/}
           <ModalCard onClick={(e) => e.stopPropagation()}>
             <ModalHeader>
               <h3>Results — {resultElection?.name}</h3>
@@ -210,8 +237,8 @@ const MyPage = () => {
                   <ResultList>
                     {resultData.result.map((r) => (
                       <li key={r.candidateid}>
-                        <span>Candidate {r.candidateid}</span>
-                        <b>{r.votes}</b>
+                        <span>Candidate: {r.candidate_name}</span>
+                        <b>{r.votes} votes</b>
                       </li>
                     ))}
                   </ResultList>
@@ -220,6 +247,39 @@ const MyPage = () => {
                 )}
               </ModalBody>
             )}
+            <ModalFooter>
+              <ButtonGroup>
+                <button
+                  className="secondary"
+                  onClick={async () => {
+                    setTallyStatus(null);
+                    try {
+                      const id = resultElection?.id;
+                      if (!id) {
+                        setTallyStatus("error");
+                        return;
+                      }
+                      const verified = await fetchTallyVerification(id);
+                      setTallyStatus(verified ? "success" : "error");
+                    } catch (e) {
+                      setTallyStatus("error");
+                    }
+                  }}
+                >
+                  Verify tally
+                </button>
+                {tallyStatus === "success" && (
+                  <span style={{ color: "green", fontWeight: "600" }}>
+                    Tally verified
+                  </span>
+                )}
+                {tallyStatus === "error" && (
+                  <span style={{ color: "red", fontWeight: "600" }}>
+                    Error verifying tally
+                  </span>
+                )}
+              </ButtonGroup>
+            </ModalFooter>
           </ModalCard>
         </ModalOverlay>
       )}
@@ -403,6 +463,19 @@ const ModalHeader = styled.div`
   justify-content: space-between;
   padding: 14px 16px;
   border-bottom: 1px solid #e5e7eb;
+
+  h3 {
+    margin: 0;
+    font-size: 18px;
+  }
+`;
+
+const ModalFooter = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  border-top: 1px solid #e5e7eb;
 
   h3 {
     margin: 0;
