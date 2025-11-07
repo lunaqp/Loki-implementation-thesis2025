@@ -9,6 +9,7 @@ from coloursVA import RED, GREEN, PURPLE
 import httpx
 import save_to_duckdb as ddb
 from tally_verification import verify_tally
+from fetch_functions_va import fetch_election_result_from_bb, fetch_candidates_names_from_bb
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -30,6 +31,34 @@ app.include_router(bulletin_router)
 @app.get("/api/election")
 def get_election_id():
     return {"electionId": 123}
+
+@app.get("/api/election-result")
+async def get_election_result(
+    election_id: int = Query(..., description="ID of the election")):
+    try:
+        result = await fetch_election_result_from_bb(election_id)
+        if not result or not getattr(result, "result", None):
+            return {"electionid": election_id, "result": []}
+        
+        candidates = await fetch_candidates_names_from_bb(election_id)
+        id_to_name = {c["id"]: c["name"] for c in candidates.get("candidates", [])} #map name to id
+
+        #build dict to look up names by id, create new list from tally results adding each candidate name. 
+        list_results = [
+            {
+                **r.model_dump(), 
+                "candidate_name": id_to_name.get(
+                    r.candidateid, f"Candidate {r.candidateid}"),
+            }
+            for r in result.result]
+
+        return {
+            "electionid": result.electionid,
+            "result": list_results
+        } 
+    except Exception as e:
+        print(f"Error combining result and candidate names: {e}")
+        raise HTTPException(status_code=500, detail="Internal Server Error")
 
 @app.get("/api/fetch-elections-for-voter")
 async def fetch_elections_for_voter(

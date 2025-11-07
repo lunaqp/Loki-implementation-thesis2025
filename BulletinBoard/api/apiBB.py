@@ -182,5 +182,7 @@ def receive_election_result(election_result: ElectionResult):
 def send_election_result(
     election_id: int = Query(..., description="ID of the election")
 ):
-    election_result = db.fetch_election_result(election_id) # either a pydantic ElectionResult or None
+    election_result = db.fetch_election_result(election_id)
+    if election_result is None:
+        raise HTTPException(status_code=404, detail="Election result not Found")
     return election_result

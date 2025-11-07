@@ -35,6 +35,29 @@ export const AppProvider = ({ children }) => {
 
   const [hasUnread, setHasUnread] = useState(true);
 
+  const [timeout, setTimeout] = useState(() => {
+    const saved = localStorage.getItem("timeout");
+    return saved ? JSON.parse(saved) : {};
+  });
+
+  useEffect(() => {
+    localStorage.setItem("timeout", JSON.stringify(timeout));
+  }, [timeout]);
+
+  // helper: start a timeout for an election
+  const startTimeout = (electionId, ms) => {
+    const nextEligibleAt = new Date(Date.now() + ms).toISOString();
+    setTimeout((prev) => ({ ...prev, [electionId]: nextEligibleAt }));
+  };
+
+  // helper to read remaining time
+  const getRemainingMs = (electionId) => {
+    const iso = timeout[electionId];
+    if (!iso) return 0;
+    const diff = new Date(iso).getTime() - Date.now();
+    return Math.max(0, diff);
+  };
+
   useEffect(() => {
     if (user) localStorage.setItem("user", JSON.stringify(user));
     else localStorage.removeItem("user");
@@ -87,6 +110,9 @@ export const AppProvider = ({ children }) => {
         clearSession,
         hasUnread,
         setHasUnread,
+        timeout,
+        startTimeout,
+        getRemainingMs,
       }}
     >
       {children}
