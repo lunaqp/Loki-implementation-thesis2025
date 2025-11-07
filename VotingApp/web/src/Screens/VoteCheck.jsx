@@ -55,15 +55,6 @@ const VoteCheck = () => {
               Yes
             </Button>
           </ButtonContainer>
-          <p>
-            If this is your first time voting in this election, select “No”
-            <br />
-            If you want to change a previously cast vote, select “Yes”
-            <br />
-            If you are being coerced, and have already voted in this election,
-            you can select “No” and the system will automatically know not to
-            count the vote you are about to cast.
-          </p>
         </ContentWrapper>
       </ScreenTemplate>
     </PageTemplate>
