@@ -48,6 +48,18 @@ async def fetch_candidates_from_bb(election_id):
         print(f"{RED}Error fetching candidates from BB: {e}")
         raise HTTPException(status_code=500, detail=f"{RED}Error fetching candidates from BB: {str(e)}")     
 
+async def fetch_candidates_names_from_bb(election_id: int):
+    try:
+        async with httpx.AsyncClient() as client:
+            resp = await client.get(
+                f"http://bb_api:8000/candidates?election_id={election_id}"
+            )
+            resp.raise_for_status()
+            data = resp.json()
+
+            return data
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"Error fetching candidates: {e}")
 
 async def fetch_voters_from_bb(election_id):
     try:
@@ -83,9 +95,12 @@ async def fetch_election_result_from_bb(election_id):
     try:
         async with httpx.AsyncClient() as client:
             response = await client.get(f"http://bb_api:8000/election-result?election_id={election_id}")
+            if response.status_code == 404:
+                return None
             response.raise_for_status() 
-
             data = response.json()
+            if not data:
+                return None
             try:
                 election_result = ElectionResult.model_validate(data)
                 return election_result

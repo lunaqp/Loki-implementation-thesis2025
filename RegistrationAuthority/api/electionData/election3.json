@@ -1,21 +1,21 @@
 {
   "election": {
-    "id": 456,
-    "name": "Analog President",
-    "start": "2025-11-06T13:37Z",
-    "end": "2025-11-06T13:40Z"
+    "id": 789,
+    "name": "President",
+    "start": "2025-11-06T12:59Z",
+    "end": "2025-11-07T13:31Z"
   },
   "candidates": [
     {
-      "id": 4,
+      "id": 7,
       "name": "Anna"
     },
     {
-      "id": 5,
+      "id": 8,
       "name": "Bobby"
     },
     {
-      "id": 6,
+      "id": 9,
       "name": "Charlie"
     }
   ],
@@ -25,15 +25,15 @@
       "name": "Luna Q Poulsen"
     },
     {
-      "id": 104,
+      "id": 107,
       "name": "John Doe"
     },
     {
-      "id": 105,
+      "id": 108,
       "name": "Jane Doe"
     },
     {
-      "id": 106,
+      "id": 109,
       "name": "Julian Doe"
     }
   ]

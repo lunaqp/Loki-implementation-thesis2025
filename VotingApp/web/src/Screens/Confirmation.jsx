@@ -1,15 +1,20 @@
 import styled from "styled-components";
 import PageTemplate from "../Components/PageTemplate";
 import ScreenTemplate from "../Components/ScreenTemplate";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { useApp } from "../Components/AppContext";
 
 const Confirmation = () => {
   const nextRoute = "/Mypage";
   const navigate = useNavigate();
+  const { electionId } = useParams();
+  const { startTimeout } = useApp();
   const { electionName, clearFlow } = useApp();
 
-  const navigateToMypage = () => {
+  const handleFinish = () => {
+     if (electionId) {
+      startTimeout(Number(electionId), 6 * 60 * 1000); // timeout 6 minutes
+    }
     clearFlow();
     navigate("/mypage");
   };
@@ -23,7 +28,7 @@ const Confirmation = () => {
       <ScreenTemplate
         showSecondaryButton={false}
         primaryButtonText="Finish"
-        onPrimaryClick={navigateToMypage}
+        onPrimaryClick={handleFinish}
       >
         <Container>
           <Question>You have now completed the voting process.</Question>
