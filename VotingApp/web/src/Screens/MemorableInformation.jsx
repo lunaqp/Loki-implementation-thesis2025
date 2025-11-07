@@ -12,10 +12,19 @@ const MemorableInformation = () => {
   const nextRoute = `/${electionId}/Confirmation`;
   const prevRoute = `/${electionId}/CandidateSelection`;
   const [showPopUp, setShowPopUp] = useState(false);
-  const { setImageFilename, imageFilename, electionName, clearFlow } = useApp();
+  const {
+    setImageFilename,
+    imageFilename,
+    electionName,
+    clearFlow,
+    startTimeout,
+  } = useApp();
   const navigate = useNavigate();
 
   const navigateToMypage = () => {
+    if (electionId) {
+      startTimeout(Number(electionId), 1 * 60 * 1000); // timeout 6 minutes
+    }
     clearFlow();
     navigate("/mypage");
   };

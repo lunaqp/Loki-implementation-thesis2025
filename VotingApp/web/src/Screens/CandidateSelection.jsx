@@ -22,7 +22,7 @@ const CandidateSelection = () => {
   };
 
   useEffect(() => {
-    fetch("/api/bulletin/candidates")
+    fetch(`/api/bulletin/candidates?election_id=${electionId}`)
       .then((res) => res.json())
       .then((data) => {
         setCandidates(data.candidates);
@@ -30,7 +30,7 @@ const CandidateSelection = () => {
       .catch((err) => console.error("Error fetching candidates:", err));
   }, []);
 
-  const party1Candidates =
+  const candidateNames =
     candidates && candidates.map((candidate) => candidate.name);
 
   const [showPopUp, setShowPopUp] = useState(false);
@@ -114,7 +114,7 @@ const CandidateSelection = () => {
                 button.
                 <br /> You can only vote for <strong>one</strong> candidate.
               </Text>
-              {party1Candidates.map((candidate) => {
+              {candidateNames.map((candidate) => {
                 return (
                   <CandidateContainer>
                     <StyledInput
