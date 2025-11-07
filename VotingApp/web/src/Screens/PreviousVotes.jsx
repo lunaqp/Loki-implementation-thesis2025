@@ -117,12 +117,17 @@ const PreviousVotes = () => {
       >
         <Wrap>
           <Top>
-            <Title>Previous Votes</Title>
+            <Title>Select your previous votes</Title>
             <Directions>
               For each vote you cast previously, pick the image you were shown
-              afterward. Use the <b>hour timeline</b> below to jump, or scroll
-              the gallery. Images are grouped by hour; click an image to select
-              it.
+              afterwards. <br /> <br />
+              You can use the <b>hour timeline</b> below to jump, or simply
+              scroll through the gallery. Images are grouped by hours of the
+              election period. <br />
+              click an image to select it. To zoom an image, click the little
+              magnifying glass. <br />
+              To deselect an image, click the image in the list of selected
+              images below the gallery.
             </Directions>
           </Top>
           <Timeline>
@@ -178,6 +183,7 @@ const Title2 = styled.h2`
 
 const Directions = styled.p`
   margin: 0;
+  font-size: 20px;
   max-width: 1000px;
 `;
 

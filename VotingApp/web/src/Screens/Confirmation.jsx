@@ -32,9 +32,12 @@ const Confirmation = () => {
         <Container>
           <Question>You have now completed the voting process.</Question>
           <Text>
-            This is the only confirmation you will see. <br />
-            For security reasons, the system will not send you a confirmation
-            e-mail with the selected candidate.
+            Your vote has now been cast. <br />
+            For security reasons this is the only confirmation you will see.{" "}
+            <br />
+            Click the “Finish” button to navigate back to MyPage. You will now
+            see a timeout on this election, and you will be able to change your
+            vote once the timer is up.
           </Text>
         </Container>
       </ScreenTemplate>
@@ -55,6 +58,7 @@ const Container = styled.div`
 
 const Question = styled.h1``;
 
-const Text = styled.h2`
+const Text = styled.p`
+  font-size: 20px;
   text-align: center;
 `;

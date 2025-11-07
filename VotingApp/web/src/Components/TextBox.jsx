@@ -18,7 +18,7 @@ export default TextBox;
 const Title = styled.h2``;
 
 const Text = styled.p`
-  line-height: 1.2;
+  font-size: 20px;
 `;
 
 const Container = styled.div`
