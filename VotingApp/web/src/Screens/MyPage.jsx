@@ -72,7 +72,6 @@ const MyPage = () => {
       }
 
       const data = await response.json();
-      console.log(data.elections);
       setElections(data.elections);
 
       return data.elections;
@@ -148,7 +147,6 @@ const MyPage = () => {
     setResultError("");
   };
 
-  console.log(user);
   return (
     <Page>
       <Header>

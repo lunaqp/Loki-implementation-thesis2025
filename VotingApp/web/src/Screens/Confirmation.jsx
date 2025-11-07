@@ -5,19 +5,26 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useApp } from "../Components/AppContext";
 
 const Confirmation = () => {
-  const nav = useNavigate();
+  const nextRoute = "/Mypage";
+  const navigate = useNavigate();
   const { electionId } = useParams();
   const { startTimeout } = useApp();
+  const { electionName, clearFlow } = useApp();
 
   const handleFinish = () => {
-    if (electionId) {
+     if (electionId) {
       startTimeout(Number(electionId), 6 * 60 * 1000); // timeout 6 minutes
     }
-    nav("/Mypage");
+    clearFlow();
+    navigate("/mypage");
   };
 
   return (
-    <PageTemplate progress={6}>
+    <PageTemplate
+      progress={6}
+      onButtonClick={navigateToMypage}
+      electionName={electionName}
+    >
       <ScreenTemplate
         showSecondaryButton={false}
         primaryButtonText="Finish"

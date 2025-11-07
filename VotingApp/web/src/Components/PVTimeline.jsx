@@ -20,7 +20,6 @@ const PVTimeline = ({ activeHour, onChange, electionId }) => {
 
       // Response has structure: {"startdate": DATE, "enddate": DATE}
       const dates = await response.json();
-      console.log("election start and end date:", dates);
       setStartdate(dates.startdate);
       setEnddate(dates.enddate);
     } catch (error) {

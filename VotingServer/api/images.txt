@@ -485,7 +485,7 @@ dip_11s.jpg
 dirt_bike_01b.jpg
 dishrag_10s.jpg
 dishwasher_09s.jpg
-dishwashing_liquid_07s.jpg
+dishwashing_soap_07s.jpg
 dish_13s.jpg
 diskette_07s.jpg
 diving_board_07s.jpg

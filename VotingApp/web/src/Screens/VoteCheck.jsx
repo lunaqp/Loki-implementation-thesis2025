@@ -8,19 +8,23 @@ import { useApp } from "../Components/AppContext";
 const VoteCheck = () => {
   const navigate = useNavigate();
   const { electionId } = useParams();
-  const { setPreviousVotes } = useApp();
-
+  const { setPreviousVotes, previousVotes, electionName, clearFlow } = useApp();
   const yesRoute = `/${electionId}/PreviousVotes`;
   const noRoute = `/${electionId}/CandidateSelection`;
   const prevRoute = `/${electionId}/Welcome`;
 
+  const navigateToMypage = () => {
+    clearFlow();
+    navigate("/mypage");
+  };
+
   return (
-    <PageTemplate progress={2} adjustableHeight={true}>
-      <ScreenTemplate
-        showPrimaryButton={false}
-        adjustableHeight={true}
-        prevRoute={prevRoute}
-      >
+    <PageTemplate
+      progress={2}
+      onButtonClick={navigateToMypage}
+      electionName={electionName}
+    >
+      <ScreenTemplate showPrimaryButton={false} prevRoute={prevRoute}>
         <ContentWrapper>
           <Question>Did you already cast a vote in this election?</Question>
 
@@ -29,6 +33,10 @@ const VoteCheck = () => {
               variant="primary"
               onClick={() => {
                 setPreviousVotes([]); // Setting previous votes to an empty list if voter has not voted before.
+                console.log(
+                  "Previous votes list registered as:",
+                  previousVotes
+                );
                 navigate(noRoute, {
                   state: {
                     from: `/${electionId}/VoteCheck`,

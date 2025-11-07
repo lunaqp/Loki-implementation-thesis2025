@@ -1,5 +1,6 @@
 import styled from "styled-components";
 import ProgressBar from "./ProgressBar.jsx";
+import Button from "./Button.jsx";
 
 /**
  * A template for a page layout that includes a progress bar and a screen section.
@@ -15,6 +16,8 @@ const PageTemplate = ({
   progress,
   columnLayout,
   adjustableHeight,
+  onButtonClick,
+  electionName,
   steps = [
     "Welcome",
     "Vote Check",
@@ -24,20 +27,14 @@ const PageTemplate = ({
     "Confirmation",
   ],
 }) => {
-  /**
-   * A styled container for content that is placed inside the screen area of the page template.
-   * This component wraps and centers the content inside a styled screen box with specific dimensions.
-   *
-   * @param {Object} props - The props passed to the Screen component.
-   * @param {ReactNote} props.children - The content to display inside the <Screen> element (this can include any React components or JSX).
-   * @returns {JSX.Element} A styled <Screen> component containing the children passed to it.
-   */
-
   return (
     <Page>
       <Header>
         <HeaderContent>
-          <Title>Election Process</Title>
+          <Title>{electionName}</Title>
+          <Button variant="primary" onClick={onButtonClick}>
+            Exit voting process
+          </Button>
         </HeaderContent>
       </Header>
       <BodyContainer>
@@ -98,23 +95,4 @@ const StyledScreen = styled.div`
   align-items: center;
   justify-content: center;
   position: relative;
-  //border: 1px solid black;
 `;
-
-// const StyledScreen = styled.div`
-//   width: 1100px;
-//   border: 1px solid black;
-//   ${({ $adjustableHeight }) =>
-//     $adjustableHeight
-//       ? `min-height: 600px;
-//         height: auto;`
-//       : `height: 600px;`}
-//   border-radius: 20px;
-//   background-color: var(--secondary-color);
-//   display: flex;
-//   align-items: center;
-//   justify-content: center;
-//   position: relative;
-//   margin: 0 0 60px 0;
-//   padding: 30px 60px 30px 60px; // If padding is updated it also needs to be updated in CandidateSelection.js and MemorableInformation.js to maintain proper blurring.
-// `;
