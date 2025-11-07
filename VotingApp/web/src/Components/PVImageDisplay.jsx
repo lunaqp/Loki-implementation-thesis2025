@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import styled from "styled-components";
 
 // TODO: change createRef usage to match modern React.
@@ -18,8 +18,19 @@ const PVImageDisplay = ({
   const markerRefs = useRef({}); //ref marker element above header
   const programmaticScroll = useRef(false); //true while scrolling, flase when clicking buttons
   const cooldownUntil = useRef(0); //after scrolling we cooldown before switching to programmaticScroll=false
-
+  const [isImageZoomed, setIsImageZoomed] = useState(false);
   const hours = useMemo(() => Object.keys(imagesByHour).sort(), [imagesByHour]); //sorted list of hour keys
+  const [zoomedImage, setZoomedImage] = useState();
+
+  const onZoomClick = (image) => {
+    setIsImageZoomed(true);
+    setZoomedImage(image);
+  };
+
+  const handleCloseModal = () => {
+    setIsImageZoomed(false);
+    setZoomedImage(null);
+  };
 
   //Handle radio click, scroll into view when jumpToken changes
   useEffect(() => {
@@ -123,27 +134,52 @@ const PVImageDisplay = ({
                   return (
                     <TextImageBox>
                       <ImageText>{imagetext}</ImageText>
-                      <Clickableimg
-                        key={index}
-                        $active={isSelected}
-                        onClick={() =>
-                          onToggleSelect({ cbrindex: index, image, timestamp })
-                        }
-                        title={isSelected ? "Deselect" : "Select"}
-                        type="button"
-                      >
-                        <Img
-                          src={`/images/${image}`}
-                          alt={`${image}`}
-                          loading="lazy"
-                        />
-                      </Clickableimg>
+                      <ImageMagnifyBox>
+                        <Clickableimg
+                          key={index}
+                          $active={isSelected}
+                          onClick={() =>
+                            onToggleSelect({
+                              cbrindex: index,
+                              image,
+                              timestamp,
+                            })
+                          }
+                          title={isSelected ? "Deselect" : "Select"}
+                          type="button"
+                        >
+                          <Img
+                            src={`/images/${image}`}
+                            alt={`${image}`}
+                            loading="lazy"
+                          />
+                        </Clickableimg>
+                        <ZoomButton onClick={() => onZoomClick(image)}>
+                          <img
+                            src="/magnifying-glass-solid-full.svg" // FontAwesome icon - https://fontawesome.com/icons/magnifying-glass?f=classic&s=solid
+                            alt="Zoom"
+                          />
+                        </ZoomButton>
+                      </ImageMagnifyBox>
                     </TextImageBox>
                   );
                 })}
               </Grid>
-              {idx < hours.length - 1 && <Divider />}{" "}
               {/*separater between sections*/}
+              {idx < hours.length - 1 && <Divider />}{" "}
+              {/*Pop-up for zoomed images*/}
+              {isImageZoomed && (
+                <ImagePopUp onClick={handleCloseModal}>
+                  {/*In combination with the ImagePopUp onClick, this closes the image when clicking anywhere but the ImagePopUp. */}
+                  <ImagePopUpContainer onClick={(e) => e.stopPropagation()}>
+                    <CloseX onClick={handleCloseModal}>×</CloseX>
+                    <ZoomedImage
+                      src={`/images/${zoomedImage}`}
+                      alt={`${zoomedImage}`}
+                    />
+                  </ImagePopUpContainer>
+                </ImagePopUp>
+              )}{" "}
             </Section>
           );
         })}
@@ -219,8 +255,7 @@ const Grid = styled.div`
 
 const Clickableimg = styled.button`
   border: 2px solid
-    ${({ $active }) =>
-      $active ? "var(--primary-color,#2563eb)" : "rgba(0,0,0,0.15)"};
+    ${({ $active }) => ($active ? "var(--primary-color)" : "rgba(0,0,0,0.15)")};
   border-radius: 10px;
   padding: 0;
   background: #fff;
@@ -228,7 +263,7 @@ const Clickableimg = styled.button`
   outline: none;
 
   &:hover {
-    border-color: var(--primary-color, #2563eb);
+    border-color: var(--primary-color);
   }
 `;
 
@@ -257,4 +292,74 @@ const TextImageBox = styled.div`
 const ImageText = styled.p`
   line-height: 0;
   font-size: 9;
+`;
+
+const ImageMagnifyBox = styled.div`
+  position: relative;
+  display: inline-block;
+`;
+
+const ZoomButton = styled.button`
+  position: absolute;
+  bottom: 4px;
+  right: 2px;
+  background: rgba(233, 233, 233, 0.9);
+  border: none;
+  border-radius: 8px 0 8px 0;
+  padding: 7px;
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+
+  &:hover {
+    background: var(--primary-color);
+    color: white;
+  }
+
+  img {
+    width: 14px;
+    height: 14px;
+    display: block;
+  }
+`;
+
+const ImagePopUp = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  z-index: 10;
+`;
+
+const ImagePopUpContainer = styled.div`
+  position: relative;
+  background-color: #f5f5f5;
+  padding: 30px;
+  border-radius: 10px 10px 10px 10px;
+`;
+
+const ZoomedImage = styled.img`
+  width: 600px;
+  height: auto;
+`;
+
+const CloseX = styled.button`
+  position: absolute;
+  top: 0px;
+  right: 4px;
+  border: 0;
+  background: transparent;
+  font-size: 24px;
+  line-height: 1;
+  cursor: pointer;
+  color: #64748b;
+  padding: 5px 5px;
+  &:hover {
+    color: #111827;
+  }
 `;
