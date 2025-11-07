@@ -38,14 +38,16 @@ const Welcome = () => {
         primaryButtonText="Start"
       >
         <ColumnWrapper>
-          <InstructionsTitle>Welcome to the voting process</InstructionsTitle>
+          <InstructionsTitle>Welcome to the voting process!</InstructionsTitle>
           <InstructionsWrapper>
             <Text>
               This system might be a little different from what you are used to.
-              This is because it is designed to help prevent voter coercion.
-              After casting a vote, you will be shown an image that you will
-              need to remember in case you want to change your vote later on.
-              The process will start with checking if you have voted before.{" "}
+              <br />
+              If you are ever in doubt about the voting process, you can always
+              go back to MyPage by clicking the "Exit voting process" button and
+              read the step by step guide in the “Instructions & FAQ” tab.
+              <br />
+              Happy voting!{" "}
             </Text>
           </InstructionsWrapper>
         </ColumnWrapper>
@@ -77,7 +79,7 @@ const InstructionsWrapper = styled.div`
 `;
 
 const Text = styled.div`
-  width: 60%;
+  width: 80%;
   line-height: 1.2;
   font-size: 20px;
   text-align: center;

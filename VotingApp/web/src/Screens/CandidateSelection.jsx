@@ -110,9 +110,8 @@ const CandidateSelection = () => {
             <Wrapper>
               <Title>Candidate Selection</Title>
               <Text>
-                Vote for a candidate by clicking their name or their associated
-                button.
-                <br /> You can only vote for <strong>one</strong> candidate.
+                Vote for a candidate by clicking their name.
+                <br /> You can only choose <strong>one</strong> candidate.
               </Text>
               {candidateNames.map((candidate) => {
                 return (
@@ -138,8 +137,8 @@ const CandidateSelection = () => {
             message={
               <>
                 You are now voting for <strong>{selectedCandidate}</strong>. If
-                this is the intended candidate click “Cast Vote”. If you want to
-                change your vote choose “Change Vote”
+                this is the intended candidate, click “Cast Vote”. If you want
+                to change your candidate choice, click “Change Vote”
               </>
             }
             confirm={handleConfirm}

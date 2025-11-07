@@ -71,7 +71,7 @@ const MemorableInformation = () => {
             <ContentWrapper>
               <MemorableInfoComponent
                 title="IMPORTANT!"
-                message={`You have to remember the below image in case you want to change your vote later.`}
+                message={`Make sure you remember the below image in case you want to change your vote later.`}
                 imageFilename={imageFilename}
                 imagetext={createImageText(imageFilename)}
               />
@@ -81,7 +81,7 @@ const MemorableInformation = () => {
         {showPopUp && (
           <PopUp
             title="Attention!"
-            message="Make sure you remember the information displayed! This is important if you want to change your vote. You will not be able to come back to view this information again!"
+            message="This is your last chance to memorise the image. You will not be able to come back to view this information again!"
             confirm={handleConfirm}
             cancel={handleCancel}
             nextButtonText="I remember"

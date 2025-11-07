@@ -2,8 +2,8 @@
   "election": {
     "id": 123,
     "name": "Student Council President",
-    "start": "2025-11-06T14:00Z",
-    "end": "2025-11-06T15:00Z"
+    "start": "2025-11-07T14:30Z",
+    "end": "2025-11-07T15:00Z"
   },
   "candidates": [
     {
