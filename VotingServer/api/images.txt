@@ -1,5 +1,4 @@
-﻿aardvark_11s.jpg
-abacus_13s.jpg
+﻿abacus_13s.jpg
 accordion_12s.jpg
 acorn_15n.jpg
 airbag_15s.jpg
@@ -1098,3 +1097,4 @@ ruler_07s.jpg
 saddle_04s.jpg
 sardine_02s.jpg
 saw_01s.jpg
+zebra_20s.jpg
