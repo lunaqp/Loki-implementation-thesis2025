@@ -1,12 +1,12 @@
 from petlib.ec import EcGroup
 import os
-from cryptography.fernet import Fernet
 import httpx
 from modelsRA import ElGamalParams, VoterKey, VoterKeyList
 import httpx
 import base64
 from fastapi import HTTPException
 from coloursRA import BLUE, RED
+from petlib.cipher import Cipher
 
 def generate_group_order():
     # Using the petlib library group operations to generate group and group values
@@ -46,9 +46,9 @@ async def keygen(voter_list, election_id):
     for id in voter_list:
         secret_key = ORDER.random() # save secret key locally.
         public_key = secret_key * GENERATOR
-        #enc_secret_key = encrypt_key(secret_key) # TODO: Either reintroduce encryption or remove from code
+        enc_secret_key, iv = encrypt_key(secret_key) # TODO: Either reintroduce encryption or remove from code
         
-        await send_keys_to_va(id, election_id, secret_key, public_key)
+        await send_keys_to_va(id, election_id, enc_secret_key, public_key, iv)
 
         voter_key = VoterKey(
             electionid = election_id,
@@ -65,8 +65,8 @@ async def send_keys_to_bb(voter_info: VoterKeyList):
         response.raise_for_status()
         print(f"{BLUE}voter public keys sent to BB")        
 
-async def send_keys_to_va(voter_id, election_id, secret_key, public_key):
-    data = {"voter_id": voter_id, "election_id": election_id, "secret_key": base64.b64encode(secret_key.binary()).decode(), "public_key":base64.b64encode(public_key.export()).decode() } # decode() converts b64 bytes to string
+async def send_keys_to_va(voter_id, election_id, secret_key, public_key, iv):
+    data = {"voter_id": voter_id, "election_id": election_id, "secret_key": base64.b64encode(secret_key).decode(), "iv": base64.b64encode(iv).decode(), "public_key":base64.b64encode(public_key.export()).decode() } # decode() converts b64 bytes to string
 
     try:
         async with httpx.AsyncClient() as client:
@@ -78,29 +78,13 @@ async def send_keys_to_va(voter_id, election_id, secret_key, public_key):
         print(f"{RED}Error sending keys to VA: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to send secret key to VA: {str(e)}")     
 
-
 def encrypt_key(secret_key):
-    ENCRYPTION_KEY = os.getenv("VOTER_SK_ENCRYPTION_KEY") # Symmetric key - saved in docker-compose.yml. NOTE: Should be moved outside of repository.
-    cipher = Fernet(ENCRYPTION_KEY)
-    # the encrypt() function returns a URL-safe base64-encoded secure message that cannot be read or altered without the key - a “Fernet token”.
-    encrypted_secret_key = cipher.encrypt(str(secret_key).encode()) # Fernet needs byte objects or strings.
-    print(f"Type of encrypted key: {type(encrypted_secret_key)}")
-    return encrypted_secret_key
+    secret_key_bin = secret_key.binary()
+    aes_cipher = Cipher("AES-128-CTR")
+    iv = os.urandom(16)
+    ENC_KEY = base64.b64decode(os.getenv("VOTER_SK_ENCRYPTION_KEY")) # Symmetric key - saved in docker-compose.yml
+    enc = aes_cipher.enc(ENC_KEY, iv)
+    enc_secret_key = enc.update(secret_key_bin)
+    enc_secret_key += enc.finalize()
 
-# Only for testing if decryption worked - might be relevant in VotingApp
-# def decrypt_key():
-#     conn = psycopg.connect(dbname=DBNAME, user=DBUSER, password=DBPASSWORD, host=DBHOST, port=DBPORT)
-#     cur = conn.cursor()
-#     cur.execute("""
-#                 SELECT SecretKey
-#                 FROM VoterParticipatesInElection
-#                 WHERE VoterID = 0 AND ElectionID = 0
-#                 """)
-#     (record,) = cur.fetchone()
-#     conn.commit()
-#     cur.close()
-#     conn.close()
-#     ENCRYPTION_KEY = os.getenv("VOTERKEYMATERIAL_KEY") # Symmetric key - saved in docker-compose.yml
-#     cipher = Fernet(ENCRYPTION_KEY)
-#     decrypted_secret_key = cipher.decrypt(record)
-#     print(decrypted_secret_key)
+    return (enc_secret_key, iv)

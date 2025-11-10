@@ -26,14 +26,35 @@ export const AppProvider = ({ children }) => {
     return saved ? JSON.parse(saved) : null;
   });
 
-  //   const [choices, setChoices] = useState(() => {
-  //     const saved = localStorage.getItem("choices");
-  //     return saved ? JSON.parse(saved) : {};
-  //   });
-
-  // Persist to localStorage
+  const [electionName, setElectionName] = useState(() => {
+    const saved = localStorage.getItem("electionName");
+    return saved ? JSON.parse(saved) : null;
+  });
 
   const [hasUnread, setHasUnread] = useState(true);
+
+  const [timeout, setTimeout] = useState(() => {
+    const saved = localStorage.getItem("timeout");
+    return saved ? JSON.parse(saved) : {};
+  });
+
+  useEffect(() => {
+    localStorage.setItem("timeout", JSON.stringify(timeout));
+  }, [timeout]);
+
+  // helper: start a timeout for an election
+  const startTimeout = (electionId, ms) => {
+    const nextEligibleAt = new Date(Date.now() + ms).toISOString();
+    setTimeout((prev) => ({ ...prev, [electionId]: nextEligibleAt }));
+  };
+
+  // helper to read remaining time
+  const getRemainingMs = (electionId) => {
+    const iso = timeout[electionId];
+    if (!iso) return 0;
+    const diff = new Date(iso).getTime() - Date.now();
+    return Math.max(0, diff);
+  };
 
   useEffect(() => {
     if (user) localStorage.setItem("user", JSON.stringify(user));
@@ -52,23 +73,23 @@ export const AppProvider = ({ children }) => {
     localStorage.setItem("imageFilename", JSON.stringify(imageFilename));
   }, [imageFilename]);
 
-  //   useEffect(() => {
-  //     localStorage.setItem("choices", JSON.stringify(choices));
-  //   }, [choices]);
+  useEffect(() => {
+    localStorage.setItem("electionName", JSON.stringify(electionName));
+  }, [electionName]);
 
-  //   // Utility: update a single choice
-  //   const updateChoice = (electionId, candidateId) => {
-  //     setChoices(prev => ({ ...prev, [electionId]: candidateId }));
-  //   };
-
-  // Utility: clear all user data (on logout)
+  // Clearing all user data
   const clearSession = () => {
     setUser(null);
     setElections([]);
     setPreviousVotes([]);
     setImageFilename(null);
-    // setChoices({});
     localStorage.clear();
+  };
+
+  const clearFlow = () => {
+    setPreviousVotes([]);
+    setImageFilename(null);
+    setElectionName(null);
   };
 
   return (
@@ -82,11 +103,15 @@ export const AppProvider = ({ children }) => {
         setPreviousVotes,
         imageFilename,
         setImageFilename,
-        //   choices, setChoices,
-        //   updateChoice,
+        electionName,
+        setElectionName,
         clearSession,
+        clearFlow,
         hasUnread,
         setHasUnread,
+        timeout,
+        startTimeout,
+        getRemainingMs,
       }}
     >
       {children}

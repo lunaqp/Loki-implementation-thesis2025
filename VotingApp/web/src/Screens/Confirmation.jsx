@@ -1,23 +1,43 @@
 import styled from "styled-components";
 import PageTemplate from "../Components/PageTemplate";
 import ScreenTemplate from "../Components/ScreenTemplate";
+import { useNavigate, useParams } from "react-router-dom";
+import { useApp } from "../Components/AppContext";
 
 const Confirmation = () => {
-  const nextRoute = "/Mypage";
+  const navigate = useNavigate();
+  const { electionId } = useParams();
+  const { startTimeout } = useApp();
+  const { electionName, clearFlow } = useApp();
+
+  const handleFinish = () => {
+    if (electionId) {
+      startTimeout(Number(electionId), 1 * 60 * 1000); // timeout 6 minutes
+    }
+    clearFlow();
+    navigate("/mypage");
+  };
 
   return (
-    <PageTemplate progress={6}>
+    <PageTemplate
+      progress={6}
+      onButtonClick={handleFinish}
+      electionName={electionName}
+    >
       <ScreenTemplate
-        nextRoute={nextRoute}
         showSecondaryButton={false}
         primaryButtonText="Finish"
+        onPrimaryClick={handleFinish}
       >
         <Container>
           <Question>You have now completed the voting process.</Question>
           <Text>
-            This is the only confirmation you will see. <br />
-            For security reasons, the system will not send you a confirmation
-            e-mail with the selected candidate.
+            Your vote has now been cast. <br />
+            For security reasons this is the only confirmation you will see.{" "}
+            <br />
+            Click the “Finish” button to navigate back to MyPage. You will now
+            see a timeout on this election, and you will be able to change your
+            vote once the timer is up.
           </Text>
         </Container>
       </ScreenTemplate>
@@ -38,6 +58,7 @@ const Container = styled.div`
 
 const Question = styled.h1``;
 
-const Text = styled.h2`
+const Text = styled.p`
+  font-size: 20px;
   text-align: center;
 `;

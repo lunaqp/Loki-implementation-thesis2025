@@ -6,8 +6,8 @@ from petlib.ec import EcPt, EcGroup, Bn
 import base64
 import duckdb
 import os
-from cryptography.fernet import Fernet
 from pydantic import ValidationError
+from petlib.cipher import Cipher
 
 async def fetch_elgamal_params():
     async with httpx.AsyncClient() as client:
@@ -48,6 +48,18 @@ async def fetch_candidates_from_bb(election_id):
         print(f"{RED}Error fetching candidates from BB: {e}")
         raise HTTPException(status_code=500, detail=f"{RED}Error fetching candidates from BB: {str(e)}")     
 
+async def fetch_candidates_names_from_bb(election_id: int):
+    try:
+        async with httpx.AsyncClient() as client:
+            resp = await client.get(
+                f"http://bb_api:8000/candidates?election_id={election_id}"
+            )
+            resp.raise_for_status()
+            data = resp.json()
+
+            return data
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"Error fetching candidates: {e}")
 
 async def fetch_voters_from_bb(election_id):
     try:
@@ -83,9 +95,12 @@ async def fetch_election_result_from_bb(election_id):
     try:
         async with httpx.AsyncClient() as client:
             response = await client.get(f"http://bb_api:8000/election-result?election_id={election_id}")
+            if response.status_code == 404:
+                return None
             response.raise_for_status() 
-
             data = response.json()
+            if not data:
+                return None
             try:
                 election_result = ElectionResult.model_validate(data)
                 return election_result
@@ -145,20 +160,22 @@ async def fetch_cbr_length_from_bb(voter_id, election_id):
 
 def fetch_keys(voter_id, election_id):
     conn = duckdb.connect("/duckdb/voter-keys.duckdb")
-    (enc_secret_key, public_key) = conn.execute("""
-            SELECT SecretKey, PublicKey
+    (enc_secret_key, public_key, iv) = conn.execute("""
+            SELECT SecretKey, PublicKey, IV
             FROM VoterKeys
             WHERE VoterID = ? AND ElectionID = ?
             """, (voter_id, election_id)).fetchone()
-    #usk_bin = decrypt_key(enc_secret_key)
-    usk_bin = enc_secret_key
+    
+    secret_key = decrypt_key(enc_secret_key, iv)
 
-    return usk_bin, public_key
+    return secret_key, public_key
 
 
-def decrypt_key(enc_secret_key):
-    ENCRYPTION_KEY = os.getenv("VOTER_SK_DECRYPTION_KEY") # Symmetric key - saved in docker-compose.yml
-    cipher = Fernet(ENCRYPTION_KEY)
-    decrypted_secret_key = cipher.decrypt(enc_secret_key)
-    print(f"decrypted secret key = {decrypted_secret_key}")
+def decrypt_key(enc_secret_key, iv):
+    ENC_KEY = base64.b64decode(os.getenv("VOTER_SK_DECRYPTION_KEY"))
+    aes_cipher = Cipher("AES-128-CTR")
+    dec = aes_cipher.dec(ENC_KEY, iv)
+    decrypted_secret_key = dec.update(enc_secret_key)
+    decrypted_secret_key += dec.finalize()
+
     return decrypted_secret_key

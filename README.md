@@ -17,6 +17,31 @@ Call/load new election file with FastApi: "Invoke-RestMethod -Uri "http://localh
 
 Remove data from db: docker volume rm loki-implementation-thesis2025_db_data
 
+# Use script to run project
+
+To run script:
+.\rundocker.ps1
+
+This will run the script causing it to:
+
+- First remove the docker images
+- Delete from the database
+- Then build the docker images again
+
+From here you will then be given different options from 1-6:
+1: Load election 1
+2: Load election 2
+3: Extract DuckDB file for Voting Server (timestamp table)
+4: Extract DuckDB file for Voting App (voter keys)
+5: Rerun application from scratch
+6: Exit (closes and removes Docker images)
+Choose by typing the number in the terminal.
+
+while the docker images are build you can go to:
+http://localhost:5173/ to see the frontend.
+
+# Hosting the app
+
 # Colour coding
 
 We have colour-coded the log for all of the services based on the following:
