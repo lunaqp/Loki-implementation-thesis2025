@@ -1,6 +1,5 @@
 from fastapi import FastAPI, HTTPException, Query
 from bulletin_routes import router as bulletin_router
-import base64
 import duckdb
 from contextlib import asynccontextmanager
 from modelsVA import Ballot, VoterBallot, AuthRequest, Elections, IndexImageCBR
@@ -15,7 +14,7 @@ from fetch_functions_va import fetch_election_result_from_bb, fetch_candidates_n
 async def lifespan(app: FastAPI):
     # Initialising DuckDB database:
     conn = duckdb.connect("/duckdb/voter-keys.duckdb")
-    conn.sql("CREATE TABLE VoterKeys(VoterID INTEGER, ElectionID INTEGER, SecretKey BLOB, PublicKey BLOB)")
+    conn.sql("CREATE TABLE VoterKeys(VoterID INTEGER, ElectionID INTEGER, SecretKey BLOB, PublicKey BLOB, IV BLOB)")
     conn.sql("CREATE TABLE VoterLogin(Username TEXT PRIMARY KEY, Password TEXT)")
     yield  # yielding control back to FastAPI
 
@@ -98,9 +97,10 @@ def receive_secret_key(data: dict):
     election_id = data["election_id"]
     enc_secret_key = data["secret_key"]
     public_key = data["public_key"]
+    iv = data["iv"]
 
-    # Public and private keys are saved in internal duckdb database. Secret key is symmetrically encrypted with Fernet.
-    ddb.save_keys_to_duckdb(voter_id, election_id, enc_secret_key, public_key)
+    # Public and secret keys are saved in internal duckdb database. Secret key is symmetrically encrypted with Fernet.
+    ddb.save_keys_to_duckdb(voter_id, election_id, enc_secret_key, public_key, iv)
     ddb.save_voter_login(voter_id)
     conn = duckdb.connect("/duckdb/voter-keys.duckdb")
     conn.table("VoterLogin").show() 

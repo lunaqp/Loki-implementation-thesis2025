@@ -1,8 +1,5 @@
 import numpy as np
-from datetime import datetime
-import httpx
 import random
-from coloursVS import RED
 from fetch_functions import fetch_electiondates_from_bb
 
 

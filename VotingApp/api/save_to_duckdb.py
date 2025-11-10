@@ -2,11 +2,11 @@ import duckdb
 import base64
 from coloursVA import CYAN, RED
 
-def save_keys_to_duckdb(voter_id, election_id, enc_secret_key, public_key):
+def save_keys_to_duckdb(voter_id, election_id, enc_secret_key, public_key, iv):
     try:
         conn = duckdb.connect("/duckdb/voter-keys.duckdb")
         print(f"{CYAN}inserting keys in duckdb for voter {voter_id}")
-        conn.execute(f"INSERT INTO VoterKeys VALUES (?, ?, ?, ?)", (voter_id, election_id, base64.b64decode(enc_secret_key), base64.b64decode(public_key)))
+        conn.execute(f"INSERT INTO VoterKeys VALUES (?, ?, ?, ?, ?)", (voter_id, election_id, base64.b64decode(enc_secret_key), base64.b64decode(public_key), base64.b64decode(iv)))
     except Exception as e:
         print(f"{RED}error inserting keys in duckdb for voter {voter_id}: {e}")
 
