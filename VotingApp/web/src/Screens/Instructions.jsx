@@ -3,7 +3,44 @@ import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 
 const InstructionsPage = () => {
+  const [welcomeExpanded, setWelcomeExpanded] = useState(false);
+  const [voteCheckExpanded, setVoteCheckExpanded] = useState(false);
+  const [previousVotesExpanded, setPreviousVotesExpanded] = useState(false);
+  const [candidatesExpanded, setCandidatesExpanded] = useState(false);
+  const [memorableInfoExpanded, setMemorableInfoExpanded] = useState(false);
+  const [confirmationExpanded, setConfirmationExpanded] = useState(false);
   const nav = useNavigate();
+
+  const handleClick = (step) => {
+    switch (step) {
+      case 1:
+        if (welcomeExpanded === false) setWelcomeExpanded(true);
+        else setWelcomeExpanded(false);
+        break;
+      case 2:
+        if (voteCheckExpanded === false) setVoteCheckExpanded(true);
+        else setVoteCheckExpanded(false);
+        break;
+      case 3:
+        if (previousVotesExpanded === false) setPreviousVotesExpanded(true);
+        else setPreviousVotesExpanded(false);
+        break;
+      case 4:
+        if (candidatesExpanded === false) setCandidatesExpanded(true);
+        else setCandidatesExpanded(false);
+        break;
+      case 5:
+        if (memorableInfoExpanded === false) setMemorableInfoExpanded(true);
+        else setMemorableInfoExpanded(false);
+        break;
+      case 6:
+        if (confirmationExpanded === false) setConfirmationExpanded(true);
+        else setConfirmationExpanded(false);
+        break;
+      default:
+    }
+  };
+
   return (
     <Page>
       <BodyContainer>
@@ -23,6 +60,18 @@ const InstructionsPage = () => {
                 <br />
                 This is the first screen you will see when clicking "Vote" in an
                 election. This screen welcomes you to the voting process.
+                <br />
+                <ImageContainer>
+                  <ImageButton onClick={() => handleClick(1)}>
+                    {welcomeExpanded ? "- Hide image" : "+ Expand image"}
+                  </ImageButton>
+                  {welcomeExpanded && (
+                    <Image
+                      src={"/screenshots/welcome.png"}
+                      alt="Welcome step"
+                    />
+                  )}
+                </ImageContainer>
               </li>
 
               <li>
@@ -46,6 +95,18 @@ const InstructionsPage = () => {
                   automatically know not to count the vote you are about to
                   cast.
                 </RedText>
+                <br />
+                <ImageContainer>
+                  <ImageButton onClick={() => handleClick(2)}>
+                    {voteCheckExpanded ? "- Hide image" : "+ Expand image"}
+                  </ImageButton>
+                  {voteCheckExpanded && (
+                    <Image
+                      src={"/screenshots/welcome.png"}
+                      alt="Vote Check step"
+                    />
+                  )}
+                </ImageContainer>
               </li>
 
               <li>
@@ -81,6 +142,17 @@ const InstructionsPage = () => {
                   if it is wrong the system will still allow you to cast the
                   vote but will mark the vote as invalid.
                 </RedText>
+                <ImageContainer>
+                  <ImageButton onClick={() => handleClick(3)}>
+                    {previousVotesExpanded ? "- Hide image" : "+ Expand image"}
+                  </ImageButton>
+                  {previousVotesExpanded && (
+                    <Image
+                      src={"/screenshots/pv.png"}
+                      alt="Previous Votes Step"
+                    />
+                  )}
+                </ImageContainer>
               </li>
 
               <li>
@@ -91,6 +163,18 @@ const InstructionsPage = () => {
                 <br />
                 Make sure you are voting for the intended candidate before you
                 move on.
+                <br />
+                <ImageContainer>
+                  <ImageButton onClick={() => handleClick(4)}>
+                    {candidatesExpanded ? "- Hide image" : "+ Expand image"}
+                  </ImageButton>
+                  {candidatesExpanded && (
+                    <Image
+                      src={"/screenshots/pv.png"}
+                      alt="Candidate Selection Step"
+                    />
+                  )}
+                </ImageContainer>
               </li>
 
               <li>
@@ -111,6 +195,18 @@ const InstructionsPage = () => {
                   Make sure you have the information memorised before you move
                   on! Once you click “Next” you cannot go back.
                 </RedText>
+                <br />
+                <ImageContainer>
+                  <ImageButton onClick={() => handleClick(5)}>
+                    {memorableInfoExpanded ? "- Hide image" : "+ Expand image"}
+                  </ImageButton>
+                  {memorableInfoExpanded && (
+                    <Image
+                      src={"/screenshots/pv.png"}
+                      alt="Memorable Information Step"
+                    />
+                  )}
+                </ImageContainer>
               </li>
 
               <li>
@@ -135,6 +231,18 @@ const InstructionsPage = () => {
                   work as intended. Be aware that a coercer will know that you
                   have voted before if they see that you are on timeout.
                 </RedText>
+                <br />
+                <ImageContainer>
+                  <ImageButton onClick={() => handleClick(6)}>
+                    {confirmationExpanded ? "- Hide image" : "+ Expand image"}
+                  </ImageButton>
+                  {confirmationExpanded && (
+                    <Image
+                      src={"/screenshots/pv.png"}
+                      alt="Confirmation Step"
+                    />
+                  )}
+                </ImageContainer>
               </li>
             </StepList>
           </Card>
@@ -377,7 +485,6 @@ const StepList = styled.ol`
   li + li {
     margin-top: 15px;
   }
-
   li {
     border: 1px solid #e5e7eb;
     border-radius: 10px;
@@ -428,4 +535,37 @@ const FAQAnswer = styled.div`
   padding: 0 16px 14px;
   color: black;
   line-height: 1.6;
+`;
+
+const ImageButton = styled.button`
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  gap: 6px;
+  font-size: 14px;
+  color: var(--primary-color);
+  background: var(--secondary-color);
+  border: 1px solid rgba(114, 152, 183, 0.4);
+  border-radius: 6px;
+  padding: 4px 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin: 5px 0 5px 0;
+
+  &:hover {
+    background: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+  }
+`;
+
+const ImageContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+`;
+
+const Image = styled.img`
+  width: 100%;
+  height: auto;
+  border-radius: 10px;
 `;
