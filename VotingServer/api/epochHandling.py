@@ -106,7 +106,7 @@ async def cast_vote(voter_id, election_id):
                 return ballot_validated #false if not validated
 
     except Exception as e:
-        print(f"{RED}error, fetching pending votes: {e}")
+        print(f"{RED}error casting ballot, {e}")
 
 
 def construct_ballot(voter_id, public_key, ct_v, ct_lv, ct_lid, proof, election_id):
