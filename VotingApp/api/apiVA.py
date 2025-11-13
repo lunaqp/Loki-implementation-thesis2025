@@ -4,12 +4,16 @@ import duckdb
 from contextlib import asynccontextmanager
 from modelsVA import Ballot, VoterBallot, AuthRequest, Elections, IndexImageCBR
 from vote_casting import vote, send_ballot_to_VS
-from coloursVA import RED, GREEN, PURPLE, PINK
+from coloursVA import RED, GREEN, PURPLE, PINK, BLUE
 import httpx
 import save_to_duckdb as ddb
 from tally_verification import verify_tally
 from fetch_functions_va import fetch_election_result_from_bb, fetch_candidates_names_from_bb
 import time
+import os
+import json
+import base64
+
 
 e_time_vote = []
 
@@ -17,6 +21,8 @@ e_time_vote = []
 async def lifespan(app: FastAPI):
     # Initialising DuckDB database:
     conn = duckdb.connect("/duckdb/voter-keys.duckdb")
+    conn.sql("DROP TABLE IF EXISTS VoterKeys")
+    conn.sql("DROP TABLE IF EXISTS VoterLogin")
     conn.sql("CREATE TABLE VoterKeys(VoterID INTEGER, ElectionID INTEGER, SecretKey BLOB, PublicKey BLOB, IV BLOB)")
     conn.sql("CREATE TABLE VoterLogin(Username TEXT PRIMARY KEY, Password TEXT)")
     yield  # yielding control back to FastAPI
@@ -97,8 +103,19 @@ def receive_secret_key(data: dict):
     enc_secret_key = data["secret_key"]
     public_key = data["public_key"]
     iv = data["iv"]
+    print(f"Received keys for voter in election {election_id}")
 
-    # Public and secret keys are saved in internal duckdb database. Secret key is symmetrically encrypted with Fernet.
+    # BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+    # SECRET_KEY_PATH = os.path.join(BASE_DIR, 'keys.json')
+
+    # data =  {"public_key": base64.b64encode(public_key.export()).decode(), "secret_key": enc_secret_key}
+
+    # # Saving keys to json-file:
+    # with open(SECRET_KEY_PATH, 'w') as file:
+    #     json.dump(data, file)
+    # print(f"{BLUE}Secret key saved to {SECRET_KEY_PATH}")
+
+    # Public and secret keys are saved in internal duckdb database. Secret key is symmetrically encrypted with Petlib.
     ddb.save_keys_to_duckdb(voter_id, election_id, enc_secret_key, public_key, iv)
     ddb.save_voter_login(voter_id)
     conn = duckdb.connect("/duckdb/voter-keys.duckdb")

@@ -7,6 +7,8 @@ import base64
 from fastapi import HTTPException
 from coloursRA import BLUE, RED
 from petlib.cipher import Cipher
+import docker
+import asyncio
 
 def generate_group_order():
     # Using the petlib library group operations to generate group and group values
@@ -43,16 +45,17 @@ async def send_params_to_bb():
 async def keygen(voter_list, election_id):
     voter_key_list = VoterKeyList(voterkeylist=[])
 
-    for id in voter_list:
+    for voter_id in voter_list:
         secret_key = ORDER.random()
         public_key = secret_key * GENERATOR
         enc_secret_key, iv = encrypt_key(secret_key)
         
-        await send_keys_to_va(id, election_id, enc_secret_key, public_key, iv)
+        container_name = create_va_instance(voter_id)
+        await send_keys_to_va(voter_id, election_id, enc_secret_key, public_key, iv, container_name)
 
         voter_key = VoterKey(
             electionid = election_id,
-            voterid = id,
+            voterid = voter_id,
             publickey = base64.b64encode(public_key.export()).decode()
         )
         voter_key_list.voterkeylist.append(voter_key)
@@ -65,14 +68,17 @@ async def send_keys_to_bb(voter_info: VoterKeyList):
         response.raise_for_status()
         print(f"{BLUE}voter public keys sent to BB")        
 
-async def send_keys_to_va(voter_id, election_id, secret_key, public_key, iv):
+async def send_keys_to_va(voter_id, election_id, secret_key, public_key, iv, container_name):
     data = {"voter_id": voter_id, "election_id": election_id, "secret_key": base64.b64encode(secret_key).decode(), "iv": base64.b64encode(iv).decode(), "public_key":base64.b64encode(public_key.export()).decode() } # decode() converts b64 bytes to string
-
+    url = f"http://{container_name}:8000/receive-keys"
+    await wait_for_va(container_name)
+    print("sending key to", container_name)
     try:
         async with httpx.AsyncClient() as client:
-            response = await client.post("http://va_api:8000/receive-keys", json=data)
+            response = await client.post(url, json=data)
             response.raise_for_status() # gets http status code
-          
+
+            print("key sent to", container_name)
             return response.json()
     except Exception as e:
         print(f"{RED}Error sending keys to VA: {e}")
@@ -88,3 +94,55 @@ def encrypt_key(secret_key):
     enc_secret_key += enc.finalize()
 
     return (enc_secret_key, iv)
+
+
+def create_va_instance(voter_id):
+    client = docker.from_env()
+    container_name = f"va_api_{voter_id}"
+    existing = client.containers.list(filters={"name": container_name})
+    if existing:
+        return container_name
+
+    image_name = "loki-implementation-thesis2025-va_api:latest"
+    network_name = "loki-implementation-thesis2025_default"
+    volume_name = f"va_data_{voter_id}"
+    try:
+        client.volumes.get(volume_name)
+    except docker.errors.NotFound:
+        client.volumes.create(name=volume_name)
+
+    client.containers.run(
+        image=image_name,
+        name=container_name,
+        detach=True,
+        network=network_name,
+        environment={
+            "BB_API_URL": "http://bb_api:8000",
+            "VOTER_SK_DECRYPTION_KEY": "Al43dQKlM/aAjb5zBNYXBQ==",
+            "DUCKDB_PATH": "/duckdb/voter-keys.duckdb",
+            "VOTER_ID": str(voter_id),
+        },
+        volumes={volume_name: {"bind": "/duckdb", "mode": "rw"}},
+    )
+    return container_name
+
+
+
+async def wait_for_va(container_name, timeout=30):
+    url = f"http://{container_name}:8000/health" 
+    start_time = asyncio.get_event_loop().time()
+    
+    while True:
+        try:
+            async with httpx.AsyncClient() as client:
+                r = await client.get(url, timeout=2)
+                if r.status_code == 200:
+                    print(f"{container_name} is ready")
+                    return
+        except (httpx.ConnectError, httpx.ReadTimeout):
+            pass #TODO: figure out if pass makes sense to use here.
+
+        if asyncio.get_event_loop().time() - start_time > timeout:
+            raise TimeoutError(f"{container_name} did not become ready in {timeout} seconds")
+        
+        await asyncio.sleep(1) 

@@ -1,12 +1,13 @@
 # Closing and removing docker images
 Write-Host "Closing and removing Docker images..." -ForegroundColor Green
+docker rm -f $(docker ps -aq --filter network=loki-implementation-thesis2025_default)
 docker compose down
 
 # Removing data in docker volumes
 Write-Host "Removing Docker data volumes..." -ForegroundColor Green
 docker volume rm loki-implementation-thesis2025_vs_data
 docker volume rm loki-implementation-thesis2025_db_data
-docker volume rm loki-implementation-thesis2025_va_data
+#docker volume rm loki-implementation-thesis2025_va_data
 
 # Building Docker images
 Write-Host "Building docker images..." -ForegroundColor Green
