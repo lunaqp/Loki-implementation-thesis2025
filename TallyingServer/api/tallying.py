@@ -31,7 +31,7 @@ async def handle_election(election_id):
 
     # Wait until election is over
     await asyncio.sleep(remaining_time.total_seconds()) # Adding slight delay to ensure voting server wraps up last obfuscation ballot for each voter.
-    grace_period = 10 # seconds
+    grace_period = 5 # seconds
     print(f"{PURPLE}Election {election_id} has concluded, giving grace period of {grace_period} seconds before tallying begins")
     await asyncio.sleep(grace_period)
 
