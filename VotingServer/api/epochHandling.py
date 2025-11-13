@@ -7,10 +7,13 @@ from modelsVS import Ballot, BallotPayload
 from fastapi import HTTPException 
 import json
 import pytz
-from coloursVS import RED, CYAN, GREEN, PURPLE, YELLOW
+from coloursVS import RED, CYAN, GREEN, PURPLE, YELLOW, PINK
 from lock import duckdb_lock
 from fetch_functions import fetch_electiondates_from_bb
 from epochGeneration import generate_timestamps, assign_images_for_timestamps
+import time
+
+e_time_obf = []
 
 tz = pytz.timezone('Europe/Copenhagen')
 current_time = datetime.now(tz)
@@ -49,7 +52,6 @@ async def prepare_election(payload: BallotPayload):
 async def timestamp_management(voter_id, election_id, start, end):
     time_until_start_election = (start-current_time).total_seconds()
     print(f"{CYAN}Time until election starts: {time_until_start_election}")
-    
     await asyncio.sleep(time_until_start_election+1) # adding one second to ensure we don't check until after election start date
 
     while current_time >= start and current_time <= end: 
@@ -70,6 +72,9 @@ async def timestamp_management(voter_id, election_id, start, end):
 
         print(f"{GREEN}Reached timestamp {next_timestamp} for voter {voter_id}")
         await cast_vote(voter_id, election_id)
+        # ballot_validated = await cast_vote(voter_id, election_id)
+        # if ballot_validated == False
+        #   async call to frontend with voterid + ballot?
     
     if current_time > end:
         print(f"{PURPLE}election over for election {election_id}")
@@ -79,6 +84,7 @@ async def timestamp_management(voter_id, election_id, start, end):
             print(f"{YELLOW}Final obfuscation ballot sent to bb for voter {voter_id}.")
         except Exception as e:
             print(f"{RED}Error creating/sending final obfuscation ballot for voter {voter_id}: {e}")
+        print(f"{PINK}Ballot obfuscation time (avg):", round(sum(e_time_obf)/len(e_time_obf)/1000000,3), "ms")
     
 async def cast_vote(voter_id, election_id):
     try:
@@ -90,21 +96,26 @@ async def cast_vote(voter_id, election_id):
                     WHERE VoterID = ? AND ElectionID = ?
                     """, (voter_id, election_id)).fetchone()
         
+        # Check DuckDB table "PendingVotes" to see if a voter-cast ballot has been received from the Voting App
         if not row or all(x is None for x in row):
+            s_time_obf = time.process_time_ns() # Start timer before obfuscation
             obf_ballot = await obfuscate(voter_id, election_id)
+            e_time_obf.append(time.process_time_ns() - s_time_obf) # Append time taken to the timer array after obfuscation
             await send_ballot_to_bb(obf_ballot)
         else:
             public_key, ct_v, ct_lv, ct_lid, proof = row
             pyballot:Ballot = construct_ballot(voter_id, public_key, ct_v, ct_lv, ct_lid, proof, election_id)
             ballot_validated = await validate_ballot(pyballot)
+            #conn.execute("DELETE FROM PendingVotes WHERE VoterID = ? AND ElectionID = ?", (voter_id, election_id)) # TODO: Move up before if-statement
+            #conn.close()
             if ballot_validated:
-                conn.execute("DELETE FROM PendingVotes WHERE VoterID = ? AND ElectionID = ?", (voter_id, election_id)) 
+                conn.execute("DELETE FROM PendingVotes WHERE VoterID = ? AND ElectionID = ?", (voter_id, election_id)) # TODO: Move up before if-statement
                 conn.close()
                 await send_ballot_to_bb(pyballot)
                 return ballot_validated #true if validated
             else:
                 return ballot_validated #false if not validated
-
+    
     except Exception as e:
         print(f"{RED}error casting ballot, {e}")
 

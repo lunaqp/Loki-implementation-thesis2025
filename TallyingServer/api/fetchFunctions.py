@@ -28,7 +28,7 @@ async def fetch_elgamal_params():
             return GROUP, GENERATOR, ORDER
         
         except Exception as e:
-            raise HTTPException(status_code=502, detail=f"Unable to fetch elgamal params: {e}") #NOTE: What would be the most correct status_codes for different scenarios?
+            raise HTTPException(status_code=502, detail=f"Unable to fetch elgamal params: {e}")
 
 
 async def fetch_last_ballot_ctvs_from_bb(election_id):

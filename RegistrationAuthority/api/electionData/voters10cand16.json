@@ -1,0 +1,116 @@
+{
+    "election": {
+        "id": 123,
+        "name": "Student Council President",
+        "start": "2025-11-11T09:18Z",
+        "end": "2025-11-11T09:30Z"
+    },
+    "candidates": [
+        {
+            "id": 1,
+            "name": "Alice"
+        },
+        {
+            "id": 2,
+            "name": "Bob"
+        },
+        {
+            "id": 3,
+            "name": "Egon"
+        },
+        {
+            "id": 4,
+            "name": "Olsen"
+        },
+        {
+            "id": 5,
+            "name": "Rebecca"
+        },
+        {
+            "id": 6,
+            "name": "Thomas"
+        },
+        {
+            "id": 7,
+            "name": "Pernille"
+        },
+        {
+            "id": 8,
+            "name": "Brock"
+        },
+        {
+            "id": 9,
+            "name": "Dennis"
+        },
+        {
+            "id": 10,
+            "name": "Anne"
+        },
+        {
+            "id": 11,
+            "name": "Annie"
+        },
+        {
+            "id": 12,
+            "name": "Anna"
+        },
+        {
+            "id": 13,
+            "name": "Sophie"
+        },
+        {
+            "id": 14,
+            "name": "Sophia"
+        },
+        {
+            "id": 15,
+            "name": "Aligator"
+        },
+        {
+            "id": 16,
+            "name": "Bobetta"
+        }
+    ],
+    "voters": [
+        {
+            "id": 0,
+            "name": "First0 Last0"
+        },
+        {
+            "id": 1,
+            "name": "First1 Last1"
+        },
+        {
+            "id": 2,
+            "name": "First2 Last2"
+        },
+        {
+            "id": 3,
+            "name": "First3 Last3"
+        },
+        {
+            "id": 4,
+            "name": "First4 Last4"
+        },
+        {
+            "id": 5,
+            "name": "First5 Last5"
+        },
+        {
+            "id": 6,
+            "name": "First6 Last6"
+        },
+        {
+            "id": 7,
+            "name": "First7 Last7"
+        },
+        {
+            "id": 8,
+            "name": "First8 Last8"
+        },
+        {
+            "id": 9,
+            "name": "First9 Last9"
+        }
+    ]
+}
