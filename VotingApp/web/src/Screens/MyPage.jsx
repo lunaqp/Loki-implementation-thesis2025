@@ -133,8 +133,12 @@ const MyPage = () => {
       if (!res.ok) throw new Error(await res.text());
       const data = await res.json();
       setResultData(data);
+
+      const verified = await fetchTallyVerification(election.id);
+      setTallyStatus(verified ? "success" : "error");
     } catch (err) {
       setResultError(String(err));
+      setTallyStatus("error");
     } finally {
       setResultLoading(false);
     }
@@ -231,11 +235,12 @@ const MyPage = () => {
             )}
             {!resultLoading && !resultError && resultData && (
               <ModalBody>
+                <h4>Candidates:</h4>
                 {Array.isArray(resultData.result) ? (
                   <ResultList>
                     {resultData.result.map((r) => (
                       <li key={r.candidateid}>
-                        <span>Candidate: {r.candidate_name}</span>
+                        <span>{r.candidate_name}</span>
                         <b>{r.votes} votes</b>
                       </li>
                     ))}
@@ -246,37 +251,16 @@ const MyPage = () => {
               </ModalBody>
             )}
             <ModalFooter>
-              <ButtonGroup>
-                <button
-                  className="secondary"
-                  onClick={async () => {
-                    setTallyStatus(null);
-                    try {
-                      const id = resultElection?.id;
-                      if (!id) {
-                        setTallyStatus("error");
-                        return;
-                      }
-                      const verified = await fetchTallyVerification(id);
-                      setTallyStatus(verified ? "success" : "error");
-                    } catch (e) {
-                      setTallyStatus("error");
-                    }
-                  }}
-                >
-                  Verify tally
-                </button>
-                {tallyStatus === "success" && (
-                  <span style={{ color: "green", fontWeight: "600" }}>
-                    Tally verified
-                  </span>
-                )}
-                {tallyStatus === "error" && (
-                  <span style={{ color: "red", fontWeight: "600" }}>
-                    Error verifying tally
-                  </span>
-                )}
-              </ButtonGroup>
+              {tallyStatus === "success" && (
+                <span style={{ color: "green", fontWeight: "600" }}>
+                  Tally verified!
+                </span>
+              )}
+              {tallyStatus === "error" && (
+                <span style={{ color: "red", fontWeight: "600" }}>
+                  Error verifying tally
+                </span>
+              )}
             </ModalFooter>
           </ModalCard>
         </ModalOverlay>
@@ -495,6 +479,10 @@ const CloseX = styled.button`
 
 const ModalBody = styled.div`
   padding: 16px;
+
+  h4 {
+    margin: 0 0 8px;
+  }
 `;
 
 const ResultList = styled.ul`
