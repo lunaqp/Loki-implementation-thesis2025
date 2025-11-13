@@ -7,8 +7,9 @@ from statement import stmt
 import base64
 from hashVS import hash_ballot
 import json
-from coloursVS import GREEN, ORANGE, YELLOW
+from coloursVS import GREEN, ORANGE, YELLOW, PINK, BOLD
 import fetch_functions as ff
+import time
 
 async def validate_ballot(pyballot:Ballot):
     election_id = pyballot.electionid
@@ -30,14 +31,14 @@ async def validate_ballot(pyballot:Ballot):
     if hashed_ballot not in ballot_hash:
         ballot_not_included = True
 
+    s_time_verify = time.process_time_ns()
     proof_verified = await verify_proof(election_id, pyballot.voterid, pyballot)
-    #proof_verified = True #for testing purposes, keep above instead.
+    e_time_verify = time.process_time_ns() - s_time_verify
+    print(f"{PINK}Ballot verification time:", e_time_verify/1000000, "ms")
 
     ballot_validated = uid_exists and ballot_not_included and proof_verified
 
     return ballot_validated
-
-    #NOTE Function to create the hash value in RA missing.
 
 async def verify_proof(election_id, voter_id, pyballot):
     GROUP, GENERATOR, _, cbr_length, candidates, pk_TS, pk_VS = await fetch_data(election_id, voter_id)
@@ -56,7 +57,7 @@ async def verify_proof(election_id, voter_id, pyballot):
     last_ballot = convert_to_ecpt(last_ballot_b64, GROUP)
     previous_last_ballot = convert_to_ecpt(previous_last_ballot_b64, GROUP)
 
-    upk = EcPt.from_binary(base64.b64decode(pyballot.upk), GROUP) # Recreating voter public key as  EcPt object
+    upk = EcPt.from_binary(base64.b64decode(pyballot.upk), GROUP) # Recreating voter public key as EcPt object
 
     ctv = last_ballot[0]
     ctlv = last_ballot[1]
@@ -77,7 +78,7 @@ async def verify_proof(election_id, voter_id, pyballot):
         print(f"{ORANGE}verification failed")
         #NOTE: if failed to verify send message to voting app and display in UI "ballot not valid"
     else:
-        print(f"{GREEN}Ballot succesfully verified")
+        print(f"{BOLD}{GREEN}Ballot succesfully verified")
 
     return stmt_c.verify(proof_current)
 
@@ -117,9 +118,7 @@ def dec(ct, sk):
 
     return message
 
-#NOTE: We recieve a ballot  with a uid, then we can get the cbr for that id, we are missing this
-#NOTE we are missing the time aspect of potentially calling obfuscate many times asynchronously maybe??
-    
+  
 async def obfuscate(voter_id, election_id):
     GROUP, GENERATOR, ORDER, cbr_length, candidates, pk_TS, pk_VS = await fetch_data(election_id, voter_id)
     voter_public_key_bin = await ff.fetch_voter_public_key_from_bb(voter_id, election_id)

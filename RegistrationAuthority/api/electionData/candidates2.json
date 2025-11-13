@@ -1,0 +1,32 @@
+{
+    "election": {
+        "id": 123,
+        "name": "Student Council President",
+        "start": "2025-11-10T14:11Z",
+        "end": "2025-11-10T14:14Z"
+    },
+    "candidates": [
+        {
+            "id": 1,
+            "name": "Alice"
+        },
+        {
+            "id": 2,
+            "name": "Bob"
+        }
+    ],
+    "voters": [
+        {
+            "id": 101,
+            "name": "Luna Q Poulsen"
+        },
+        {
+            "id": 102,
+            "name": "Aja Harder"
+        },
+        {
+            "id": 103,
+            "name": "Eve Evesdropper"
+        }
+    ]
+}

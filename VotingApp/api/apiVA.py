@@ -4,11 +4,14 @@ import duckdb
 from contextlib import asynccontextmanager
 from modelsVA import Ballot, VoterBallot, AuthRequest, Elections, IndexImageCBR
 from vote_casting import vote, send_ballot_to_VS
-from coloursVA import RED, GREEN, PURPLE
+from coloursVA import RED, GREEN, PURPLE, PINK
 import httpx
 import save_to_duckdb as ddb
 from tally_verification import verify_tally
 from fetch_functions_va import fetch_election_result_from_bb, fetch_candidates_names_from_bb
+import time
+
+e_time_vote = []
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -26,10 +29,6 @@ def health():
 
 # Register FastAPI router
 app.include_router(bulletin_router)
-
-@app.get("/api/election")
-def get_election_id():
-    return {"electionId": 123}
 
 @app.get("/api/election-result")
 async def get_election_result(
@@ -111,8 +110,12 @@ def receive_secret_key(data: dict):
 # Sending ballot to Voting Server after receiving it in the Voting App frontend.
 @app.post("/api/send-ballot")
 async def send_ballot(voter_ballot: VoterBallot):
+    s_time_vote = time.process_time_ns() # Start timer
     # Constructing ballot
     pyBallot: Ballot = await vote(voter_ballot.v, voter_ballot.lv_list, voter_ballot.election_id, voter_ballot.voter_id)
+    e_time_vote.append(time.process_time_ns() - s_time_vote) # Append to timer
+    print("e-time-vote:", e_time_vote)
+    print(f"{PINK}Ballot vote time (avg):", round(sum(e_time_vote)/len(e_time_vote)/1000000,3), "ms") # Last result printed is the average of all
     # Sending ballot to voting-server
     print(f"{GREEN}Sending ballot to Voting Server")
     image_response = await send_ballot_to_VS(pyBallot) # Image response in format: {"image": image_filename.jpg}
@@ -155,7 +158,10 @@ async def fetch_elections_for_voter(
     
 @app.get("/api/verify_tally")
 async def verify_election_tally(election_id: int = Query(..., description="ID of the election")):
+    s_time_tally_verification = time.process_time_ns()
     verification_status = await verify_tally(election_id)
+    e_time_tally_verification = time.process_time_ns() - s_time_tally_verification
+    print(f"{PINK}Tallying verification time:", e_time_tally_verification/1000000, "ms")
     print(f"{PURPLE}Tally verification request received for election {election_id}. Verification status:", verification_status)
     return {"verified": verification_status}
 

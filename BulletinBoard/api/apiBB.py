@@ -11,11 +11,6 @@ app = FastAPI()
 def health():
     return{"ok": True}
 
-# @app.get("/hello") #Defines HTTP Get route at /hello
-# #a function that runs when client requests /hello
-# def hello():
-#     return {"message": "Hello World from BulletinBoard!"}
-
 @app.get("/candidates")
 def candidates(election_id: int = Query(..., description = "id of the election")):
     candidates = db.fetch_candidates_for_election(election_id)

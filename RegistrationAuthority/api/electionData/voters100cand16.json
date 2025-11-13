@@ -1,0 +1,476 @@
+{
+    "election": {
+        "id": 123,
+        "name": "Student Council President",
+        "start": "2025-11-11T12:15Z",
+        "end": "2025-11-11T12:27Z"
+    },
+    "candidates": [
+        {
+            "id": 1,
+            "name": "Alice"
+        },
+        {
+            "id": 2,
+            "name": "Bob"
+        },
+        {
+            "id": 3,
+            "name": "Egon"
+        },
+        {
+            "id": 4,
+            "name": "Olsen"
+        },
+        {
+            "id": 5,
+            "name": "Rebecca"
+        },
+        {
+            "id": 6,
+            "name": "Thomas"
+        },
+        {
+            "id": 7,
+            "name": "Pernille"
+        },
+        {
+            "id": 8,
+            "name": "Brock"
+        },
+        {
+            "id": 9,
+            "name": "Dennis"
+        },
+        {
+            "id": 10,
+            "name": "Anne"
+        },
+        {
+            "id": 11,
+            "name": "Annie"
+        },
+        {
+            "id": 12,
+            "name": "Anna"
+        },
+        {
+            "id": 13,
+            "name": "Sophie"
+        },
+        {
+            "id": 14,
+            "name": "Sophia"
+        },
+        {
+            "id": 15,
+            "name": "Aligator"
+        },
+        {
+            "id": 16,
+            "name": "Bobetta"
+        }
+    ],
+    "voters": [
+        {
+            "id": 0,
+            "name": "First0 Last0"
+        },
+        {
+            "id": 1,
+            "name": "First1 Last1"
+        },
+        {
+            "id": 2,
+            "name": "First2 Last2"
+        },
+        {
+            "id": 3,
+            "name": "First3 Last3"
+        },
+        {
+            "id": 4,
+            "name": "First4 Last4"
+        },
+        {
+            "id": 5,
+            "name": "First5 Last5"
+        },
+        {
+            "id": 6,
+            "name": "First6 Last6"
+        },
+        {
+            "id": 7,
+            "name": "First7 Last7"
+        },
+        {
+            "id": 8,
+            "name": "First8 Last8"
+        },
+        {
+            "id": 9,
+            "name": "First9 Last9"
+        },
+        {
+            "id": 10,
+            "name": "First10 Last10"
+        },
+        {
+            "id": 11,
+            "name": "First11 Last11"
+        },
+        {
+            "id": 12,
+            "name": "First12 Last12"
+        },
+        {
+            "id": 13,
+            "name": "First13 Last13"
+        },
+        {
+            "id": 14,
+            "name": "First14 Last14"
+        },
+        {
+            "id": 15,
+            "name": "First15 Last15"
+        },
+        {
+            "id": 16,
+            "name": "First16 Last16"
+        },
+        {
+            "id": 17,
+            "name": "First17 Last17"
+        },
+        {
+            "id": 18,
+            "name": "First18 Last18"
+        },
+        {
+            "id": 19,
+            "name": "First19 Last19"
+        },
+        {
+            "id": 20,
+            "name": "First20 Last20"
+        },
+        {
+            "id": 21,
+            "name": "First21 Last21"
+        },
+        {
+            "id": 22,
+            "name": "First22 Last22"
+        },
+        {
+            "id": 23,
+            "name": "First23 Last23"
+        },
+        {
+            "id": 24,
+            "name": "First24 Last24"
+        },
+        {
+            "id": 25,
+            "name": "First25 Last25"
+        },
+        {
+            "id": 26,
+            "name": "First26 Last26"
+        },
+        {
+            "id": 27,
+            "name": "First27 Last27"
+        },
+        {
+            "id": 28,
+            "name": "First28 Last28"
+        },
+        {
+            "id": 29,
+            "name": "First29 Last29"
+        },
+        {
+            "id": 30,
+            "name": "First30 Last30"
+        },
+        {
+            "id": 31,
+            "name": "First31 Last31"
+        },
+        {
+            "id": 32,
+            "name": "First32 Last32"
+        },
+        {
+            "id": 33,
+            "name": "First33 Last33"
+        },
+        {
+            "id": 34,
+            "name": "First34 Last34"
+        },
+        {
+            "id": 35,
+            "name": "First35 Last35"
+        },
+        {
+            "id": 36,
+            "name": "First36 Last36"
+        },
+        {
+            "id": 37,
+            "name": "First37 Last37"
+        },
+        {
+            "id": 38,
+            "name": "First38 Last38"
+        },
+        {
+            "id": 39,
+            "name": "First39 Last39"
+        },
+        {
+            "id": 40,
+            "name": "First40 Last40"
+        },
+        {
+            "id": 41,
+            "name": "First41 Last41"
+        },
+        {
+            "id": 42,
+            "name": "First42 Last42"
+        },
+        {
+            "id": 43,
+            "name": "First43 Last43"
+        },
+        {
+            "id": 44,
+            "name": "First44 Last44"
+        },
+        {
+            "id": 45,
+            "name": "First45 Last45"
+        },
+        {
+            "id": 46,
+            "name": "First46 Last46"
+        },
+        {
+            "id": 47,
+            "name": "First47 Last47"
+        },
+        {
+            "id": 48,
+            "name": "First48 Last48"
+        },
+        {
+            "id": 49,
+            "name": "First49 Last49"
+        },
+        {
+            "id": 50,
+            "name": "First50 Last50"
+        },
+        {
+            "id": 51,
+            "name": "First51 Last51"
+        },
+        {
+            "id": 52,
+            "name": "First52 Last52"
+        },
+        {
+            "id": 53,
+            "name": "First53 Last53"
+        },
+        {
+            "id": 54,
+            "name": "First54 Last54"
+        },
+        {
+            "id": 55,
+            "name": "First55 Last55"
+        },
+        {
+            "id": 56,
+            "name": "First56 Last56"
+        },
+        {
+            "id": 57,
+            "name": "First57 Last57"
+        },
+        {
+            "id": 58,
+            "name": "First58 Last58"
+        },
+        {
+            "id": 59,
+            "name": "First59 Last59"
+        },
+        {
+            "id": 60,
+            "name": "First60 Last60"
+        },
+        {
+            "id": 61,
+            "name": "First61 Last61"
+        },
+        {
+            "id": 62,
+            "name": "First62 Last62"
+        },
+        {
+            "id": 63,
+            "name": "First63 Last63"
+        },
+        {
+            "id": 64,
+            "name": "First64 Last64"
+        },
+        {
+            "id": 65,
+            "name": "First65 Last65"
+        },
+        {
+            "id": 66,
+            "name": "First66 Last66"
+        },
+        {
+            "id": 67,
+            "name": "First67 Last67"
+        },
+        {
+            "id": 68,
+            "name": "First68 Last68"
+        },
+        {
+            "id": 69,
+            "name": "First69 Last69"
+        },
+        {
+            "id": 70,
+            "name": "First70 Last70"
+        },
+        {
+            "id": 71,
+            "name": "First71 Last71"
+        },
+        {
+            "id": 72,
+            "name": "First72 Last72"
+        },
+        {
+            "id": 73,
+            "name": "First73 Last73"
+        },
+        {
+            "id": 74,
+            "name": "First74 Last74"
+        },
+        {
+            "id": 75,
+            "name": "First75 Last75"
+        },
+        {
+            "id": 76,
+            "name": "First76 Last76"
+        },
+        {
+            "id": 77,
+            "name": "First77 Last77"
+        },
+        {
+            "id": 78,
+            "name": "First78 Last78"
+        },
+        {
+            "id": 79,
+            "name": "First79 Last79"
+        },
+        {
+            "id": 80,
+            "name": "First80 Last80"
+        },
+        {
+            "id": 81,
+            "name": "First81 Last81"
+        },
+        {
+            "id": 82,
+            "name": "First82 Last82"
+        },
+        {
+            "id": 83,
+            "name": "First83 Last83"
+        },
+        {
+            "id": 84,
+            "name": "First84 Last84"
+        },
+        {
+            "id": 85,
+            "name": "First85 Last85"
+        },
+        {
+            "id": 86,
+            "name": "First86 Last86"
+        },
+        {
+            "id": 87,
+            "name": "First87 Last87"
+        },
+        {
+            "id": 88,
+            "name": "First88 Last88"
+        },
+        {
+            "id": 89,
+            "name": "First89 Last89"
+        },
+        {
+            "id": 90,
+            "name": "First90 Last90"
+        },
+        {
+            "id": 91,
+            "name": "First91 Last91"
+        },
+        {
+            "id": 92,
+            "name": "First92 Last92"
+        },
+        {
+            "id": 93,
+            "name": "First93 Last93"
+        },
+        {
+            "id": 94,
+            "name": "First94 Last94"
+        },
+        {
+            "id": 95,
+            "name": "First95 Last95"
+        },
+        {
+            "id": 96,
+            "name": "First96 Last96"
+        },
+        {
+            "id": 97,
+            "name": "First97 Last97"
+        },
+        {
+            "id": 98,
+            "name": "First98 Last98"
+        },
+        {
+            "id": 99,
+            "name": "First99 Last99"
+        }
+    ]
+}

@@ -44,9 +44,9 @@ async def keygen(voter_list, election_id):
     voter_key_list = VoterKeyList(voterkeylist=[])
 
     for id in voter_list:
-        secret_key = ORDER.random() # save secret key locally.
+        secret_key = ORDER.random()
         public_key = secret_key * GENERATOR
-        enc_secret_key, iv = encrypt_key(secret_key) # TODO: Either reintroduce encryption or remove from code
+        enc_secret_key, iv = encrypt_key(secret_key)
         
         await send_keys_to_va(id, election_id, enc_secret_key, public_key, iv)
 

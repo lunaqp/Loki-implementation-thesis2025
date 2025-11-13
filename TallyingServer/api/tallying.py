@@ -1,13 +1,14 @@
 from zksk import Secret, base, DLRep
 from petlib.ec import EcPt
 import httpx
-from coloursTS import RED, PURPLE, CYAN
+from coloursTS import RED, PURPLE, CYAN, PINK
 import base64
 from modelsTS import CandidateResult, ElectionResult
 import pytz
 from datetime import datetime
 import asyncio
 from fetchFunctions import fetch_candidates_from_bb, fetch_voters_from_bb, fetch_last_ballot_ctvs_from_bb, fetch_ts_secret_key, fetch_electiondates_from_bb, fetch_elgamal_params
+import time
 
 # Keeping track of time to trigger tallying once an election ends.
 tz = pytz.timezone('Europe/Copenhagen')
@@ -36,7 +37,10 @@ async def handle_election(election_id):
 
     # Tally the election result
     print(f"{PURPLE}Tallying election with id {election_id}...")
+    s_time_tally = time.process_time_ns()
     election_result: ElectionResult = await tally(election_id)
+    e_time_tally = time.process_time_ns() - s_time_tally
+    print(f"{PINK}Tallying time:", e_time_tally/1000000, "ms")
     await send_result_to_bb(election_result)
 
 # Tally function:

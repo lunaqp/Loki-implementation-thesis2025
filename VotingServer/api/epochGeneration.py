@@ -2,8 +2,6 @@ import numpy as np
 import random
 from fetch_functions import fetch_electiondates_from_bb
 
-
-#NOTE: Remove cycle once we have images enough
 def assign_images_for_timestamps(length: int): #assigns imgs, returns list of length x imgpaths, one per timestamp
     #Return list of image paths length, shuffled for each voter. If fewer images than length, cycle through.
 
@@ -20,7 +18,7 @@ def generate_voteamount():
     generator = np.random.default_rng(seed=None)
 
     # Discrete uniform distribution from 900-1100. Size=None means that a single value is returned.
-    voteamount = generator.integers(low=10, high=15, size=None, dtype=np.int64, endpoint=True) # endpoint=true makes both low and high inclusive. Range is therefore 800-1200.
+    voteamount = generator.integers(low=10, high=15, size=None, dtype=np.int64, endpoint=True) # endpoint=true makes both low and high inclusive.
     return voteamount
 
 def generate_epochs(election_duration_secs, voteamount):
@@ -36,9 +34,9 @@ def generate_epochs(election_duration_secs, voteamount):
     while np.sum(epoch_array) < election_duration_secs:
         samples = generator.normal(center, spread, size=voteamount+100) # + 100 to create a buffer in case some values fall outside of the three standard deviations.
 
-        # Loop to ensure we only keep values over 0 seconds and less than twice the mean/center.
+        # Loop to ensure we only keep values over 5 seconds and less than twice the mean/center.
         for interval in samples:
-            if interval > 5 and interval < center * 2: #NOTE: minimum time = 5 sec buffer. To ensure certain amount of time between timestamps.
+            if interval >= 5 and interval < center * 2: # minimum time of 5 seconds to ensure certain amount of time between timestamps.
                 epoch_array = np.append(epoch_array, interval)
         
     return epoch_array
@@ -57,8 +55,8 @@ async def generate_timestamps(election_id):
     # pass election duration and the total number of votes for the given voter to dynamically generate epochs.
     epoch_array = generate_epochs(election_duration_secs, voteamount)
 
-    # Adding timestamps to a timeline for the 24 hours the election lasts.
-    # sum is used to track on 24-hour timeline:    0 sec |--------------------------------------| 86400 sec
+    # Adding timestamps to a timeline for the duration the election lasts.
+    # sum is used to track progress on timeline:    0 sec |--------------------------------------| election_duration_secs
     sum = 0
     timestamps = [first_timestamp]
     for epoch in epoch_array:

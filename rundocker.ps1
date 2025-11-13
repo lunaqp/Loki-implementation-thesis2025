@@ -52,6 +52,10 @@ do {
             docker compose down
             exit
         }
+        '7' {
+            Write-Host "Loading election 3..." -ForegroundColor Green
+            Invoke-RestMethod -Uri "http://localhost:8002/elections/load-file?name=voters1000cand2.json" -Method Post  
+        }
         default {
             Write-Host "Invalid selection. Choose a number from 1-6"  -ForegroundColor Red
         }
