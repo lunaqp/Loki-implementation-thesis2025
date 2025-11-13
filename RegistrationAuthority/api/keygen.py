@@ -126,8 +126,6 @@ def create_va_instance(voter_id):
     )
     return container_name
 
-
-
 async def wait_for_va(container_name, timeout=30):
     url = f"http://{container_name}:8000/health" 
     start_time = asyncio.get_event_loop().time()
@@ -146,3 +144,26 @@ async def wait_for_va(container_name, timeout=30):
             raise TimeoutError(f"{container_name} did not become ready in {timeout} seconds")
         
         await asyncio.sleep(1) 
+
+
+def create_va_web_instance(voter_id):
+    client = docker.from_env()
+    container_name = f"va_web_{voter_id}"
+    existing = client.containers.list(filters={"name": container_name})
+    if existing:
+        return container_name
+
+    image_name = "loki-implementation-thesis2025-va_web:latest"
+    network_name = "loki-implementation-thesis2025_default"
+    
+    client.containers.run(
+        image=image_name,
+        name=container_name,
+        detach=True,
+        network=network_name,
+        environment={
+            "VITE_API_VOTINGAPP": f"http://va_api_{voter_id}:8000",
+            "VOTER_ID": str(voter_id),
+        },
+    )
+    return container_name
