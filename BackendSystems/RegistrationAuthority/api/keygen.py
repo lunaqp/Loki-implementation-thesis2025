@@ -48,7 +48,7 @@ async def keygen(voter_list, election_id):
         public_key = secret_key * GENERATOR
         enc_secret_key, iv = encrypt_key(secret_key)
         
-        await send_keys_to_va(id, election_id, enc_secret_key, public_key, iv)
+        # await send_keys_to_va(id, election_id, enc_secret_key, public_key, iv)
 
         voter_key = VoterKey(
             electionid = election_id,
