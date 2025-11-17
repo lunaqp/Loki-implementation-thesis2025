@@ -79,8 +79,10 @@ services:
     build:
       context: ./VotingApp/web
       dockerfile: Dockerfile
-    environment:
-      VITE_API_VOTINGAPP: http://va_api:8000
+    profiles: # Adding profile to avoid starting a va_api that is not connected to a voter (when running "docker compose up").
+      - va
+    # environment:
+    #   VITE_API_VOTINGAPP: http://va_api:8000
     # depends_on:
     #   - va_api
     ports:

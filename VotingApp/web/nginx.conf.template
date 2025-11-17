@@ -9,7 +9,7 @@ server {
 
     # Setting up proxy for VotingApp backend/frontend communication.
     location /api {
-        proxy_pass http://va_api:8000;  # Docker service name + port
+        proxy_pass ${VITE_API_VOTINGAPP};  # Docker service name + port
         proxy_set_header Host $host;
     }
 }
