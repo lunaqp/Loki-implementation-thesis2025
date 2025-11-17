@@ -1,12 +1,10 @@
 from petlib.ec import EcGroup
-import os
 import httpx
 from modelsRA import ElGamalParams, VoterKey, VoterKeyList
 import httpx
 import base64
-from fastapi import HTTPException
-from coloursRA import BLUE, RED
-from petlib.cipher import Cipher
+from coloursRA import BLUE, RED, CYAN
+import duckdb
 
 def generate_group_order():
     # Using the petlib library group operations to generate group and group values
@@ -43,21 +41,30 @@ async def send_params_to_bb():
 async def keygen(voter_list, election_id):
     voter_key_list = VoterKeyList(voterkeylist=[])
 
-    for id in voter_list:
+    for voter_id in voter_list:
         secret_key = ORDER.random()
         public_key = secret_key * GENERATOR
-        enc_secret_key, iv = encrypt_key(secret_key)
         
-        # await send_keys_to_va(id, election_id, enc_secret_key, public_key, iv)
+        save_keys_to_duckdb(voter_id, election_id, secret_key, public_key)
 
         voter_key = VoterKey(
             electionid = election_id,
-            voterid = id,
+            voterid = voter_id,
             publickey = base64.b64encode(public_key.export()).decode()
         )
         voter_key_list.voterkeylist.append(voter_key)
     
     return voter_key_list
+
+def save_keys_to_duckdb(voter_id, election_id, secret_key, public_key):
+    print("saving keys to duckdb")
+    try:
+        conn = duckdb.connect("/duckdb/voter-keys.duckdb")
+        print(f"{CYAN}inserting keys in duckdb for voter {voter_id}")
+        conn.execute(f"INSERT INTO VoterKeys VALUES (?, ?, ?, ?)", (voter_id, election_id, secret_key.binary(), public_key.export()))
+    except Exception as e:
+        print(f"{RED}error inserting keys in duckdb for voter {voter_id}: {e}")
+
 
 async def send_keys_to_bb(voter_info: VoterKeyList):
     async with httpx.AsyncClient() as client:
@@ -65,26 +72,12 @@ async def send_keys_to_bb(voter_info: VoterKeyList):
         response.raise_for_status()
         print(f"{BLUE}voter public keys sent to BB")        
 
-async def send_keys_to_va(voter_id, election_id, secret_key, public_key, iv):
-    data = {"voter_id": voter_id, "election_id": election_id, "secret_key": base64.b64encode(secret_key).decode(), "iv": base64.b64encode(iv).decode(), "public_key":base64.b64encode(public_key.export()).decode() } # decode() converts b64 bytes to string
+def fetch_keys_from_duckdb(voter_id, election_id):
+    conn = duckdb.connect("/duckdb/voter-keys.duckdb")
+    (secret_key, public_key) = conn.execute("""
+            SELECT SecretKey, PublicKey
+            FROM VoterKeys
+            WHERE VoterID = ? AND ElectionID = ?
+            """, (voter_id, election_id)).fetchone()
 
-    try:
-        async with httpx.AsyncClient() as client:
-            response = await client.post("http://va_api:8000/receive-keys", json=data)
-            response.raise_for_status() # gets http status code
-          
-            return response.json()
-    except Exception as e:
-        print(f"{RED}Error sending keys to VA: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to send secret key to VA: {str(e)}")     
-
-def encrypt_key(secret_key):
-    secret_key_bin = secret_key.binary()
-    aes_cipher = Cipher("AES-128-CTR")
-    iv = os.urandom(16)
-    ENC_KEY = base64.b64decode(os.getenv("VOTER_SK_ENCRYPTION_KEY")) # Symmetric key - saved in docker-compose.yml
-    enc = aes_cipher.enc(ENC_KEY, iv)
-    enc_secret_key = enc.update(secret_key_bin)
-    enc_secret_key += enc.finalize()
-
-    return (enc_secret_key, iv)
+    return secret_key, public_key

@@ -6,13 +6,13 @@ from modelsVA import Ballot, VoterBallot, AuthRequest, Elections, IndexImageCBR
 from vote_casting import vote, send_ballot_to_VS
 from coloursVA import RED, GREEN, PURPLE, PINK
 import httpx
-import save_to_duckdb as ddb
 from tally_verification import verify_tally
-from fetch_functions_va import fetch_election_result_from_bb, fetch_candidates_names_from_bb
+from fetch_functions_va import fetch_election_result_from_bb, fetch_candidates_names_from_bb, fetch_keys_from_ra, already_saved
 import time
 import os
 
 BB_API_URL = os.environ.get("BB_API_URL")
+RA_API_URL = os.environ.get("RA_API_URL")
 
 e_time_vote = []
 
@@ -20,8 +20,9 @@ e_time_vote = []
 async def lifespan(app: FastAPI):
     # Initialising DuckDB database:
     conn = duckdb.connect("/duckdb/voter-keys.duckdb")
-    conn.sql("CREATE TABLE VoterKeys(VoterID INTEGER, ElectionID INTEGER, SecretKey BLOB, PublicKey BLOB, IV BLOB)")
-    conn.sql("CREATE TABLE VoterLogin(Username TEXT PRIMARY KEY, Password TEXT)")
+    conn.sql("CREATE TABLE IF NOT EXISTS VoterKeys(VoterID INTEGER, ElectionID INTEGER, SecretKey BLOB, PublicKey BLOB)")
+    conn.sql("CREATE TABLE IF NOT EXISTS VoterLogin(Username TEXT PRIMARY KEY, Password TEXT)")
+
     yield  # yielding control back to FastAPI
 
 app = FastAPI(lifespan=lifespan)
@@ -71,6 +72,14 @@ async def fetch_elections_for_voter(
 
             elections: Elections = Elections.model_validate(response.json())
             
+            print("fetching keys for elections associated with voter")
+            # Retrieve keys for each election associated with voter. Avoid re-fetching by checking if election has been saved.
+            for election in elections.elections:
+                if already_saved(election.id):
+                    continue
+                else:
+                    await fetch_keys_from_ra(voter_id, election.id)
+
             return elections
     except Exception as e:
         print(f"{RED}Error fetching elections for voter {voter_id}: {e}")
@@ -91,23 +100,6 @@ async def fetch_elections_for_voter(
     except Exception as e:
         print(f"{RED}Error fetching cbr images for voter {voter_id}: {e}")
         raise HTTPException(status_code=500, detail=f"{RED}Error fetching cbr images for voter {voter_id}: {str(e)}")     
-
-
-@app.post("/receive-keys")
-def receive_secret_key(data: dict):
-    voter_id = data["voter_id"]
-    election_id = data["election_id"]
-    enc_secret_key = data["secret_key"]
-    public_key = data["public_key"]
-    iv = data["iv"]
-
-    # Public and secret keys are saved in internal duckdb database. Secret key is symmetrically encrypted with Fernet.
-    ddb.save_keys_to_duckdb(voter_id, election_id, enc_secret_key, public_key, iv)
-    ddb.save_voter_login(voter_id)
-    conn = duckdb.connect("/duckdb/voter-keys.duckdb")
-    conn.table("VoterLogin").show() 
-
-    return {"status": "secret key received"}
 
 
 # Sending ballot to Voting Server after receiving it in the Voting App frontend.

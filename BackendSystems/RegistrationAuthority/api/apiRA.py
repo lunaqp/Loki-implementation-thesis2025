@@ -1,12 +1,14 @@
 import os
 from fastapi import FastAPI, HTTPException, Query
 import json
-from keygen import keygen, send_params_to_bb, send_keys_to_bb
+from keygen import keygen, send_params_to_bb, send_keys_to_bb, fetch_keys_from_duckdb
 from generateB0 import generate_ballot0, send_ballotlist_to_votingserver
 from contextlib import asynccontextmanager
 import httpx
 from modelsRA import VoterKeyList, NewElectionData
 from coloursRA import BLUE, RED, CYAN
+import duckdb
+import base64
 
 DATA_DIR = os.getenv("DATA_DIR", "/app/data") #this is the electionData dir
 
@@ -15,6 +17,11 @@ DATA_DIR = os.getenv("DATA_DIR", "/app/data") #this is the electionData dir
 async def lifespan(app: FastAPI):
     # await send_election_to_bb
     await send_params_to_bb()
+
+    # Initialising DuckDB database:
+    conn = duckdb.connect("/duckdb/voter-keys.duckdb")
+    conn.sql("CREATE TABLE VoterKeys(VoterID INTEGER, ElectionID INTEGER, SecretKey BLOB, PublicKey BLOB)")
+
     yield # yielding control back to FastApi
 
 app = FastAPI(lifespan=lifespan)
@@ -101,3 +108,14 @@ async def send_election_to_bb(payload):
     except Exception as e:
         print(f"{RED}Error sending election payload: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to send election to BB: {str(e)}")        
+
+@app.get("/voter-keys")
+async def send_voter_keys(
+    voter_id: int = Query(..., description="id of the voter"),
+    election_id: int = Query(..., description="id of the election")):
+    print(f"sending keys to Voting-app for voter: {voter_id}")
+    # Fetch from duckDB
+    secret_key, public_key = await fetch_keys_from_duckdb(voter_id, election_id)
+    data: dict = {"voter_id": voter_id, "election_id": election_id, "secret_key": base64.b64encode(secret_key).decode(), "public_key":base64.b64encode(public_key).decode()} # decode() converts b64 bytes to string
+    
+    return data

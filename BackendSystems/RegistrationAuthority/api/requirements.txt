@@ -8,3 +8,4 @@ https://github.com/caro3801/bplib/archive/refs/heads/fix/OpenSSL.tar.gz # petlib
 git+https://github.com/spring-epfl/zksk.git#egg=zksk
 cryptography
 httpx
+duckdb

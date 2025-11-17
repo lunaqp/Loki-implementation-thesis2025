@@ -6,9 +6,10 @@ from petlib.ec import EcPt, EcGroup, Bn
 import base64
 import duckdb
 from pydantic import ValidationError
-from petlib.cipher import Cipher
 import os
+import save_to_duckdb as ddb
 
+RA_API_URL = os.environ.get("RA_API_URL")
 BB_API_URL = os.environ.get("BB_API_URL")
 
 async def fetch_elgamal_params():
@@ -162,22 +163,49 @@ async def fetch_cbr_length_from_bb(voter_id, election_id):
 
 def fetch_keys(voter_id, election_id):
     conn = duckdb.connect("/duckdb/voter-keys.duckdb")
-    (enc_secret_key, public_key, iv) = conn.execute("""
-            SELECT SecretKey, PublicKey, IV
+    (secret_key, public_key) = conn.execute("""
+            SELECT SecretKey, PublicKey
             FROM VoterKeys
             WHERE VoterID = ? AND ElectionID = ?
             """, (voter_id, election_id)).fetchone()
-    
-    secret_key = decrypt_key(enc_secret_key, iv)
 
     return secret_key, public_key
 
 
-def decrypt_key(enc_secret_key, iv):
-    ENC_KEY = base64.b64decode(os.getenv("VOTER_SK_DECRYPTION_KEY"))
-    aes_cipher = Cipher("AES-128-CTR")
-    dec = aes_cipher.dec(ENC_KEY, iv)
-    decrypted_secret_key = dec.update(enc_secret_key)
-    decrypted_secret_key += dec.finalize()
+async def fetch_keys_from_ra(voter_id, election_id):
+    print("fetching keys from RA...")
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.get(f"{RA_API_URL}/voter-keys")
+            response.raise_for_status() 
 
-    return decrypted_secret_key
+            data:dict = response.json()
+
+            voter_id = data["voter_id"]
+            election_id = data["election_id"]
+            enc_secret_key = data["secret_key"]
+            public_key = data["public_key"]
+
+            # Public and secret keys are saved in internal duckdb database.
+            ddb.save_keys_to_duckdb(voter_id, election_id, enc_secret_key, public_key)
+            ddb.save_voter_login(voter_id)
+            conn = duckdb.connect("/duckdb/voter-keys.duckdb")
+            conn.table("VoterLogin").show() 
+
+            return {"status": "keys received"}
+    except Exception as e:
+        print(f"{RED}Error fetching keys for voter, {e}")
+        raise HTTPException(status_code=500, detail=f"{RED}Error fetching keys for voter, {str(e)}")     
+
+def already_saved(election_id):
+    ("checking if keys for election is already saved for voter in duckdb")
+    conn = duckdb.connect("/duckdb/voter-keys.duckdb")
+    result = conn.execute("""
+        SELECT 1
+        FROM VoterKeys
+        WHERE ElectionID = ?
+        LIMIT 1
+    """, [election_id]).fetchone()
+
+    # True if the row already exists in the database.
+    return result is not None
