@@ -1,3 +1,8 @@
+"""This file has all database calls for the Bulletin Board.
+
+It handles all "read" and "write" operations to the PostgreSQL database.
+"""
+
 import os
 from modelsBB import NewElectionData, VoterKeyList, Ballot, ElectionResult, Elections, Election, IndexImageCBR, IndexImage, CandidateResult
 import base64
@@ -16,10 +21,8 @@ CONNECTION_INFO = f"dbname={DB_NAME} user={DB_USER} password={DB_PASS} host={DB_
 pool = ConnectionPool(conninfo=CONNECTION_INFO, open=True)
 
 ## ---------------- WRITING TO DB ---------------- ##
+#SQL statements for insertion/ updating
 
-
-# loading a newly received election into the database:
-#SQL statements to be executed
 SQL_INSERT_ELECTION = """
 INSERT INTO Elections (ID, Name, ElectionStart, ElectionEnd)
 VALUES (%s, %s, %s, %s)
@@ -64,7 +67,14 @@ ON CONFLICT (BallotID) DO NOTHING;
 """
 
 def load_election_into_db(payload: NewElectionData):
-    #Writes the election, candidates, voters and relations to the DB.
+    """Load a newly received election + election related data.
+
+    Writes election with its candidates, and voters to the database.
+    "Candidate runs in election" relationships are also created.
+    Args:
+        payload (NewElectionData): Pydantic model containing election info,
+            participating candidates, and voters.
+    """
     eid = payload.election.id
 
     with pool.connection() as conn:
@@ -84,12 +94,15 @@ def load_election_into_db(payload: NewElectionData):
 
 
 def load_ballot_into_db(pyBallot: Ballot):
-    # recomputed = hash_ballot(pyBallot)
-    # if pyBallot.hash and pyBallot.hash != recomputed:
-    #     raise ValueError("Ballot hash mismatch")
+    """Loads a ballot and the ballots relations to the DB.
 
-    # hashed_ballot = recomputed
-    # print("BB hash:", recomputed)
+    The ballot ciphertexts, proof and hash are stored in the "Ballots" table,
+    and the relationship between voter, election, and ballot is stored
+    in the "VoterCastsBallot" relation. The corresponding image filename related to the ballot is stored
+    in the "Images" table.
+    Args:
+        pyBallot (Ballot): Pydantic model representing a ballot.
+    """
 
     election_id = pyBallot.electionid
     ctv = json.dumps(pyBallot.ctv) # json string of base64 encoding
@@ -118,8 +131,13 @@ def load_ballot_into_db(pyBallot: Ballot):
                 (pyBallot.imagepath, ballot_id)
             )
 
-# saving group, generator and order to database after receiving them from RA.
 def save_elgamalparams(GROUP, GENERATOR, ORDER):
+    """Load elgamal group parameters to the database for an election after receiving them from RA.
+    Args:
+        GROUP: Description or id of the group/curve.
+        GENERATOR (bytes): Group generator in binary form.
+        ORDER (bytes): Group order in binary form.
+    """
     with pool.connection() as conn:
         with conn.cursor() as cur:
             cur.execute("""
@@ -130,6 +148,11 @@ def save_elgamalparams(GROUP, GENERATOR, ORDER):
 
 
 def save_key_to_db(service, KEY):
+    """Load the public key of TS or VS to the DB.
+    Args:
+        service (str): Service id, values are "TS" or "VS".
+        KEY (bytes): Public key of servise in binary format.
+    """
     if service == "TS":
         column = "PublicKeyTallyingServer"
     elif service == "VS":
@@ -144,8 +167,12 @@ def save_key_to_db(service, KEY):
                         """, (KEY,))
 
 
-# Save keymaterial to database for each voter
 def save_voter_keys_to_db(voter_key_list: VoterKeyList):
+    """Load public key material for each voter in an election to DB.
+    Args:
+        voter_key_list (VoterKeyList): List of voter keys containing
+            election id, voter id, and Base64-encoded public keys.
+    """
     voter_keys : list = voter_key_list.voterkeylist
     with pool.connection() as conn:
         with conn.cursor() as cur:
@@ -157,6 +184,12 @@ def save_voter_keys_to_db(voter_key_list: VoterKeyList):
 
 
 def save_election_result(election_result: ElectionResult):
+    """Load tally results and proofs for an election.
+    For each candidate in the election, the final vote count and tally proof are saved in the
+    "CandidateRunsInElection" table.
+    Args:
+        election_result (ElectionResult): Pydantic model containing result an proof for each specific candidate in election.
+    """
     election_id = election_result.electionid
     
     # Looping through all candidates to store the votecount and the proof for each candidate individually.
@@ -175,9 +208,13 @@ def save_election_result(election_result: ElectionResult):
                             )
 
 ## ---------------- READING FROM DB ---------------- ##
-
+#Calls to fetch/read from DB
 
 async def fetch_params():
+    """Fetch elgamal parameters from the DB.
+    Returns:
+        (GROUP, GENERATOR, ORDER) where GENERATOR and ORDER are bytes.
+    """
     with pool.connection() as conn:
         with conn.cursor() as cur:
             cur.execute("""
@@ -188,8 +225,13 @@ async def fetch_params():
             (GROUP, GENERATOR, ORDER) = cur.fetchone()
     return GROUP, GENERATOR, ORDER
 
-# Query for fetching all voters participating in a given election
 def fetch_voters_for_election(election_id):
+    """Fetch all voters participating in a given election.
+    Args:
+        election_id: Id of the election.
+    Returns:
+        list[tuple]: List of (id and name) for voters.
+    """
     with pool.connection() as conn:
         with conn.cursor() as cur:
             cur.execute("""
@@ -201,8 +243,13 @@ def fetch_voters_for_election(election_id):
             records = cur.fetchall()
     return records
 
-# Query for fetching all candidates running in a given election id:
 def fetch_candidates_for_election(election_id): # Should cursor be given as parameter?
+    """Fetch all candidates running in a given election.
+    Args:
+        election_id: Id of the election.
+    Returns:
+        list[tuple]: List of (id and name) for candidates.
+    """
     with pool.connection() as conn:
         with conn.cursor() as cur:
             cur.execute("""
@@ -216,8 +263,13 @@ def fetch_candidates_for_election(election_id): # Should cursor be given as para
             records = cur.fetchall()
     return records
 
-# Fetch startdate from database
 def fetch_election_dates(election_id):
+    """Fetch election start and end dates from DB.
+    Args:
+        election_id: Id of the election.
+    Returns:
+        (ElectionStart, ElectionEnd) as datetime objects.
+    """
     with pool.connection() as conn:
         with conn.cursor() as cur:
             cur.execute("""
@@ -228,8 +280,11 @@ def fetch_election_dates(election_id):
             election_startdate, election_enddate = cur.fetchone()
     return election_startdate, election_enddate
 
-# Fetch public keys for Tallying Server and Voting Server
 def fetch_public_keys_tsvs():
+    """Fetch public keys for the Tallying Server and Voting Server.
+    Returns:
+        tuple: (public_key_ts_bin, public_key_vs_bin) as binary.
+    """
     with pool.connection() as conn:
         with conn.cursor() as cur:
             cur.execute("""
@@ -241,8 +296,14 @@ def fetch_public_keys_tsvs():
 
     return public_key_ts_bin, public_key_vs_bin
 
-# Fetch public key for a given voter in a given election
 def fetch_voter_public_key(voter_id, election_id):
+    """Fetch public key of a specific voter in a given election.
+    Args:
+        voter_id: Id of the voter.
+        election_id: Id of the election.
+    Returns:
+        Public key in binary format.
+    """
     with pool.connection() as conn:
         with conn.cursor() as cur:
             cur.execute("""
@@ -255,6 +316,15 @@ def fetch_voter_public_key(voter_id, election_id):
     return upk
 
 def fetch_last_and_previouslast_ballot(voter_id, election_id):
+    """Fetch the last and previous last ballots for a voter in an election.
+    Args:
+        voter_id: Id of the voter.
+        election_id: Id of the election.
+    Returns:
+        tuple: (last_ballot_b64, previous_last_ballot_b64) where each ballot is
+            represented as a tuple of base64-encoded ciphertexts and proof.
+            Second element is None if only one ballot exists.
+    """
     with pool.connection() as conn:
         with conn.cursor() as cur:
             cur.execute("""
