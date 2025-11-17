@@ -10,6 +10,9 @@ import save_to_duckdb as ddb
 from tally_verification import verify_tally
 from fetch_functions_va import fetch_election_result_from_bb, fetch_candidates_names_from_bb
 import time
+import os
+
+BB_API_URL = os.environ.get("BB_API_URL")
 
 e_time_vote = []
 
@@ -63,7 +66,7 @@ async def fetch_elections_for_voter(
     voter_id: int = Query(..., description="ID of the voter")):
     try:
         async with httpx.AsyncClient() as client:
-            response = await client.get(f"http://bb_api:8000/send-elections-for-voter?voter_id={voter_id}")
+            response = await client.get(f"{BB_API_URL}/send-elections-for-voter?voter_id={voter_id}")
             response.raise_for_status() 
 
             elections: Elections = Elections.model_validate(response.json())
@@ -79,7 +82,7 @@ async def fetch_elections_for_voter(
     voter_id: int = Query(..., description="ID of the voter")):
     try:
         async with httpx.AsyncClient() as client:
-            response = await client.get(f"http://bb_api:8000/cbr-for-voter?election_id={election_id}&voter_id={voter_id}")
+            response = await client.get(f"{BB_API_URL}/cbr-for-voter?election_id={election_id}&voter_id={voter_id}")
             response.raise_for_status() 
 
             cbr_images: IndexImageCBR = IndexImageCBR.model_validate(response.json())
@@ -146,7 +149,7 @@ async def fetch_elections_for_voter(
     try:
         async with httpx.AsyncClient() as client:
             payload = {"electionid": election_id} 
-            response = await client.post(f"http://bb_api:8000/send-election-startdate", json = payload)
+            response = await client.post(f"{BB_API_URL}/send-election-startdate", json = payload)
             response.raise_for_status() 
 
             election_dates = response.json()
