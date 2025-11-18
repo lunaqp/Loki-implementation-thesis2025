@@ -233,7 +233,7 @@ dist-ssr
 *.sw?
 
 # Duckdb database file if extracted:
-/BackendSystems//voter-data.duckdb
-/BackendSystems//voter-keys.duckdb
+/BackendSystems/voter-data.duckdb
+/BackendSystems/voter-keys.duckdb
 /BackendSystems/VotingServer/api/keys.json
 /BackendSystems/TallyingServer/api/keys.json

@@ -8,7 +8,9 @@ from epochHandling import update_time, prepare_election
 import json
 from coloursVS import RED, CYAN
 from lock import duckdb_lock
-from fetch_functions import fetch_image_filename
+from fetch_functions import fetch_image_filename, fetch_electiondates_from_bb
+import pytz
+from datetime import datetime
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -41,6 +43,14 @@ async def receive_ballotlist(payload: BallotPayload):
 
 @app.post("/receive-ballot")
 async def receive_ballot(pyBallot: Ballot):
+    election_start, election_end = await fetch_electiondates_from_bb(pyBallot.electionid)
+    tz = pytz.timezone('Europe/Copenhagen')
+    current_time = datetime.now(tz)
+
+    # Reject ballot if the election is not active. TODO: improve user experience on the frontend.
+    if current_time < election_start or current_time > election_end:
+        print(f"{RED}Election not active, rejecting ballot")
+        return {"image": "Ballot rejected"}
     try:
         async with duckdb_lock: # lock is acquired to check if access should be allowed, lock while accessing ressource and is then released before returning  
             conn = duckdb.connect("/duckdb/voter-data.duckdb")

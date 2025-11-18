@@ -10,6 +10,7 @@ services:
       RA_API_URL: http://172.27.145.48:8002
       VS_API_URL: http://172.27.145.48:8004
       DUCKDB_PATH: /duckdb/voter-keys.duckdb
+      VOTER_ID: ${VOTER_ID}
     ports:
       - "8003:8000"
 
@@ -20,6 +21,7 @@ services:
       dockerfile: Dockerfile
     environment:
       VITE_API_VOTINGAPP: http://va_api:8000
+      VOTER_ID: ${VOTER_ID}
     depends_on:
       - va_api
     ports:
