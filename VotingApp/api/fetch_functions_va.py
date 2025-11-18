@@ -176,18 +176,16 @@ async def fetch_keys_from_ra(voter_id, election_id):
     print("fetching keys from RA...")
     try:
         async with httpx.AsyncClient() as client:
-            response = await client.get(f"{RA_API_URL}/voter-keys")
+            response = await client.get(f"{RA_API_URL}/voter-keys?voter_id={voter_id}&election_id={election_id}")
             response.raise_for_status() 
 
             data:dict = response.json()
 
-            voter_id = data["voter_id"]
-            election_id = data["election_id"]
-            enc_secret_key = data["secret_key"]
+            secret_key = data["secret_key"]
             public_key = data["public_key"]
 
             # Public and secret keys are saved in internal duckdb database.
-            ddb.save_keys_to_duckdb(voter_id, election_id, enc_secret_key, public_key)
+            ddb.save_keys_to_duckdb(voter_id, election_id, secret_key, public_key)
             ddb.save_voter_login(voter_id)
             conn = duckdb.connect("/duckdb/voter-keys.duckdb")
             conn.table("VoterLogin").show() 

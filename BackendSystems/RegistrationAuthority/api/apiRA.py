@@ -20,7 +20,7 @@ async def lifespan(app: FastAPI):
 
     # Initialising DuckDB database:
     conn = duckdb.connect("/duckdb/voter-keys.duckdb")
-    conn.sql("CREATE TABLE VoterKeys(VoterID INTEGER, ElectionID INTEGER, SecretKey BLOB, PublicKey BLOB)")
+    conn.sql("CREATE TABLE IF NOT EXISTS VoterKeys(VoterID INTEGER, ElectionID INTEGER, SecretKey BLOB, PublicKey BLOB)")
 
     yield # yielding control back to FastApi
 
@@ -115,7 +115,7 @@ async def send_voter_keys(
     election_id: int = Query(..., description="id of the election")):
     print(f"sending keys to Voting-app for voter: {voter_id}")
     # Fetch from duckDB
-    secret_key, public_key = await fetch_keys_from_duckdb(voter_id, election_id)
-    data: dict = {"voter_id": voter_id, "election_id": election_id, "secret_key": base64.b64encode(secret_key).decode(), "public_key":base64.b64encode(public_key).decode()} # decode() converts b64 bytes to string
+    secret_key, public_key = fetch_keys_from_duckdb(voter_id, election_id)
+    data: dict = {"secret_key": base64.b64encode(secret_key).decode(), "public_key":base64.b64encode(public_key).decode()} # decode() converts b64 bytes to string
     
     return data
