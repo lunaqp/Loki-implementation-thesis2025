@@ -8,6 +8,7 @@ services:
     environment:
       BB_API_URL: http://172.27.145.48:8001
       RA_API_URL: http://172.27.145.48:8002
+      VS_API_URL: http://172.27.145.48:8004
       DUCKDB_PATH: /duckdb/voter-keys.duckdb
     ports:
       - "8003:8000"

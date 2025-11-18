@@ -4,9 +4,9 @@ docker compose down
 
 # Removing data in docker volumes
 Write-Host "Removing Docker data volumes..." -ForegroundColor Green
-docker volume rm loki-implementation-thesis2025_vs_data
-docker volume rm loki-implementation-thesis2025_db_data
-docker volume rm loki-implementation-thesis2025_ra_data
+docker volume rm backendsystems_vs_data
+docker volume rm backendsystems_db_data
+docker volume rm backendsystems_ra_data
 
 # Building Docker images
 Write-Host "Building docker images..." -ForegroundColor Green
@@ -45,7 +45,7 @@ do {
         '5' {
             Write-Host "Rerun docker"  -ForegroundColor Green
             docker compose down
-            ./rundocker.ps1
+            ./run_backendsystems.ps1
         }
         '6' {
             Write-Host "Exiting. Closing and removing Docker images..." -ForegroundColor Green

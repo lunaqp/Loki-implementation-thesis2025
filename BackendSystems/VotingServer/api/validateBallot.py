@@ -78,7 +78,7 @@ async def verify_proof(election_id, voter_id, pyballot):
         print(f"{ORANGE}verification failed")
         #NOTE: if failed to verify send message to voting app and display in UI "ballot not valid"
     else:
-        print(f"{BOLD}{GREEN}Ballot succesfully verified")
+        print(f"{BOLD}{GREEN}Ballot succesfully verified for voter {voter_id}")
 
     return stmt_c.verify(proof_current)
 

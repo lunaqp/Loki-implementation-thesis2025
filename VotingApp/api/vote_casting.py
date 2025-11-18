@@ -4,9 +4,11 @@ import httpx
 import base64
 from petlib.ec import EcPt, Bn
 from modelsVA import Ballot
-from cryptography.fernet import Fernet
 from coloursVA import RED, GREEN
 import fetch_functions_va as ff
+import os
+
+VS_API_URL = os.environ.get("VS_API_URL")
 
 def bin_to_int(lst, size):
     b=[0]*size
@@ -145,7 +147,7 @@ def constructBallot(voter_id, public_key, ct_v, ct_lv, ct_lid, proof, election_i
 async def send_ballot_to_VS(pyBallot:Ballot):
     try:
         async with httpx.AsyncClient() as client:
-            response = await client.post("http://vs_api:8000/receive-ballot", json=pyBallot.model_dump()) 
+            response = await client.post(f"{VS_API_URL}/receive-ballot", json=pyBallot.model_dump()) 
             response.raise_for_status()
             # TODO: Get response from Voting server and then -> if status = validated return success to frontend, else return ballot invalid
             return response.json()
