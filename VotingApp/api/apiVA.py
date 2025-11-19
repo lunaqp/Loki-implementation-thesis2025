@@ -67,6 +67,7 @@ async def get_election_result(
 
 @app.get("/api/fetch-elections-for-voter")
 async def fetch_elections_for_voter():
+    print(f"address: {BB_API_URL}/send-elections-for-voter?voter_id={VOTER_ID}")
     try:
         async with httpx.AsyncClient() as client:
             response = await client.get(f"{BB_API_URL}/send-elections-for-voter?voter_id={VOTER_ID}")

@@ -10,23 +10,13 @@ import asyncio
 from fetchFunctions import fetch_candidates_from_bb, fetch_voters_from_bb, fetch_last_ballot_ctvs_from_bb, fetch_ts_secret_key, fetch_electiondates_from_bb, fetch_elgamal_params
 import time
 
-# Keeping track of time to trigger tallying once an election ends.
-tz = pytz.timezone('Europe/Copenhagen')
-current_time = datetime.now(tz)
-
-async def update_time():
-    global current_time
-    while True:
-        current_time = datetime.now(tz)
-        await asyncio.sleep(1)
-
-
 async def handle_election(election_id):
     print(f"{CYAN}Election with ID {election_id} loaded.")
-
     # Calculate time until election is over
     _, election_end = await fetch_electiondates_from_bb(election_id)
-    remaining_time = election_end - current_time
+    tz = pytz.timezone('Europe/Copenhagen')
+
+    remaining_time = election_end - datetime.now(tz)
     print(f"remaining time: {remaining_time}")
 
     # Wait until election is over

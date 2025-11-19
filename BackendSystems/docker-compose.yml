@@ -67,7 +67,6 @@ services:
       dockerfile: Dockerfile
     volumes:
       - vs_data:/duckdb
-      - ./VotingServer/api/keys.json:/app/keys.json
       - ./VotingServer/api/images.txt:/app/images.txt:ro
     environment:
       DUCKDB_PATH: /duckdb/voter-data.duckdb
@@ -84,8 +83,6 @@ services:
     build:
       context: ./TallyingServer/api
       dockerfile: Dockerfile
-    volumes:
-      - ./TallyingServer/api/keys.json:/app/keys.json
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 10s

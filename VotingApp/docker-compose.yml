@@ -6,13 +6,18 @@ services:
     volumes:
       - va_data:/duckdb
     environment:
+      # Testing with server
+      # BB_API_URL: http://127.0.0.1:8001
+      # RA_API_URL: http://127.0.0.1:8002
+      # VS_API_URL: http://127.0.0.1:8004
+
+      # Testing with Luna's laptop
       BB_API_URL: http://172.27.145.48:8001
       RA_API_URL: http://172.27.145.48:8002
       VS_API_URL: http://172.27.145.48:8004
+
       DUCKDB_PATH: /duckdb/voter-keys.duckdb
       VOTER_ID: ${VOTER_ID}
-    ports:
-      - "8003:8000"
 
   # React frontend
   va_web:
