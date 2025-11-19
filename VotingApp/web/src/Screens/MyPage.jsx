@@ -60,11 +60,9 @@ const MyPage = () => {
     }
   };
 
-  const fetchElections = async (voterId) => {
+  const fetchElections = async () => {
     try {
-      const response = await fetch(
-        `/api/fetch-elections-for-voter?voter_id=${voterId}`
-      );
+      const response = await fetch(`/api/fetch-elections-for-voter`);
 
       if (!response.ok) {
         const errText = await response.text();
@@ -84,10 +82,9 @@ const MyPage = () => {
   useEffect(() => {
     if (!user) return;
 
-    const voterId = user.user;
     const loadElections = async () => {
       try {
-        await fetchElections(voterId);
+        await fetchElections();
       } catch (err) {
         console.log(err.message);
       }

@@ -51,11 +51,10 @@ const CandidateSelection = () => {
 
     // Elements for ballot:
     const v = selectedCandidateIndex;
-    const voter_id = user.user;
     const election_id = electionId;
     const lv_list = previousVotes;
 
-    sendBallot(v, lv_list, election_id, voter_id);
+    sendBallot(v, lv_list, election_id);
 
     navigate(nextRoute);
   };
@@ -68,14 +67,14 @@ const CandidateSelection = () => {
     setSelectedCandidate(e.target.value);
   };
 
-  async function sendBallot(v, lv_list, election_id, voter_id) {
+  async function sendBallot(v, lv_list, election_id) {
     try {
       const response = await fetch("/api/send-ballot", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ v, lv_list, election_id, voter_id }),
+        body: JSON.stringify({ v, lv_list, election_id }),
       });
 
       if (!response.ok) {

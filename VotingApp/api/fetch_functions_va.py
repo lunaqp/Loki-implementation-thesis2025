@@ -186,9 +186,7 @@ async def fetch_keys_from_ra(voter_id, election_id):
 
             # Public and secret keys are saved in internal duckdb database.
             ddb.save_keys_to_duckdb(voter_id, election_id, secret_key, public_key)
-            ddb.save_voter_login(voter_id)
             conn = duckdb.connect("/duckdb/voter-keys.duckdb")
-            conn.table("VoterLogin").show() 
 
             return {"status": "keys received"}
     except Exception as e:

@@ -20,11 +20,10 @@ class Ballot(BaseModel):
     hash: Optional[str] = None
     imagepath: Optional[str] = None
 
-class VoterBallot(BaseModel):
+class VoterCastBallot(BaseModel):
     v: int
     lv_list: list
     election_id: int
-    voter_id: int
 
 class AuthRequest(BaseModel):
     provided_username: str

@@ -18,5 +18,6 @@ def save_voter_login(voter_id):
         conn = duckdb.connect("/duckdb/voter-keys.duckdb")
         print(f"{CYAN}inserting login info in duckdb for voter {voter_id}")
         conn.execute(f"INSERT INTO VoterLogin (Username, Password) VALUES (?, ?) ON CONFLICT(Username) DO NOTHING", (username, password))
+        conn.table("VoterLogin").show() 
     except Exception as e:
         print(f"{RED}error inserting login info in duckdb for voter {voter_id}: {e}")

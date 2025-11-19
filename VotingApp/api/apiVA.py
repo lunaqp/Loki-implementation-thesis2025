@@ -2,7 +2,7 @@ from fastapi import FastAPI, HTTPException, Query
 from bulletin_routes import router as bulletin_router
 import duckdb
 from contextlib import asynccontextmanager
-from modelsVA import Ballot, VoterBallot, AuthRequest, Elections, IndexImageCBR
+from modelsVA import Ballot, VoterCastBallot, AuthRequest, Elections, IndexImageCBR
 from vote_casting import vote, send_ballot_to_VS
 from coloursVA import RED, GREEN, PURPLE, PINK
 import httpx
@@ -10,9 +10,11 @@ from tally_verification import verify_tally
 from fetch_functions_va import fetch_election_result_from_bb, fetch_candidates_names_from_bb, fetch_keys_from_ra, already_saved
 import time
 import os
+import save_to_duckdb as ddb
 
 BB_API_URL = os.environ.get("BB_API_URL")
 RA_API_URL = os.environ.get("RA_API_URL")
+VOTER_ID = os.environ.get("VOTER_ID")
 
 e_time_vote = []
 
@@ -22,7 +24,8 @@ async def lifespan(app: FastAPI):
     conn = duckdb.connect("/duckdb/voter-keys.duckdb")
     conn.sql("CREATE TABLE IF NOT EXISTS VoterKeys(VoterID INTEGER, ElectionID INTEGER, SecretKey BLOB, PublicKey BLOB)")
     conn.sql("CREATE TABLE IF NOT EXISTS VoterLogin(Username TEXT PRIMARY KEY, Password TEXT)")
-
+    ddb.save_voter_login(VOTER_ID)
+              
     yield  # yielding control back to FastAPI
 
 app = FastAPI(lifespan=lifespan)
@@ -63,11 +66,10 @@ async def get_election_result(
         raise HTTPException(status_code=500, detail="Internal Server Error")
 
 @app.get("/api/fetch-elections-for-voter")
-async def fetch_elections_for_voter(
-    voter_id: int = Query(..., description="ID of the voter")):
+async def fetch_elections_for_voter():
     try:
         async with httpx.AsyncClient() as client:
-            response = await client.get(f"{BB_API_URL}/send-elections-for-voter?voter_id={voter_id}")
+            response = await client.get(f"{BB_API_URL}/send-elections-for-voter?voter_id={VOTER_ID}")
             response.raise_for_status() 
 
             elections: Elections = Elections.model_validate(response.json())
@@ -78,12 +80,12 @@ async def fetch_elections_for_voter(
                 if already_saved(election.id):
                     continue
                 else:
-                    await fetch_keys_from_ra(voter_id, election.id)
+                    await fetch_keys_from_ra(VOTER_ID, election.id)
 
             return elections
     except Exception as e:
-        print(f"{RED}Error fetching elections for voter {voter_id}: {e}")
-        raise HTTPException(status_code=500, detail=f"{RED}Error fetching elections for voter {voter_id}: {str(e)}")     
+        print(f"{RED}Error fetching elections for voter {VOTER_ID}: {e}")
+        raise HTTPException(status_code=500, detail=f"{RED}Error fetching elections for voter {VOTER_ID}: {str(e)}")     
 
 @app.get("/api/fetch-cbr-images-for-voter")
 async def fetch_elections_for_voter(
@@ -104,13 +106,12 @@ async def fetch_elections_for_voter(
 
 # Sending ballot to Voting Server after receiving it in the Voting App frontend.
 @app.post("/api/send-ballot")
-async def send_ballot(voter_ballot: VoterBallot):
-    VOTER_ID = os.environ.get("VOTER_ID")
+async def send_ballot(voter_ballot: VoterCastBallot):
     print("Voter id fetched from environment variable:", VOTER_ID)
 
     s_time_vote = time.process_time_ns() # Start timer
     # Constructing ballot
-    pyBallot: Ballot = await vote(voter_ballot.v, voter_ballot.lv_list, voter_ballot.election_id, voter_ballot.voter_id)
+    pyBallot: Ballot = await vote(voter_ballot.v, voter_ballot.lv_list, voter_ballot.election_id, VOTER_ID)
     e_time_vote.append(time.process_time_ns() - s_time_vote) # Append to timer
     print("e-time-vote:", e_time_vote)
     print(f"{PINK}Ballot vote time (avg):", round(sum(e_time_vote)/len(e_time_vote)/1000000,3), "ms") # Last result printed is the average of all
