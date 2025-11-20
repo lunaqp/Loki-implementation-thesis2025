@@ -2,8 +2,8 @@
   "election": {
     "id": 789,
     "name": "President",
-    "start": "2025-11-19T14:19Z",
-    "end": "2025-11-19T14:23Z"
+    "start": "2025-11-20T14:00Z",
+    "end": "2025-11-20T16:00Z"
   },
   "candidates": [
     {
