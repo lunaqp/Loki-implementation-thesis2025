@@ -3,12 +3,14 @@ import PageTemplate from "../Components/PageTemplate";
 import ScreenTemplate from "../Components/ScreenTemplate";
 import { useNavigate, useParams } from "react-router-dom";
 import { useApp } from "../Components/AppContext";
+import { useState } from "react";
 
 const Confirmation = () => {
   const navigate = useNavigate();
   const { electionId } = useParams();
   const { startTimeout } = useApp();
   const { electionName, clearFlow } = useApp();
+  const { ballotVerified, setBallotVerified } = useState(null);
 
   const handleFinish = () => {
     if (electionId) {
@@ -30,10 +32,14 @@ const Confirmation = () => {
         onPrimaryClick={handleFinish}
       >
         <Container>
-          <Question>You have now completed the voting process.</Question>
+          <Question>Your vote has now been cast.</Question>
           <Text>
-            Your vote has now been cast. <br />
             For security reasons this is the only confirmation you will see.{" "}
+            <br />
+            Your vote will be finalised within the next few minutes. You now
+            have the option to wait for a confirmation that your ballot has been
+            correctly verified.
+            <VerificationText>{ballotVerified}</VerificationText>
             <br />
             Click the “Finish” button to navigate back to MyPage. You will now
             see a timeout on this election, and you will be able to change your

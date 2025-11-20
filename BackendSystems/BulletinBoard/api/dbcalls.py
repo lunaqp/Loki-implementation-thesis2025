@@ -499,3 +499,35 @@ def fetch_election_result(election_id):
     )
 
     return election_result
+
+def fetch_ballot(election_id, voter_id, timestamp):
+    with pool.connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                        SELECT PublicKey, CtCandidate, CtVoterList, CtVotingServerList, Proof
+                        FROM VoterParticipatesInElection p
+                        JOIN VoterCastsBallot c 
+                        ON p.ElectionID = c.ElectionID AND p.VoterID = c.VoterID
+                        JOIN Ballots b
+                        ON b.ID = c.BallotID
+                        WHERE c.ElectionID = %s
+                            AND c.VoterID = %s
+                            AND c.VoteTimestamp = %s
+                        """, (election_id, voter_id, timestamp))
+            row = cur.fetchone()
+
+    if not row:
+        return None
+
+    (ctv_b64, ctlv_b64, ctlid_b64, proof_b64) = serialise_ballot_cts((row[1], row[2], row[3], row[4]))
+
+    ballot: Ballot = Ballot(
+        voterid=voter_id,
+        upk=base64.b64encode(row[0]).decode(),
+        ctv=ctv_b64,
+        ctlv=ctlv_b64,
+        ctlid=ctlid_b64,
+        proof=proof_b64
+    )
+
+    return ballot

@@ -13,6 +13,7 @@ import base64
 import dbcalls as db
 from notifications import notify_ts_vs_params_saved, notify_ra_public_key_saved
 from coloursBB import RED, CYAN, GREEN, PURPLE, BLUE
+from datetime import datetime
 
 app = FastAPI()
 
@@ -344,3 +345,13 @@ def send_election_result(
     if election_result is None:
         raise HTTPException(status_code=404, detail="Election result not Found")
     return election_result
+
+@app.get("/ballot")
+def get_ballot(
+    election_id: int = Query(..., description="ID of the election"),
+    voter_id: int = Query(..., description="ID of the voter"),
+    timestamp: datetime = Query(..., description="Timestamp of the ballot")
+):
+    ballot: Ballot = db.fetch_ballot(election_id, voter_id, timestamp)
+
+    return ballot

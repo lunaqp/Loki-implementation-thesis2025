@@ -7,10 +7,12 @@ from vote_casting import vote, send_ballot_to_VS
 from coloursVA import RED, GREEN, PURPLE, PINK
 import httpx
 from tally_verification import verify_tally
-from fetch_functions_va import fetch_election_result_from_bb, fetch_candidates_names_from_bb, fetch_keys_from_ra, already_saved
+from fetch_functions_va import fetch_election_result_from_bb, fetch_candidates_names_from_bb, fetch_keys_from_ra, already_saved, fetch_ballot_from_bb
 import time
 import os
 import save_to_duckdb as ddb
+from datetime import datetime
+from ballotVerification import verify_proof
 
 BB_API_URL = os.environ.get("BB_API_URL")
 RA_API_URL = os.environ.get("RA_API_URL")
@@ -165,3 +167,15 @@ async def verify_election_tally(election_id: int = Query(..., description="ID of
     print(f"{PURPLE}Tally verification request received for election {election_id}. Verification status:", verification_status)
     return {"verified": verification_status}
 
+@app.get("/api/verify-ballot")
+async def verify_ballot(
+    election_id: int = Query(..., description="ID of the election"),
+    voter_id: int = Query(..., description="ID of the voter"),
+    timestamp: datetime = Query(..., description="timestamp of the ballot")):
+
+    ballot: Ballot = await fetch_ballot_from_bb(election_id, voter_id, timestamp)
+    print("ballot created:", ballot)
+    print("proceeding to verification")
+    ballot_verified: bool = await verify_proof(election_id, voter_id, ballot)
+
+    return ballot_verified

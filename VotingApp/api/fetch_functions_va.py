@@ -1,7 +1,7 @@
 import httpx
 from fastapi import HTTPException
 from coloursVA import RED
-from modelsVA import ElGamalParams, ElectionResult
+from modelsVA import ElGamalParams, ElectionResult, Ballot
 from petlib.ec import EcPt, EcGroup, Bn
 import base64
 import duckdb
@@ -205,3 +205,23 @@ def already_saved(election_id):
 
     # True if the row already exists in the database.
     return result is not None
+
+async def fetch_ballot_from_bb(election_id, voter_id, timestamp):
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.get(f"{BB_API_URL}/ballot", params={
+                    "election_id": election_id,
+                    "voter_id": voter_id,
+                    "timestamp": timestamp.isoformat(), # datetime serialisation
+                })
+            response.raise_for_status() 
+            data = response.json()
+
+            # Recreating Pydantic ballot model
+            ballot: Ballot = Ballot.model_validate(data)
+           
+            return ballot
+    except Exception as e:
+        print(f"{RED}Error fetching ballot election {election_id}, voter {voter_id} with timestamp {timestamp}: {e}")
+        raise HTTPException(status_code=500, detail=f"{RED}Error fetching ballot election {election_id}, voter {voter_id} with timestamp {timestamp}:  {str(e)}")
+    
