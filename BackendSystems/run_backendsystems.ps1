@@ -19,7 +19,7 @@ do {
     Write-Host "1: Load election 1"
     Write-Host "2: Load election 2"
     Write-Host "3: Extract DuckDB file for Voting Server (timestamp table)"
-    Write-Host "4: Extract DuckDB file for Voting App (voter keys)"
+    Write-Host "4: Load usability test"
     Write-Host "5: Rerun application from scratch"
     Write-Host "6: Exit (closes and removes Docker images)"
 
@@ -40,7 +40,7 @@ do {
         }
         '4' {
             Write-Host "Loading performance test election..." -ForegroundColor Green
-            Invoke-RestMethod -Uri "http://localhost:8002/elections/load-file?name=voters1000cand2.json" -Method Post  
+            Invoke-RestMethod -Uri "http://localhost:8002/elections/load-file?name=usabilityTest.json" -Method Post  
         }
         '5' {
             Write-Host "Rerun docker"  -ForegroundColor Green
