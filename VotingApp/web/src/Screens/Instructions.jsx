@@ -289,8 +289,50 @@ const InstructionsPage = () => {
               In short, coercion resistance protects both the integrity of the
               election and the free choice of the voter.
             </FAQItem>
-            <FAQItem q="How does LOKI Coercion resistance work?">
-              blablablaaaaa............
+            <FAQItem q="How does Loki Coercion resistance work?">
+              Loki is designed so that you can{" "}
+              <b>appear to follow a coercer’s instructions</b>, while the system
+              still protects your real vote.
+              <br />
+              <br />
+              It does this using three main ideas:
+              <br />
+              <br />
+              <b>1. You can vote multiple times</b>
+              <br />
+              You are allowed to cast several votes in the same election. In the
+              final count, only <b>one</b> vote per person will be included.
+              This makes it possible to:
+              <br />
+              - Cast a “fake” vote under pressure, and
+              <br />
+              - Later cast a new, genuine vote when you are safe.
+              <br />
+              <br />
+              <b>2. Each vote gets a secret image/word</b>
+              <br />
+              After each vote, you see a unique image/word pair. Only you know
+              which images belong to your real votes. When you later say you
+              have voted before (Step 3 – YES), you must identify all images
+              from all your previous votes, real and fake. This proves that{" "}
+              <b>you</b> are the same person changing your vote.
+              <br />
+              <br />
+              <b>3. The system can silently invalidate coerced votes</b>
+              <br />
+              The system internally checks whether your behaviour matches what a
+              genuine voter would do:
+              <br />- If you have already voted but select “NO” in Step 2, the
+              system will still let you go through the steps, but will secretly
+              mark this new vote as invalid.
+              <br />- If you select “YES” but provide one or more{" "}
+              <b>wrong images</b>, the system again allows you to finish, but
+              will invalidate that vote.
+              <br />
+              <br />
+              In both situations a coercer will only see that you have voted
+              “correctly”, while Loki makes sure that only your final, genuine
+              vote is counted in the election.
             </FAQItem>
             <FAQItem q="What if I am coerced after I have already cast a vote with my true candidate choice?">
               If you have already submitted a vote for your intended candidate
@@ -361,9 +403,6 @@ const InstructionsPage = () => {
               The image associated with the invalid vote will no longer matter
               and you can forget about it. Just make sure to remember the new
               image displayed when you cast your new, valid vote.
-            </FAQItem>
-            <FAQItem q="What if I forgot my memorable information/image?">
-              blablablaaaaa............
             </FAQItem>
           </Card>
           <ButtonBar>

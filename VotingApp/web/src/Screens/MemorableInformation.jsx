@@ -23,7 +23,7 @@ const MemorableInformation = () => {
 
   const navigateToMypage = () => {
     if (electionId) {
-      startTimeout(Number(electionId), 1 * 60 * 1000); // timeout 6 minutes
+      startTimeout(Number(electionId), 6 * 60 * 1000); // timeout 6 minutes
     }
     clearFlow();
     navigate("/mypage");

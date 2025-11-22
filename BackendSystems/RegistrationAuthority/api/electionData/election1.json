@@ -2,35 +2,151 @@
   "election": {
     "id": 123,
     "name": "Student Council President",
-    "start": "2025-11-20T10:45Z",
-    "end": "2025-11-20T12:45Z"
+    "start": "2025-11-24T08:45Z",
+    "end": "2025-11-24T12:45Z"
   },
   "candidates": [
     {
       "id": 1,
-      "name": "Alice"
+      "name": "Peter Pan"
     },
     {
       "id": 2,
-      "name": "Bob"
+      "name": "Snow White"
     },
     {
       "id": 3,
-      "name": "Mallory"
+      "name": "Robin Hood"
+    },
+    {
+      "id": 1,
+      "name": "Fa Mulan"
+    },
+    {
+      "id": 2,
+      "name": "Prince Charming"
     }
   ],
   "voters": [
     {
-      "id": 101,
-      "name": "Luna Q Poulsen"
+      "id": 1,
+      "name": "A"
     },
     {
-      "id": 102,
-      "name": "Aja Harder"
+      "id": 2,
+      "name": "B"
     },
     {
-      "id": 103,
-      "name": "Eve Evesdropper"
+      "id": 3,
+      "name": "C"
+    },
+    {
+      "id": 4,
+      "name": "D"
+    },
+    {
+      "id": 5,
+      "name": "E"
+    },
+    {
+      "id": 6,
+      "name": "F"
+    },
+    {
+      "id": 7,
+      "name": "G"
+    },
+    {
+      "id": 8,
+      "name": "H"
+    },
+    {
+      "id": 9,
+      "name": "I"
+    },
+    {
+      "id": 10,
+      "name": "J"
+    },
+    {
+      "id": 11,
+      "name": "K"
+    },
+    {
+      "id": 12,
+      "name": "L"
+    },
+    {
+      "id": 13,
+      "name": "M"
+    },
+    {
+      "id": 14,
+      "name": "N"
+    },
+    {
+      "id": 15,
+      "name": "O"
+    },
+    {
+      "id": 16,
+      "name": "P"
+    },
+    {
+      "id": 17,
+      "name": "K"
+    },
+    {
+      "id": 18,
+      "name": "R"
+    },
+    {
+      "id": 19,
+      "name": "S"
+    },
+    {
+      "id": 20,
+      "name": "T"
+    },
+    {
+      "id": 21,
+      "name": "U"
+    },
+    {
+      "id": 22,
+      "name": "V"
+    },
+    {
+      "id": 23,
+      "name": "W"
+    },
+    {
+      "id": 24,
+      "name": "X"
+    },
+    {
+      "id": 25,
+      "name": "Y"
+    },
+    {
+      "id": 26,
+      "name": "Z"
+    },
+    {
+      "id": 27,
+      "name": "Æ"
+    },
+    {
+      "id": 28,
+      "name": "Ø"
+    },
+    {
+      "id": 29,
+      "name": "Å"
+    },
+    {
+      "id": 30,
+      "name": "#"
     }
   ]
 }
