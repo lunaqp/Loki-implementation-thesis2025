@@ -2,28 +2,28 @@
   "election": {
     "id": 456,
     "name": "Analog President",
-    "start": "2025-11-20T12:00Z",
-    "end": "2025-11-20T14:00Z"
+    "start": "2025-11-22T17:24Z",
+    "end": "2025-11-22T20:24Z"
   },
   "candidates": [
     {
-      "id": 1,
+      "id": 6,
       "name": "Evil Queen"
     },
     {
-      "id": 2,
+      "id": 7,
       "name": "Cinderella"
     },
     {
-      "id": 3,
+      "id": 8,
       "name": "Captain Hook"
     },
     {
-      "id": 1,
+      "id": 9,
       "name": "Princess Jasmin"
     },
     {
-      "id": 2,
+      "id": 10,
       "name": "Ariel Tritondaughter"
     }
   ],
