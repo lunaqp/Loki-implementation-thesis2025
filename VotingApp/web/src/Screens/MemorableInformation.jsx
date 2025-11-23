@@ -12,19 +12,10 @@ const MemorableInformation = () => {
   const nextRoute = `/${electionId}/Confirmation`;
   const prevRoute = `/${electionId}/CandidateSelection`;
   const [showPopUp, setShowPopUp] = useState(false);
-  const {
-    setImageFilename,
-    imageFilename,
-    electionName,
-    clearFlow,
-    startTimeout,
-  } = useApp();
+  const { setImageFilename, imageFilename, electionName, clearFlow } = useApp();
   const navigate = useNavigate();
 
   const navigateToMypage = () => {
-    if (electionId) {
-      startTimeout(Number(electionId), 6 * 60 * 1000); // timeout 6 minutes
-    }
     clearFlow();
     navigate("/mypage");
   };
@@ -56,7 +47,6 @@ const MemorableInformation = () => {
     imageFilename && (
       <PageTemplate
         progress={5}
-        adjustableHeight={true}
         onButtonClick={navigateToMypage}
         electionName={electionName}
       >
@@ -65,7 +55,6 @@ const MemorableInformation = () => {
           onPrimaryClick={handleNextClick}
           prevRoute={prevRoute}
           showSecondaryButton={false}
-          adjustableHeight={true}
         >
           <Container>
             <ContentWrapper>

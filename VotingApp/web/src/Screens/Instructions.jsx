@@ -67,7 +67,7 @@ const InstructionsPage = () => {
                   </ImageButton>
                   {welcomeExpanded && (
                     <Image
-                      src={"/screenshots/welcome.png"}
+                      src={"/screenshots/Welcome.png"}
                       alt="Welcome step"
                     />
                   )}
@@ -102,7 +102,7 @@ const InstructionsPage = () => {
                   </ImageButton>
                   {voteCheckExpanded && (
                     <Image
-                      src={"/screenshots/welcome.png"}
+                      src={"/screenshots/Votecheck.png"}
                       alt="Vote Check step"
                     />
                   )}
@@ -148,7 +148,7 @@ const InstructionsPage = () => {
                   </ImageButton>
                   {previousVotesExpanded && (
                     <Image
-                      src={"/screenshots/pv.png"}
+                      src={"/screenshots/PreviousVotes.png"}
                       alt="Previous Votes Step"
                     />
                   )}
@@ -156,7 +156,7 @@ const InstructionsPage = () => {
               </li>
 
               <li>
-                <b>Step 3 – NO: Select a candidate to vote for</b>
+                <b>Step 3 - NO: Select a candidate to vote for</b>
                 <br />
                 In this step you will choose the candidate to vote for in the
                 given election.
@@ -170,7 +170,7 @@ const InstructionsPage = () => {
                   </ImageButton>
                   {candidatesExpanded && (
                     <Image
-                      src={"/screenshots/pv.png"}
+                      src={"/screenshots/CandidateSelection.png"}
                       alt="Candidate Selection Step"
                     />
                   )}
@@ -202,7 +202,7 @@ const InstructionsPage = () => {
                   </ImageButton>
                   {memorableInfoExpanded && (
                     <Image
-                      src={"/screenshots/pv.png"}
+                      src={"/screenshots/MemorableInformation.png"}
                       alt="Memorable Information Step"
                     />
                   )}
@@ -238,7 +238,7 @@ const InstructionsPage = () => {
                   </ImageButton>
                   {confirmationExpanded && (
                     <Image
-                      src={"/screenshots/pv.png"}
+                      src={"/screenshots/Confirmation.png"}
                       alt="Confirmation Step"
                     />
                   )}
@@ -273,14 +273,14 @@ const InstructionsPage = () => {
               attempts.
               <br />
               <br />
-              That’s why coercion resistance is essential in electronic voting
+              That's why coercion resistance is essential in electronic voting
               systems. It ensures that even if someone tries to coerce a voter,
               the system is designed so that:
               <br />
               - The voter can safely mislead a coercer without revealing their
               true choice.
               <br />
-              - Only the voter’s final, genuine vote is counted.
+              - Only the voter's final, genuine vote is counted.
               <br />
               - No one can prove how they voted, protecting them from threats or
               manipulation.
@@ -291,7 +291,7 @@ const InstructionsPage = () => {
             </FAQItem>
             <FAQItem q="How does Loki Coercion resistance work?">
               Loki is designed so that you can{" "}
-              <b>appear to follow a coercer’s instructions</b>, while the system
+              <b>appear to follow a coercer's instructions</b>, while the system
               still protects your real vote.
               <br />
               <br />
@@ -313,7 +313,7 @@ const InstructionsPage = () => {
               <br />
               After each vote, you see a unique image/word pair. Only you know
               which images belong to your real votes. When you later say you
-              have voted before (Step 3 – YES), you must identify all images
+              have voted before (Step 3 - YES), you must identify all images
               from all your previous votes, real and fake. This proves that{" "}
               <b>you</b> are the same person changing your vote.
               <br />
@@ -336,7 +336,7 @@ const InstructionsPage = () => {
             </FAQItem>
             <FAQItem q="What if I am coerced after I have already cast a vote with my true candidate choice?">
               If you have already submitted a vote for your intended candidate
-              before being coerced, don’t worry.
+              before being coerced, don't worry.
               <br />
               <br />
               In this situation, you can safely pretend to comply with the
@@ -354,17 +354,17 @@ const InstructionsPage = () => {
               coerced one will not be counted.
             </FAQItem>
             <FAQItem q="What if I am coerced before I have managed to cast a vote my true candidate choice?">
-              Don’t panic, you’re still protected.
+              Don't panic, you're still protected.
               <br />
               <br />
-              If you’re forced to vote by a coercer before you can make your
+              If you're forced to vote by a coercer before you can make your
               real choice:
               <br />
               - Complete the coerced vote as instructed and memorize the image
               that appears with it.
               <br />
               - Later, when you are alone, you can revote for your true
-              candidate by entering that same image in “Step 3 – YES”.
+              candidate by entering that same image in “Step 3 - YES”.
               <br />
               <br />
               This ensures that your final vote reflects your real choice.
@@ -373,12 +373,12 @@ const InstructionsPage = () => {
               If you have revoted multiple times, you must remember all the
               images from your previous votes.
               <br />
-              When you revote, you’ll need to provide every image from your
+              When you revote, you'll need to provide every image from your
               earlier votes in order to submit a valid new vote.
             </FAQItem>
             <FAQItem q="Why is there a timeout after I have voted?">
               The timeout exists for security and anti-coercion reasons. It
-              helps ensure that the system’s coercion resistant mechanisms work
+              helps ensure that the system's coercion resistant mechanisms work
               properly and prevents a coercer from repeatedly forcing you to
               vote.
               <br />
@@ -386,7 +386,7 @@ const InstructionsPage = () => {
               It also limits the number of votes you can cast in a short period,
               which helps you remember your images more easily when revoting
               later. Be aware that if a coercer sees that you are on timeout,
-              they may realize you’ve already voted.
+              they may realize you've already voted.
             </FAQItem>
             <FAQItem q="How can I verify my vote is correctly cast?">
               The system will automatically verify that your vote is properly

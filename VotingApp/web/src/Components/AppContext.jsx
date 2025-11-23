@@ -83,6 +83,7 @@ export const AppProvider = ({ children }) => {
     setElections([]);
     setPreviousVotes([]);
     setImageFilename(null);
+    setElectionName(null);
     localStorage.clear();
   };
 
