@@ -219,10 +219,11 @@ const InstructionsPage = () => {
                 confirm your choice of candidate.
                 <br />
                 <br />
-                The system will automatically verify that your vote is included
-                in the election. In case there is an error or the vote is not
-                included, the system will send you an email, telling you to
-                revote.
+                You will have the option to wait for the system to verify that
+                your vote is included in the election. In case there is an error
+                or the vote is not included, you will need to cast a new vote
+                with your intended candidate choice. We recommend you cast the
+                new vote from a different device.
                 <br />
                 <br />
                 <RedText>
@@ -390,15 +391,16 @@ const InstructionsPage = () => {
             </FAQItem>
             <FAQItem q="How can I verify my vote is correctly cast?">
               The system will automatically verify that your vote is properly
-              included in the election. For security reasons, you will not be
-              able to directly confirm which candidate you voted for.
+              included in the election. You can wait for this process at the
+              last screen of the voting process.
               <br />
-              This ensures that your vote remains confidential and coercion
-              resistant.
+              For security reasons, you will not be able to directly confirm
+              which candidate you voted for. This ensures that your vote remains
+              confidential and coercion resistant.
             </FAQItem>
-            <FAQItem q="What do I do if I receive an email saying my vote is not included?">
-              If you receive an email from the election officials stating that
-              your vote was not included, simply revote.
+            <FAQItem q="What do I do if the verification of my vote fails?">
+              If your vote cannot be succesfully verified you should cast a new
+              vote. We recommend that you do this from a different device.
               <br />
               The image associated with the invalid vote will no longer matter
               and you can forget about it. Just make sure to remember the new
