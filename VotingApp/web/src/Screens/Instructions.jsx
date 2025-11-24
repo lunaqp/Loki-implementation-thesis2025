@@ -67,7 +67,7 @@ const InstructionsPage = () => {
                   </ImageButton>
                   {welcomeExpanded && (
                     <Image
-                      src={"/screenshots/Welcome.png"}
+                      src={"/screenshots/welcome.png"}
                       alt="Welcome step"
                     />
                   )}
