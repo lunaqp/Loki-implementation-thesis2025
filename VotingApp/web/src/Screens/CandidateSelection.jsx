@@ -12,8 +12,13 @@ const CandidateSelection = () => {
   const navigate = useNavigate();
   const nextRoute = `/${electionId}/MemorableInformation`;
   const prevRoute = location.state?.from || `/${electionId}/PreviousVotes`;
-  const { previousVotes, user, setImageFilename, electionName, clearFlow } =
-    useApp();
+  const {
+    previousVotes,
+    setImageFilename,
+    electionName,
+    clearFlow,
+    startTimeout,
+  } = useApp();
   const [candidates, setCandidates] = useState();
 
   const navigateToMypage = () => {
@@ -85,6 +90,7 @@ const CandidateSelection = () => {
       const data = await response.json();
       setImageFilename(data.image);
       console.log("API response from Voting Server:", data);
+      startTimeout(Number(electionId), 6 * 60 * 1000); // timeout 6 minutes
     } catch (err) {
       console.error("API error:", err);
     }
@@ -102,7 +108,6 @@ const CandidateSelection = () => {
           onPrimaryClick={handleNextClick}
           prevRoute={prevRoute}
           primaryButtonText="Cast vote"
-          adjustableHeight={true}
           buttonUnselectable={!selectedCandidate}
         >
           <ContentWrapper>

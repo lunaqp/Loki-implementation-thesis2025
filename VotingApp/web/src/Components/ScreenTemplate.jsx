@@ -67,7 +67,7 @@ const ScreenWrapper = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 30px 60px 60px 60px;
+  padding: 30px 60px 30px 60px;
   background-color: var(--secondary-color);
   border: 1px solid black;
   ${({ $adjustableHeight }) =>

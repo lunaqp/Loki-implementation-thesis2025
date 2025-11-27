@@ -106,18 +106,16 @@ async def cast_vote(voter_id, election_id):
             public_key, ct_v, ct_lv, ct_lid, proof = row
             pyballot:Ballot = construct_ballot(voter_id, public_key, ct_v, ct_lv, ct_lid, proof, election_id)
             ballot_validated = await validate_ballot(pyballot)
-            #conn.execute("DELETE FROM PendingVotes WHERE VoterID = ? AND ElectionID = ?", (voter_id, election_id)) # TODO: Move up before if-statement
-            #conn.close()
+            conn.execute("DELETE FROM PendingVotes WHERE VoterID = ? AND ElectionID = ?", (voter_id, election_id))
+            conn.close()
             if ballot_validated:
-                conn.execute("DELETE FROM PendingVotes WHERE VoterID = ? AND ElectionID = ?", (voter_id, election_id)) # TODO: Move up before if-statement
-                conn.close()
                 await send_ballot_to_bb(pyballot)
                 return ballot_validated #true if validated
             else:
                 return ballot_validated #false if not validated
     
     except Exception as e:
-        print(f"{RED}error casting ballot, {e}")
+        print(f"{RED}error casting ballot for voter {voter_id}, {e}")
 
 
 def construct_ballot(voter_id, public_key, ct_v, ct_lv, ct_lid, proof, election_id):

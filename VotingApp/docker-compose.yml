@@ -16,6 +16,11 @@ services:
       RA_API_URL: http://172.27.145.48:8002
       VS_API_URL: http://172.27.145.48:8004
 
+      #Testing with Aja's Mobile Network
+      # BB_API_URL: http://172.30.213.140:8001
+      # RA_API_URL: http://172.30.213.140:8002
+      # VS_API_URL: http://172.30.213.140:8004
+
       DUCKDB_PATH: /duckdb/voter-keys.duckdb
       VOTER_ID: ${VOTER_ID}
 

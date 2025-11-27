@@ -57,8 +57,7 @@ async def vote(v, lv_list, election_id, voter_id):
         #generate R1_v based on the vote otherwise abstention
         R1_v[v-1] = Secret(value=1)
 
-    #generate lv based on the indexes in lv_list
-    R1_lv = Secret(value=bin_to_int(lv_list, cbr_length+1))
+    R1_lv = Secret(value=Bn.from_decimal(str(bin_to_int(lv_list, cbr_length+1))))
 
     #last ballot from voter's CBR
     ct_v, ct_lv, ct_lid, _ = last_ballot

@@ -2,39 +2,151 @@
   "election": {
     "id": 456,
     "name": "Analog President",
-    "start": "2025-11-19T14:16Z",
-    "end": "2025-11-19T14:18Z"
+    "start": "2025-11-22T17:24Z",
+    "end": "2025-11-22T20:24Z"
   },
   "candidates": [
     {
-      "id": 4,
-      "name": "Anna"
-    },
-    {
-      "id": 5,
-      "name": "Bobby"
-    },
-    {
       "id": 6,
-      "name": "Charlie"
+      "name": "Evil Queen"
+    },
+    {
+      "id": 7,
+      "name": "Cinderella"
+    },
+    {
+      "id": 8,
+      "name": "Captain Hook"
+    },
+    {
+      "id": 9,
+      "name": "Princess Jasmin"
+    },
+    {
+      "id": 10,
+      "name": "Ariel Tritondaughter"
     }
   ],
   "voters": [
     {
-      "id": 101,
-      "name": "Luna Q Poulsen"
+      "id": 1,
+      "name": "A"
     },
     {
-      "id": 104,
-      "name": "John Doe"
+      "id": 2,
+      "name": "B"
     },
     {
-      "id": 105,
-      "name": "Jane Doe"
+      "id": 3,
+      "name": "C"
     },
     {
-      "id": 106,
-      "name": "Julian Doe"
+      "id": 4,
+      "name": "D"
+    },
+    {
+      "id": 5,
+      "name": "E"
+    },
+    {
+      "id": 6,
+      "name": "F"
+    },
+    {
+      "id": 7,
+      "name": "G"
+    },
+    {
+      "id": 8,
+      "name": "H"
+    },
+    {
+      "id": 9,
+      "name": "I"
+    },
+    {
+      "id": 10,
+      "name": "J"
+    },
+    {
+      "id": 11,
+      "name": "K"
+    },
+    {
+      "id": 12,
+      "name": "L"
+    },
+    {
+      "id": 13,
+      "name": "M"
+    },
+    {
+      "id": 14,
+      "name": "N"
+    },
+    {
+      "id": 15,
+      "name": "O"
+    },
+    {
+      "id": 16,
+      "name": "P"
+    },
+    {
+      "id": 17,
+      "name": "K"
+    },
+    {
+      "id": 18,
+      "name": "R"
+    },
+    {
+      "id": 19,
+      "name": "S"
+    },
+    {
+      "id": 20,
+      "name": "T"
+    },
+    {
+      "id": 21,
+      "name": "U"
+    },
+    {
+      "id": 22,
+      "name": "V"
+    },
+    {
+      "id": 23,
+      "name": "W"
+    },
+    {
+      "id": 24,
+      "name": "X"
+    },
+    {
+      "id": 25,
+      "name": "Y"
+    },
+    {
+      "id": 26,
+      "name": "Z"
+    },
+    {
+      "id": 27,
+      "name": "Æ"
+    },
+    {
+      "id": 28,
+      "name": "Ø"
+    },
+    {
+      "id": 29,
+      "name": "Å"
+    },
+    {
+      "id": 30,
+      "name": "#"
     }
   ]
 }

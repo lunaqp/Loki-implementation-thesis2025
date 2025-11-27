@@ -164,4 +164,6 @@ const VerificationContainer = styled.div`
   gap: 20px;
   justify-content: center;
   align-items: center;
+  /* text-align: left;
+  width: 800px; */
 `;
