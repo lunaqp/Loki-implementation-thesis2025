@@ -8,19 +8,14 @@ from coloursVA import GREEN, ORANGE, BOLD
 import fetch_functions_va as ff
 
 async def verify_proof(election_id, voter_id, pyballot: Ballot):
-    GROUP, GENERATOR, _, cbr_length, candidates, pk_TS, pk_VS = await fetch_data(election_id, voter_id)
+    GROUP, GENERATOR, _, _, candidates, pk_TS, pk_VS = await fetch_data(election_id, voter_id)
 
     current_ballot_b64 = (pyballot.ctv, pyballot.ctlv, pyballot.ctlid, pyballot.proof)
     ctv_current, ctlv_current, ctlid_current, proof_current = convert_to_ecpt(current_ballot_b64, GROUP)
     
-    # Fetch last ballot and previous last ballot
-    if cbr_length >= 2:
-        last_ballot_b64, previous_last_ballot_b64 = await ff.fetch_last_and_previouslast_ballot_from_bb(election_id, voter_id)
-    else:
-        # if there is no last previous ballot then we use the last ballot as the previous ballot
-        last_ballot_b64, _ = await ff.fetch_last_and_previouslast_ballot_from_bb(election_id, voter_id)
-        previous_last_ballot_b64 = last_ballot_b64
-
+    # Fetch the two ballots preceding the provided ballot:
+    last_ballot_b64, previous_last_ballot_b64 = await ff.fetch_preceding_ballots_from_bb(election_id, voter_id, pyballot.timestamp)
+    
     last_ballot = convert_to_ecpt(last_ballot_b64, GROUP)
     previous_last_ballot = convert_to_ecpt(previous_last_ballot_b64, GROUP)
 
@@ -38,7 +33,7 @@ async def verify_proof(election_id, voter_id, pyballot: Ballot):
 
     stmt_c = stmt((GENERATOR, pk_TS, pk_VS, upk, ctv_current, ctlv_current, ctlid_current, ct_i, c0, c1, ctv, ctv2), 
                 (Secret(), Secret(), Secret(), Secret(), Secret(), Secret()), len(candidates))
-
+    
     statement_verified = stmt_c.verify(proof_current)
 
     if not statement_verified: 

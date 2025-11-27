@@ -26,10 +26,10 @@ async def fetch_data(voter_id, election_id):
     cbr_length = await ff.fetch_cbr_length_from_bb(voter_id, election_id)
     # Fetch last ballot and previous last ballot
     if cbr_length >= 2:
-        last_ballot_b64, previous_last_ballot_b64 = await ff.fetch_last_and_previouslast_ballot_from_bb(voter_id, election_id)
+        last_ballot_b64, previous_last_ballot_b64 = await ff.fetch_last_and_previouslast_ballot_from_bb(election_id, voter_id)
     else:
         # if there is no last previous ballot then we use the last ballot as the previous ballot
-        last_ballot_b64, _ = await ff.fetch_last_and_previouslast_ballot_from_bb(voter_id, election_id)
+        last_ballot_b64, _ = await ff.fetch_last_and_previouslast_ballot_from_bb(election_id, voter_id)
         previous_last_ballot_b64 = last_ballot_b64
 
     # Converting back to EcPt objects
@@ -96,7 +96,7 @@ async def vote(v, lv_list, election_id, voter_id):
 
     #prove the statement
     nizk = full_stmt.prove(sec_dict.update({R1_r_v: R1_r_v.value, R1_lv: R1_lv.value, R1_r_lv: R1_r_lv.value, R1_r_lid: R1_r_lid.value, secret_usk: secret_usk.value}))
-
+    print("nizk_proof from voting:", nizk)
     pyBallot = constructBallot(voter_id, public_key, ct_v_new, ct_lv_new, ct_lid_new, nizk, election_id)
     
     return pyBallot

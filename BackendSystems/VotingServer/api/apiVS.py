@@ -16,8 +16,10 @@ from datetime import datetime
 async def lifespan(app: FastAPI):
     # Initialising DuckDB database:
     conn = duckdb.connect("/duckdb/voter-data.duckdb")
-    conn.sql("CREATE TABLE IF NOT EXISTS VoterTimestamps(VoterID INTEGER, ElectionID INTEGER, Timestamp TIMESTAMPTZ, Processed BOOLEAN, ImagePath TEXT)" )
-    conn.sql("CREATE TABLE IF NOT EXISTS PendingVotes(VoterID INTEGER, ElectionID INTEGER, PublicKey TEXT, ctv TEXT, ctlv TEXT, ctlid TEXT, Proof TEXT)")
+    conn.sql("DROP TABLE IF EXISTS VoterTimestamps")
+    conn.sql("DROP TABLE IF EXISTS PendingVotes")
+    conn.sql("CREATE TABLE VoterTimestamps(VoterID INTEGER, ElectionID INTEGER, Timestamp TIMESTAMPTZ, Processed BOOLEAN, ImagePath TEXT)" )
+    conn.sql("CREATE TABLE PendingVotes(VoterID INTEGER, ElectionID INTEGER, PublicKey TEXT, ctv TEXT, ctlv TEXT, ctlid TEXT, Proof TEXT)")
 
     asyncio.create_task(update_time())
     yield  # yielding control back to FastAPI

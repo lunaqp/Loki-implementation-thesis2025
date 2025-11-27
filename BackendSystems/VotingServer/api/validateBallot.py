@@ -42,7 +42,6 @@ async def validate_ballot(pyballot:Ballot):
 
 async def verify_proof(election_id, voter_id, pyballot):
     GROUP, GENERATOR, _, cbr_length, candidates, pk_TS, pk_VS = await fetch_data(election_id, voter_id)
-
     current_ballot_b64 = (pyballot.ctv, pyballot.ctlv, pyballot.ctlid, pyballot.proof)
     ctv_current, ctlv_current, ctlid_current, proof_current = convert_to_ecpt(current_ballot_b64, GROUP)
     

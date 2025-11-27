@@ -44,7 +44,6 @@ async def keygen(voter_list, election_id):
     for voter_id in voter_list:
         secret_key = ORDER.random()
         public_key = secret_key * GENERATOR
-        
         save_keys_to_duckdb(voter_id, election_id, secret_key, public_key)
 
         voter_key = VoterKey(
@@ -53,11 +52,9 @@ async def keygen(voter_list, election_id):
             publickey = base64.b64encode(public_key.export()).decode()
         )
         voter_key_list.voterkeylist.append(voter_key)
-    
     return voter_key_list
 
 def save_keys_to_duckdb(voter_id, election_id, secret_key, public_key):
-    print("saving keys to duckdb")
     try:
         conn = duckdb.connect("/duckdb/voter-keys.duckdb")
         print(f"{CYAN}inserting keys in duckdb for voter {voter_id}")

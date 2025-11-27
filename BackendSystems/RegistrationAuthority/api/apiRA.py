@@ -116,6 +116,5 @@ async def send_voter_keys(
     print(f"sending keys to Voting-app for voter: {voter_id}")
     # Fetch from duckDB
     secret_key, public_key = fetch_keys_from_duckdb(voter_id, election_id)
-    data: dict = {"secret_key": base64.b64encode(secret_key).decode(), "public_key":base64.b64encode(public_key).decode()} # decode() converts b64 bytes to string
-    
+    data: dict = {"secret_key": base64.b64encode(secret_key).decode(), "public_key": base64.b64encode(public_key).decode()} # decode() converts b64 bytes to string
     return data

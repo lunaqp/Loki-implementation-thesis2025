@@ -350,8 +350,18 @@ def send_election_result(
 def get_ballot(
     election_id: int = Query(..., description="ID of the election"),
     voter_id: int = Query(..., description="ID of the voter"),
-    timestamp: datetime = Query(..., description="Timestamp of the ballot")
+    image_filename: str = Query(..., description="Image filename associated with the ballot")
 ):
-    ballot: Ballot = db.fetch_ballot(election_id, voter_id, timestamp)
-
+    ballot: Ballot = db.fetch_ballot(election_id, voter_id, image_filename)
+    print(f"ballot fetched for image: {image_filename}:", ballot)
     return ballot
+
+@app.get("/preceding-ballots")
+def get_preceding_ballots(
+    election_id: int = Query(..., description="ID of the election"),
+    voter_id: int = Query(..., description="ID of the voter"),
+    timestamp: str = Query(..., description="Timestamp associated with the ballot")
+):
+    last_ballot, previous_last_ballot = db.fetch_preceeding_ballots(voter_id, election_id, timestamp)
+
+    return {"last_ballot": last_ballot, "previous_last_ballot": previous_last_ballot}
