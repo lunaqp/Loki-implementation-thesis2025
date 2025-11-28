@@ -499,3 +499,69 @@ def fetch_election_result(election_id):
     )
 
     return election_result
+
+def fetch_ballot(election_id, voter_id, image_filename):
+    with pool.connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                        SELECT PublicKey, CtCandidate, CtVoterList, CtVotingServerList, Proof, VoteTimestamp
+                        FROM VoterParticipatesInElection p
+                        JOIN VoterCastsBallot c 
+                        ON p.ElectionID = c.ElectionID AND p.VoterID = c.VoterID
+                        JOIN Ballots b
+                        ON b.ID = c.BallotID
+                        JOIN Images i
+                        ON i.BallotID = c.BallotID
+                        WHERE c.ElectionID = %s
+                            AND c.VoterID = %s
+                            AND i.ImageFilename = %s
+                        """, (election_id, voter_id, image_filename))
+            row = cur.fetchone()
+
+    if not row:
+        return None
+
+    (ctv_b64, ctlv_b64, ctlid_b64, proof_b64) = serialise_ballot_cts((row[1], row[2], row[3], row[4]))
+
+    ballot: Ballot = Ballot(
+        voterid=voter_id,
+        upk=base64.b64encode(row[0]).decode(),
+        ctv=ctv_b64,
+        ctlv=ctlv_b64,
+        ctlid=ctlid_b64,
+        proof=proof_b64,
+        timestamp=row[5]
+    )
+
+    return ballot
+
+def fetch_preceeding_ballots(voter_id, election_id, timestamp):
+    """
+    Fetch the two ballots immediately preceding the given timestamp
+    for a voter in an election.
+    """
+
+    with pool.connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                        SELECT CtCandidate, CtVoterList, CtVotingServerList, Proof
+                        FROM VoterParticipatesInElection p
+                        JOIN VoterCastsBallot c 
+                        ON p.ElectionID = c.ElectionID AND p.VoterID = c.VoterID
+                        JOIN Ballots b
+                        ON b.ID = c.BallotID
+                        WHERE p.ElectionID = %s AND p.VoterID = %s AND c.VoteTimestamp < %s
+                        ORDER BY c.VoteTimestamp DESC
+                        LIMIT 2;
+                        """, (election_id, voter_id, timestamp))
+            rows = cur.fetchall()
+
+    # In case only one row is in the database (ballot0):
+    if len(rows) == 1:
+        last_ballot_b64 = serialise_ballot_cts(rows[0])
+        return last_ballot_b64, None
+
+    last_ballot_b64 = serialise_ballot_cts(rows[0])
+    previous_last_ballot_b64 = serialise_ballot_cts(rows[1])
+
+    return last_ballot_b64, previous_last_ballot_b64

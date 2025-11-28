@@ -20,17 +20,15 @@ async def handle_election(election_id):
     print(f"remaining time: {remaining_time}")
 
     # Wait until election is over
-    await asyncio.sleep(remaining_time.total_seconds()) # Adding slight delay to ensure voting server wraps up last obfuscation ballot for each voter.
-    grace_period = 5 # seconds
+    await asyncio.sleep(remaining_time.total_seconds())
+    # Adds a delay to ensure voting server wraps up last obfuscation ballot for each voter. Amount of time necessary depends on election setup.
+    grace_period = 60 # seconds
     print(f"{PURPLE}Election {election_id} has concluded, giving grace period of {grace_period} seconds before tallying begins")
-    await asyncio.sleep(grace_period)
+    await asyncio.sleep(grace_period) 
 
     # Tally the election result
     print(f"{PURPLE}Tallying election with id {election_id}...")
-    s_time_tally = time.process_time_ns()
     election_result: ElectionResult = await tally(election_id)
-    e_time_tally = time.process_time_ns() - s_time_tally
-    print(f"{PINK}Tallying time:", e_time_tally/1000000, "ms")
     await send_result_to_bb(election_result)
 
 # Tally function:
@@ -42,7 +40,6 @@ async def tally(election_id):
     sk_TS = fetch_ts_secret_key()
     last_ballots_ctvs_b64: list = await fetch_last_ballot_ctvs_from_bb(election_id)
     last_ballots_ctvs = convert_to_ecpt(last_ballots_ctvs_b64, GROUP)
-
     sk=Secret(value=sk_TS)
     stmt, nizk=[], []
     votes_for_candidate=[0]*candidates_length
@@ -63,7 +60,8 @@ async def tally(election_id):
                 break
 
         print(f"{PURPLE}Votes for Candidate", candidates[i],":", votes_for_candidate[i])
-
+        
+        print(f"votes: {j} \n c0: {c0} \n c1: {c1} \n secret:  {sk}")
         #constructing the statement for the ZK proof
         stmt.append(stmt_tally(GENERATOR, ORDER, j, c0, c1, sk))
 
@@ -116,9 +114,6 @@ def convert_to_ecpt(ctv_list, GROUP):
             decoded_pairs.append((EcPt.from_binary(ct0, GROUP), EcPt.from_binary(ct1, GROUP)))
         ctv_ecpt.append(decoded_pairs)
     
-    # alternatively:
-    # new_list = [[(EcPt.from_binary(base64.b64decode(ct0), GROUP),EcPt.from_binary(base64.b64decode(ct1), GROUP)) for ct0, ct1 in ctvs] for ctvs in ctv_list]
-
     return ctv_ecpt
 
 

@@ -7,21 +7,23 @@ from vote_casting import vote, send_ballot_to_VS
 from coloursVA import RED, GREEN, PURPLE, PINK
 import httpx
 from tally_verification import verify_tally
-from fetch_functions_va import fetch_election_result_from_bb, fetch_candidates_names_from_bb, fetch_keys_from_ra, already_saved
+from fetch_functions_va import fetch_election_result_from_bb, fetch_candidates_names_from_bb, fetch_keys_from_ra, already_saved, fetch_ballot_from_bb
 import time
 import os
 import save_to_duckdb as ddb
+from datetime import datetime
+from ballotVerification import verify_proof
 
 BB_API_URL = os.environ.get("BB_API_URL")
 RA_API_URL = os.environ.get("RA_API_URL")
 VOTER_ID = os.environ.get("VOTER_ID")
 
-e_time_vote = []
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Initialising DuckDB database:
     conn = duckdb.connect("/duckdb/voter-keys.duckdb")
+    conn.sql("DROP TABLE IF EXISTS VoterKeys")
+    conn.sql("DROP TABLE IF EXISTS VoterLogin")
     conn.sql("CREATE TABLE IF NOT EXISTS VoterKeys(VoterID INTEGER, ElectionID INTEGER, SecretKey BLOB, PublicKey BLOB)")
     conn.sql("CREATE TABLE IF NOT EXISTS VoterLogin(Username TEXT PRIMARY KEY, Password TEXT)")
     ddb.save_voter_login(VOTER_ID)
@@ -108,14 +110,8 @@ async def fetch_elections_for_voter(
 # Sending ballot to Voting Server after receiving it in the Voting App frontend.
 @app.post("/api/send-ballot")
 async def send_ballot(voter_ballot: VoterCastBallot):
-    print("Voter id fetched from environment variable:", VOTER_ID)
-
-    s_time_vote = time.process_time_ns() # Start timer
     # Constructing ballot
     pyBallot: Ballot = await vote(voter_ballot.v, voter_ballot.lv_list, voter_ballot.election_id, VOTER_ID)
-    e_time_vote.append(time.process_time_ns() - s_time_vote) # Append to timer
-    print("e-time-vote:", e_time_vote)
-    print(f"{PINK}Ballot vote time (avg):", round(sum(e_time_vote)/len(e_time_vote)/1000000,3), "ms") # Last result printed is the average of all
     # Sending ballot to voting-server
     print(f"{GREEN}Sending ballot to Voting Server")
     image_response = await send_ballot_to_VS(pyBallot) # Image response in format: {"image": image_filename.jpg}
@@ -165,3 +161,14 @@ async def verify_election_tally(election_id: int = Query(..., description="ID of
     print(f"{PURPLE}Tally verification request received for election {election_id}. Verification status:", verification_status)
     return {"verified": verification_status}
 
+@app.get("/api/verify-ballot")
+async def verify_ballot(
+    election_id: int = Query(..., description="ID of the election"),
+    image_filename: str = Query(..., description="image associated with the ballot")
+):
+    ballot: Ballot = await fetch_ballot_from_bb(election_id, VOTER_ID, image_filename)
+    if ballot == None:
+        return {"status": "pending"}
+    ballot_verified: bool = await verify_proof(election_id, VOTER_ID, ballot)
+
+    return {"status": ballot_verified}

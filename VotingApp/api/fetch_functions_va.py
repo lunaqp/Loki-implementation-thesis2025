@@ -1,7 +1,7 @@
 import httpx
 from fastapi import HTTPException
 from coloursVA import RED
-from modelsVA import ElGamalParams, ElectionResult
+from modelsVA import ElGamalParams, ElectionResult, Ballot
 from petlib.ec import EcPt, EcGroup, Bn
 import base64
 import duckdb
@@ -132,7 +132,7 @@ async def fetch_public_keys_from_bb():
     except Exception as e:
         print(f"{RED}Error fetching public keys for TS and VS {e}")
 
-async def fetch_last_and_previouslast_ballot_from_bb(voter_id, election_id):
+async def fetch_last_and_previouslast_ballot_from_bb(election_id, voter_id):
     try:
         async with httpx.AsyncClient() as client:
             response = await client.get(f"{BB_API_URL}/last_previous_last_ballot?election_id={election_id}&voter_id={voter_id}")
@@ -205,3 +205,45 @@ def already_saved(election_id):
 
     # True if the row already exists in the database.
     return result is not None
+
+async def fetch_ballot_from_bb(election_id, voter_id, image_filename):
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.get(f"{BB_API_URL}/ballot", params={
+                    "election_id": election_id,
+                    "voter_id": voter_id,
+                    "image_filename": image_filename,
+                })
+            response.raise_for_status() 
+            data = response.json()
+            if data == None:
+                return None
+            # Recreating Pydantic ballot model
+            ballot: Ballot = Ballot.model_validate(data)
+           
+            return ballot
+    except Exception as e:
+        print(f"{RED}Error fetching ballot election {election_id}, voter {voter_id} with image filename {image_filename}: {e}")
+        raise HTTPException(status_code=500, detail=f"{RED}Error fetching ballot election {election_id}, voter {voter_id} with image filename {image_filename}: {str(e)}")
+    
+async def fetch_preceding_ballots_from_bb(election_id, voter_id, timestamp):
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.get(f"{BB_API_URL}/preceding-ballots", params={
+                    "election_id": election_id,
+                    "voter_id": voter_id,
+                    "timestamp": timestamp.isoformat(),
+                })
+            response.raise_for_status() 
+            data = response.json()
+            last_ballot_b64 = data["last_ballot"]
+            previous_last_ballot_b64 = data["previous_last_ballot"]
+            
+            if  previous_last_ballot_b64 == None:
+                previous_last_ballot_b64 = last_ballot_b64
+                
+            return last_ballot_b64, previous_last_ballot_b64
+    except Exception as e:
+        print(f"{RED}Error fetching ballot for election {election_id}, voter {voter_id} with timestamp {timestamp}: {e}")
+        raise HTTPException(status_code=500, detail=f"{RED}Error fetching ballot for election {election_id}, voter {voter_id} with timestamp {timestamp}:  {str(e)}")
+    

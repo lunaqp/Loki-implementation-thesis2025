@@ -11,6 +11,8 @@ from coloursVS import GREEN, ORANGE, YELLOW, PINK, BOLD
 import fetch_functions as ff
 import time
 
+e_time_obf = []
+
 async def validate_ballot(pyballot:Ballot):
     election_id = pyballot.electionid
     ballot_hash: list = await ff.fetch_ballot_hash_from_bb(election_id) #NOTE Do we need compare the hash of the new ballot with all ballot hashes in an election or only the ballot hashes for that voter id. ot whole BB
@@ -31,18 +33,13 @@ async def validate_ballot(pyballot:Ballot):
     if hashed_ballot not in ballot_hash:
         ballot_not_included = True
 
-    s_time_verify = time.process_time_ns()
     proof_verified = await verify_proof(election_id, pyballot.voterid, pyballot)
-    e_time_verify = time.process_time_ns() - s_time_verify
-    print(f"{PINK}Ballot verification time:", e_time_verify/1000000, "ms")
-
     ballot_validated = uid_exists and ballot_not_included and proof_verified
 
     return ballot_validated
 
 async def verify_proof(election_id, voter_id, pyballot):
     GROUP, GENERATOR, _, cbr_length, candidates, pk_TS, pk_VS = await fetch_data(election_id, voter_id)
-
     current_ballot_b64 = (pyballot.ctv, pyballot.ctlv, pyballot.ctlid, pyballot.proof)
     ctv_current, ctlv_current, ctlid_current, proof_current = convert_to_ecpt(current_ballot_b64, GROUP)
     
@@ -76,7 +73,6 @@ async def verify_proof(election_id, voter_id, pyballot):
 
     if not statement_verified: 
         print(f"{ORANGE}verification failed")
-        #NOTE: if failed to verify send message to voting app and display in UI "ballot not valid"
     else:
         print(f"{BOLD}{GREEN}Ballot succesfully verified for voter {voter_id}")
 
@@ -137,7 +133,7 @@ async def obfuscate(voter_id, election_id):
 
     last_ballot = convert_to_ecpt(last_ballot_b64, GROUP)
     previous_last_ballot = convert_to_ecpt(previous_last_ballot_b64, GROUP)
-
+    s_time_obf = time.process_time_ns() # Performance: Start timer before obfuscation
     #Generate a noise ballot
     r_v = Secret(value=ORDER.random())
     r_lv = Secret(value=ORDER.random())
@@ -176,6 +172,10 @@ async def obfuscate(voter_id, election_id):
     full_stmt.subproofs[sim_relation].set_simulated()
     nizk = full_stmt.prove({r_v: r_v.value, r_lv: r_lv.value, r_lid: r_lid.value, sk: sk.value})
 
+    e_time_obf.append(time.process_time_ns() - s_time_obf) # Performance: Append time taken to the timer array after obfuscation
+    print("e_time_obf:", e_time_obf)
+    print(f"{PINK}Ballot obfuscation time (avg):", round(sum(e_time_obf)/len(e_time_obf)/1000000,3), "ms")
+    
     pyBallot: Ballot = construct_ballot(voter_id, upk, ct_v_new, ct_lv_new, ct_lid_new, nizk, election_id)
     return pyBallot
 
