@@ -111,7 +111,7 @@ const PreviousVotes = () => {
       <ScreenTemplate
         nextRoute={nextRoute}
         prevRoute={prevRoute}
-        adjustableHeight
+        adjustableHeight={true}
         buttonUnselectable={selected.length === 0}
         onPrimaryClick={savePreviousVotes}
       >

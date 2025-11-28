@@ -12,6 +12,7 @@ const MyPage = () => {
     hasUnread,
     setHasUnread,
     getRemainingMs,
+    clearSession,
   } = useApp();
 
   // tick every second to count down
@@ -34,6 +35,11 @@ const MyPage = () => {
   const handleRead = () => {
     setHasUnread(false);
     navigate("/instructions");
+  };
+
+  const handleLogout = () => {
+    clearSession();
+    navigate("/");
   };
 
   const [tallyStatus, setTallyStatus] = useState(null);
@@ -60,11 +66,9 @@ const MyPage = () => {
     }
   };
 
-  const fetchElections = async (voterId) => {
+  const fetchElections = async () => {
     try {
-      const response = await fetch(
-        `/api/fetch-elections-for-voter?voter_id=${voterId}`
-      );
+      const response = await fetch(`/api/fetch-elections-for-voter`);
 
       if (!response.ok) {
         const errText = await response.text();
@@ -84,10 +88,9 @@ const MyPage = () => {
   useEffect(() => {
     if (!user) return;
 
-    const voterId = user.user;
     const loadElections = async () => {
       try {
-        await fetchElections(voterId);
+        await fetchElections();
       } catch (err) {
         console.log(err.message);
       }
@@ -133,8 +136,12 @@ const MyPage = () => {
       if (!res.ok) throw new Error(await res.text());
       const data = await res.json();
       setResultData(data);
+
+      const verified = await fetchTallyVerification(election.id);
+      setTallyStatus(verified ? "success" : "error");
     } catch (err) {
       setResultError(String(err));
+      setTallyStatus("error");
     } finally {
       setResultLoading(false);
     }
@@ -152,7 +159,7 @@ const MyPage = () => {
       <Header>
         <HeaderContent>
           <Title>Welcome to MyPage!</Title>
-          <LogoutButton>Log out</LogoutButton>
+          <LogoutButton onClick={handleLogout}>Log out</LogoutButton>
         </HeaderContent>
       </Header>
 
@@ -181,7 +188,7 @@ const MyPage = () => {
 
                 {locked && (
                   <TimeoutNote>
-                    You are able to vote again in: <b>{format_ms(remaining)}</b>
+                    You can change your vote in: <b>{format_ms(remaining)}</b>
                   </TimeoutNote>
                 )}
 
@@ -231,11 +238,12 @@ const MyPage = () => {
             )}
             {!resultLoading && !resultError && resultData && (
               <ModalBody>
+                <h4>Candidates:</h4>
                 {Array.isArray(resultData.result) ? (
                   <ResultList>
                     {resultData.result.map((r) => (
                       <li key={r.candidateid}>
-                        <span>Candidate: {r.candidate_name}</span>
+                        <span>{r.candidate_name}</span>
                         <b>{r.votes} votes</b>
                       </li>
                     ))}
@@ -246,37 +254,16 @@ const MyPage = () => {
               </ModalBody>
             )}
             <ModalFooter>
-              <ButtonGroup>
-                <button
-                  className="secondary"
-                  onClick={async () => {
-                    setTallyStatus(null);
-                    try {
-                      const id = resultElection?.id;
-                      if (!id) {
-                        setTallyStatus("error");
-                        return;
-                      }
-                      const verified = await fetchTallyVerification(id);
-                      setTallyStatus(verified ? "success" : "error");
-                    } catch (e) {
-                      setTallyStatus("error");
-                    }
-                  }}
-                >
-                  Verify tally
-                </button>
-                {tallyStatus === "success" && (
-                  <span style={{ color: "green", fontWeight: "600" }}>
-                    Tally verified
-                  </span>
-                )}
-                {tallyStatus === "error" && (
-                  <span style={{ color: "red", fontWeight: "600" }}>
-                    Error verifying tally
-                  </span>
-                )}
-              </ButtonGroup>
+              {tallyStatus === "success" && (
+                <span style={{ color: "green", fontWeight: "600" }}>
+                  Tally verified!
+                </span>
+              )}
+              {tallyStatus === "error" && (
+                <span style={{ color: "red", fontWeight: "600" }}>
+                  Error verifying tally
+                </span>
+              )}
             </ModalFooter>
           </ModalCard>
         </ModalOverlay>
@@ -301,7 +288,7 @@ const Header = styled.div`
   flex-direction: row;
   justify-content: center;
   align-items: center;
-  height: 110px;
+  height: 90px;
   width: 100%;
   background-color: var(--primary-color);
   box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.2);
@@ -495,6 +482,10 @@ const CloseX = styled.button`
 
 const ModalBody = styled.div`
   padding: 16px;
+
+  h4 {
+    margin: 0 0 8px;
+  }
 `;
 
 const ResultList = styled.ul`

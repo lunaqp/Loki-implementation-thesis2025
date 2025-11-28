@@ -65,7 +65,7 @@ const Header = styled.div`
   flex-direction: row;
   justify-content: center;
   align-items: center;
-  height: 110px;
+  height: 90px;
   width: 100%;
   background-color: var(--primary-color);
   box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.2);
