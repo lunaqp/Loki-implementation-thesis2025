@@ -12,8 +12,13 @@ const CandidateSelection = () => {
   const navigate = useNavigate();
   const nextRoute = `/${electionId}/MemorableInformation`;
   const prevRoute = location.state?.from || `/${electionId}/PreviousVotes`;
-  const { previousVotes, user, setImageFilename, electionName, clearFlow } =
-    useApp();
+  const {
+    previousVotes,
+    setImageFilename,
+    electionName,
+    clearFlow,
+    startTimeout,
+  } = useApp();
   const [candidates, setCandidates] = useState();
 
   const navigateToMypage = () => {
@@ -51,11 +56,10 @@ const CandidateSelection = () => {
 
     // Elements for ballot:
     const v = selectedCandidateIndex;
-    const voter_id = user.user;
     const election_id = electionId;
     const lv_list = previousVotes;
 
-    sendBallot(v, lv_list, election_id, voter_id);
+    sendBallot(v, lv_list, election_id);
 
     navigate(nextRoute);
   };
@@ -68,14 +72,14 @@ const CandidateSelection = () => {
     setSelectedCandidate(e.target.value);
   };
 
-  async function sendBallot(v, lv_list, election_id, voter_id) {
+  async function sendBallot(v, lv_list, election_id) {
     try {
       const response = await fetch("/api/send-ballot", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ v, lv_list, election_id, voter_id }),
+        body: JSON.stringify({ v, lv_list, election_id }),
       });
 
       if (!response.ok) {
@@ -86,6 +90,7 @@ const CandidateSelection = () => {
       const data = await response.json();
       setImageFilename(data.image);
       console.log("API response from Voting Server:", data);
+      startTimeout(Number(electionId), 6 * 60 * 1000); // timeout 6 minutes
     } catch (err) {
       console.error("API error:", err);
     }
@@ -103,7 +108,6 @@ const CandidateSelection = () => {
           onPrimaryClick={handleNextClick}
           prevRoute={prevRoute}
           primaryButtonText="Cast vote"
-          adjustableHeight={true}
           buttonUnselectable={!selectedCandidate}
         >
           <ContentWrapper>

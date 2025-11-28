@@ -12,6 +12,7 @@ const MyPage = () => {
     hasUnread,
     setHasUnread,
     getRemainingMs,
+    clearSession,
   } = useApp();
 
   // tick every second to count down
@@ -34,6 +35,11 @@ const MyPage = () => {
   const handleRead = () => {
     setHasUnread(false);
     navigate("/instructions");
+  };
+
+  const handleLogout = () => {
+    clearSession();
+    navigate("/");
   };
 
   const [tallyStatus, setTallyStatus] = useState(null);
@@ -60,11 +66,9 @@ const MyPage = () => {
     }
   };
 
-  const fetchElections = async (voterId) => {
+  const fetchElections = async () => {
     try {
-      const response = await fetch(
-        `/api/fetch-elections-for-voter?voter_id=${voterId}`
-      );
+      const response = await fetch(`/api/fetch-elections-for-voter`);
 
       if (!response.ok) {
         const errText = await response.text();
@@ -84,10 +88,9 @@ const MyPage = () => {
   useEffect(() => {
     if (!user) return;
 
-    const voterId = user.user;
     const loadElections = async () => {
       try {
-        await fetchElections(voterId);
+        await fetchElections();
       } catch (err) {
         console.log(err.message);
       }
@@ -156,7 +159,7 @@ const MyPage = () => {
       <Header>
         <HeaderContent>
           <Title>Welcome to MyPage!</Title>
-          <LogoutButton>Log out</LogoutButton>
+          <LogoutButton onClick={handleLogout}>Log out</LogoutButton>
         </HeaderContent>
       </Header>
 
@@ -185,7 +188,7 @@ const MyPage = () => {
 
                 {locked && (
                   <TimeoutNote>
-                    You are able to vote again in: <b>{format_ms(remaining)}</b>
+                    You can change your vote in: <b>{format_ms(remaining)}</b>
                   </TimeoutNote>
                 )}
 
@@ -285,7 +288,7 @@ const Header = styled.div`
   flex-direction: row;
   justify-content: center;
   align-items: center;
-  height: 110px;
+  height: 90px;
   width: 100%;
   background-color: var(--primary-color);
   box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.2);

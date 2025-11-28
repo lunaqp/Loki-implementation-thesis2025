@@ -66,8 +66,9 @@ export default VoteCheck;
 const ContentWrapper = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 50px;
+  gap: 100px;
   align-items: center;
+  padding-bottom: 40px;
 `;
 
 const Question = styled.h1`

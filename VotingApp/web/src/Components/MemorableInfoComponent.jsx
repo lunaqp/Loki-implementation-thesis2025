@@ -34,7 +34,7 @@ const Container = styled.div`
 
 const TextContainer = styled.div`
   text-align: center;
-  max-width: 700px;
+  max-width: 900px;
 `;
 
 const InfoSpace = styled.div`

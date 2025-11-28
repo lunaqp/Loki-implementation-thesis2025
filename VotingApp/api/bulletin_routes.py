@@ -9,7 +9,7 @@ router = APIRouter(
 )
 
 #This reads BB URL from the env
-BB_API_URL = os.environ.get("BB_API_URL", "http://bb_api:8000") # Docker container addresses and envrionment variables defined in docker-compose.yml
+BB_API_URL = os.environ.get("BB_API_URL") # Docker container addresses and envrionment variables defined in docker-compose.yml
 
 @router.get("/candidates") #define route in VotingApp
 def get_candidates(election_id):

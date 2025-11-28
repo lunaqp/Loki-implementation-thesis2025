@@ -1,0 +1,152 @@
+{
+    "election": {
+        "id": 1,
+        "name": "Usability test",
+        "start": "2025-11-21T13:12Z",
+        "end": "2025-11-21T15:00Z"
+    },
+    "candidates": [
+        {
+            "id": 1,
+            "name": "Iris Calder"
+        },
+        {
+            "id": 2,
+            "name": "Victor Rowan"
+        },
+        {
+            "id": 3,
+            "name": "Mina Hawthorne"
+        },
+        {
+            "id": 4,
+            "name": "Theo Marwick"
+        },
+        {
+            "id": 5,
+            "name": "Clara Winslow"
+        }
+    ],
+    "voters": [
+        {
+            "id": 1,
+            "name": "Sable Merrin"
+        },
+        {
+            "id": 2,
+            "name": "Juno Crest"
+        },
+        {
+            "id": 3,
+            "name": "Kael Rowanheart"
+        },
+        {
+            "id": 4,
+            "name": "Mira Solen"
+        },
+        {
+            "id": 5,
+            "name": "Jasper Thorn"
+        },
+        {
+            "id": 6,
+            "name": "Calla Vinter"
+        },
+        {
+            "id": 7,
+            "name": "Rowan Kestrel"
+        },
+        {
+            "id": 8,
+            "name": "Niko Bramwell"
+        },
+        {
+            "id": 9,
+            "name": "Elara Wynn"
+        },
+        {
+            "id": 10,
+            "name": "Silas Arden"
+        },
+        {
+            "id": 11,
+            "name": "Kira Moonsong"
+        },
+        {
+            "id": 12,
+            "name": "Bastian Vale"
+        },
+        {
+            "id": 13,
+            "name": "Talia Evermist"
+        },
+        {
+            "id": 14,
+            "name": "Oren Blackwell"
+        },
+        {
+            "id": 15,
+            "name": "Rhea Linden"
+        },
+        {
+            "id": 16,
+            "name": "Cyrus Ember"
+        },
+        {
+            "id": 17,
+            "name": "Vera Cloudhart"
+        },
+        {
+            "id": 18,
+            "name": "Atlas Greydon"
+        },
+        {
+            "id": 19,
+            "name": "Nova Larkspur"
+        },
+        {
+            "id": 20,
+            "name": "Felix Dunmar"
+        },
+        {
+            "id": 21,
+            "name": "Ivy Starcrest"
+        },
+        {
+            "id": 22,
+            "name": "Thane Waverly"
+        },
+        {
+            "id": 23,
+            "name": "Aya Lior"
+        },
+        {
+            "id": 24,
+            "name": "Milo Crestwood"
+        },
+        {
+            "id": 25,
+            "name": "Selene Bramble"
+        },
+        {
+            "id": 26,
+            "name": "Dorian Skyfall"
+        },
+        {
+            "id": 27,
+            "name": "Lena Rooke"
+        },
+        {
+            "id": 28,
+            "name": "Corin Westvale"
+        },
+        {
+            "id": 29,
+            "name": "Maris Faelan"
+        },
+        {
+            "id": 30,
+            "name": "Hale Northwind"
+        }
+    ]
+}

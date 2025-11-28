@@ -1,18 +1,21 @@
 import httpx
 from fastapi import HTTPException
 from coloursVA import RED
-from modelsVA import ElGamalParams, ElectionResult
+from modelsVA import ElGamalParams, ElectionResult, Ballot
 from petlib.ec import EcPt, EcGroup, Bn
 import base64
 import duckdb
-import os
 from pydantic import ValidationError
-from petlib.cipher import Cipher
+import os
+import save_to_duckdb as ddb
+
+RA_API_URL = os.environ.get("RA_API_URL")
+BB_API_URL = os.environ.get("BB_API_URL")
 
 async def fetch_elgamal_params():
     async with httpx.AsyncClient() as client:
         try:
-            resp = await client.get("http://bb_api:8000/elgamalparams")
+            resp = await client.get(f"{BB_API_URL}/elgamalparams")
             data = resp.json()
             params = ElGamalParams(
                 group = data["group"],
@@ -34,7 +37,7 @@ async def fetch_elgamal_params():
 async def fetch_candidates_from_bb(election_id):
     try:
         async with httpx.AsyncClient() as client:
-            response = await client.get(f"http://bb_api:8000/candidates?election_id={election_id}")
+            response = await client.get(f"{BB_API_URL}/candidates?election_id={election_id}")
             response.raise_for_status() 
 
             data = response.json()
@@ -52,7 +55,7 @@ async def fetch_candidates_names_from_bb(election_id: int):
     try:
         async with httpx.AsyncClient() as client:
             resp = await client.get(
-                f"http://bb_api:8000/candidates?election_id={election_id}"
+                f"{BB_API_URL}/candidates?election_id={election_id}"
             )
             resp.raise_for_status()
             data = resp.json()
@@ -64,7 +67,7 @@ async def fetch_candidates_names_from_bb(election_id: int):
 async def fetch_voters_from_bb(election_id):
     try:
         async with httpx.AsyncClient() as client:
-            response = await client.get(f"http://bb_api:8000/voters?election_id={election_id}")
+            response = await client.get(f"{BB_API_URL}/voters?election_id={election_id}")
             response.raise_for_status() 
           
             data = response.json()
@@ -80,7 +83,7 @@ async def fetch_voters_from_bb(election_id):
 async def fetch_last_ballot_ctvs_from_bb(election_id):
     try:
         async with httpx.AsyncClient() as client:
-            response = await client.get(f"http://bb_api:8000/fetch_last_ballot_ctvs?election_id={election_id}")
+            response = await client.get(f"{BB_API_URL}/fetch_last_ballot_ctvs?election_id={election_id}")
             response.raise_for_status() 
           
             data = response.json()
@@ -94,7 +97,7 @@ async def fetch_last_ballot_ctvs_from_bb(election_id):
 async def fetch_election_result_from_bb(election_id):
     try:
         async with httpx.AsyncClient() as client:
-            response = await client.get(f"http://bb_api:8000/election-result?election_id={election_id}")
+            response = await client.get(f"{BB_API_URL}/election-result?election_id={election_id}")
             if response.status_code == 404:
                 return None
             response.raise_for_status() 
@@ -116,7 +119,7 @@ async def fetch_public_keys_from_bb():
     GROUP, _, _ = await fetch_elgamal_params()
     try:
         async with httpx.AsyncClient() as client:
-            response = await client.get("http://bb_api:8000/public-keys-tsvs")
+            response = await client.get(f"{BB_API_URL}/public-keys-tsvs")
             response.raise_for_status() # gets http status code
 
             data: dict = response.json()
@@ -129,10 +132,10 @@ async def fetch_public_keys_from_bb():
     except Exception as e:
         print(f"{RED}Error fetching public keys for TS and VS {e}")
 
-async def fetch_last_and_previouslast_ballot_from_bb(voter_id, election_id):
+async def fetch_last_and_previouslast_ballot_from_bb(election_id, voter_id):
     try:
         async with httpx.AsyncClient() as client:
-            response = await client.get(f"http://bb_api:8000/last_previous_last_ballot?election_id={election_id}&voter_id={voter_id}")
+            response = await client.get(f"{BB_API_URL}/last_previous_last_ballot?election_id={election_id}&voter_id={voter_id}")
             response.raise_for_status() 
 
             data = response.json()
@@ -147,7 +150,7 @@ async def fetch_last_and_previouslast_ballot_from_bb(voter_id, election_id):
 async def fetch_cbr_length_from_bb(voter_id, election_id):
     try:
         async with httpx.AsyncClient() as client:
-            response = await client.get(f"http://bb_api:8000/cbr_length?election_id={election_id}&voter_id={voter_id}")
+            response = await client.get(f"{BB_API_URL}/cbr_length?election_id={election_id}&voter_id={voter_id}")
             response.raise_for_status() 
             data = response.json()
 
@@ -160,22 +163,87 @@ async def fetch_cbr_length_from_bb(voter_id, election_id):
 
 def fetch_keys(voter_id, election_id):
     conn = duckdb.connect("/duckdb/voter-keys.duckdb")
-    (enc_secret_key, public_key, iv) = conn.execute("""
-            SELECT SecretKey, PublicKey, IV
+    (secret_key, public_key) = conn.execute("""
+            SELECT SecretKey, PublicKey
             FROM VoterKeys
             WHERE VoterID = ? AND ElectionID = ?
             """, (voter_id, election_id)).fetchone()
-    
-    secret_key = decrypt_key(enc_secret_key, iv)
 
     return secret_key, public_key
 
 
-def decrypt_key(enc_secret_key, iv):
-    ENC_KEY = base64.b64decode(os.getenv("VOTER_SK_DECRYPTION_KEY"))
-    aes_cipher = Cipher("AES-128-CTR")
-    dec = aes_cipher.dec(ENC_KEY, iv)
-    decrypted_secret_key = dec.update(enc_secret_key)
-    decrypted_secret_key += dec.finalize()
+async def fetch_keys_from_ra(voter_id, election_id):
+    print("fetching keys from RA...")
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.get(f"{RA_API_URL}/voter-keys?voter_id={voter_id}&election_id={election_id}")
+            response.raise_for_status() 
 
-    return decrypted_secret_key
+            data:dict = response.json()
+
+            secret_key = data["secret_key"]
+            public_key = data["public_key"]
+
+            # Public and secret keys are saved in internal duckdb database.
+            ddb.save_keys_to_duckdb(voter_id, election_id, secret_key, public_key)
+            conn = duckdb.connect("/duckdb/voter-keys.duckdb")
+
+            return {"status": "keys received"}
+    except Exception as e:
+        print(f"{RED}Error fetching keys for voter, {e}")
+        raise HTTPException(status_code=500, detail=f"{RED}Error fetching keys for voter, {str(e)}")     
+
+def already_saved(election_id):
+    ("checking if keys for election is already saved for voter in duckdb")
+    conn = duckdb.connect("/duckdb/voter-keys.duckdb")
+    result = conn.execute("""
+        SELECT 1
+        FROM VoterKeys
+        WHERE ElectionID = ?
+        LIMIT 1
+    """, [election_id]).fetchone()
+
+    # True if the row already exists in the database.
+    return result is not None
+
+async def fetch_ballot_from_bb(election_id, voter_id, image_filename):
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.get(f"{BB_API_URL}/ballot", params={
+                    "election_id": election_id,
+                    "voter_id": voter_id,
+                    "image_filename": image_filename,
+                })
+            response.raise_for_status() 
+            data = response.json()
+            if data == None:
+                return None
+            # Recreating Pydantic ballot model
+            ballot: Ballot = Ballot.model_validate(data)
+           
+            return ballot
+    except Exception as e:
+        print(f"{RED}Error fetching ballot election {election_id}, voter {voter_id} with image filename {image_filename}: {e}")
+        raise HTTPException(status_code=500, detail=f"{RED}Error fetching ballot election {election_id}, voter {voter_id} with image filename {image_filename}: {str(e)}")
+    
+async def fetch_preceding_ballots_from_bb(election_id, voter_id, timestamp):
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.get(f"{BB_API_URL}/preceding-ballots", params={
+                    "election_id": election_id,
+                    "voter_id": voter_id,
+                    "timestamp": timestamp.isoformat(),
+                })
+            response.raise_for_status() 
+            data = response.json()
+            last_ballot_b64 = data["last_ballot"]
+            previous_last_ballot_b64 = data["previous_last_ballot"]
+            
+            if  previous_last_ballot_b64 == None:
+                previous_last_ballot_b64 = last_ballot_b64
+                
+            return last_ballot_b64, previous_last_ballot_b64
+    except Exception as e:
+        print(f"{RED}Error fetching ballot for election {election_id}, voter {voter_id} with timestamp {timestamp}: {e}")
+        raise HTTPException(status_code=500, detail=f"{RED}Error fetching ballot for election {election_id}, voter {voter_id} with timestamp {timestamp}:  {str(e)}")
+    

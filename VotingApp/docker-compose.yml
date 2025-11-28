@@ -1,0 +1,46 @@
+services:
+  va_api:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    volumes:
+      - va_data:/duckdb
+    environment:
+      # Testing with server
+      # BB_API_URL: http://127.0.0.1:8001
+      # RA_API_URL: http://127.0.0.1:8002
+      # VS_API_URL: http://127.0.0.1:8004
+
+      # Testing with Luna's laptop + hotspot
+      BB_API_URL: http://172.27.145.48:8001
+      RA_API_URL: http://172.27.145.48:8002
+      VS_API_URL: http://172.27.145.48:8004
+
+      #Testing with Aja's Mobile Network
+      # BB_API_URL: http://172.30.213.140:8001
+      # RA_API_URL: http://172.30.213.140:8002
+      # VS_API_URL: http://172.30.213.140:8004
+
+      # Luna home network:
+      # BB_API_URL: http://192.168.0.120:8001
+      # RA_API_URL: http://192.168.0.120:8002
+      # VS_API_URL: http://192.168.0.120:8004
+
+      DUCKDB_PATH: /duckdb/voter-keys.duckdb
+      VOTER_ID: ${VOTER_ID}
+
+  # React frontend
+  va_web:
+    build:
+      context: ./web
+      dockerfile: Dockerfile
+    environment:
+      VITE_API_VOTINGAPP: http://va_api:8000
+      VOTER_ID: ${VOTER_ID}
+    depends_on:
+      - va_api
+    ports:
+      - "5173:80"
+
+volumes:
+  va_data:

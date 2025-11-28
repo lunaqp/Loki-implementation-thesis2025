@@ -1,0 +1,98 @@
+services:
+  db:
+    image: postgres:16
+    container_name: db
+    env_file:
+      - ./docker/env/db.env
+    volumes:
+      - db_data:/var/lib/postgresql/db_data # add data dir to ensure data persists at container re-creation
+      - ./docker/init-db:/docker-entrypoint-initdb.d # For adding initialisation scripts.
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  adminer:
+    image: adminer
+    restart: always
+    ports:
+      - 8080:8080
+
+  bb_api:
+    build:
+      context: ./BulletinBoard/api
+      dockerfile: Dockerfile
+    env_file:
+      - ./docker/env/db.env
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/appdb
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8001:8000"
+
+  ra_api:
+    build:
+      context: ./RegistrationAuthority/api
+      dockerfile: Dockerfile
+    environment:
+      DATA_DIR: /app/data
+      DUCKDB_PATH: /duckdb/voter-data.duckdb
+    depends_on:
+      vs_api:
+        condition: service_healthy
+      ts_api:
+        condition: service_healthy
+      bb_api:
+        condition: service_healthy
+    ports:
+      - "8002:8000"
+    volumes:
+      - ra_data:/duckdb
+      - ./RegistrationAuthority/api/electionData:/app/data:ro
+
+  vs_api:
+    build:
+      context: ./VotingServer/api
+      dockerfile: Dockerfile
+    volumes:
+      - vs_data:/duckdb
+      - ./VotingServer/api/images.txt:/app/images.txt:ro
+    environment:
+      DUCKDB_PATH: /duckdb/voter-data.duckdb
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    ports:
+      - "8004:8000"
+
+  ts_api:
+    build:
+      context: ./TallyingServer/api
+      dockerfile: Dockerfile
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+    ports:
+      - "8005:8000"
+
+volumes:
+  db_data:
+  vs_data:
+  ra_data:
