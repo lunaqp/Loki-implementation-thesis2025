@@ -18,8 +18,6 @@ BB_API_URL = os.environ.get("BB_API_URL")
 RA_API_URL = os.environ.get("RA_API_URL")
 VOTER_ID = os.environ.get("VOTER_ID")
 
-e_time_vote = []
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Initialising DuckDB database:
@@ -112,12 +110,8 @@ async def fetch_elections_for_voter(
 # Sending ballot to Voting Server after receiving it in the Voting App frontend.
 @app.post("/api/send-ballot")
 async def send_ballot(voter_ballot: VoterCastBallot):
-    s_time_vote = time.process_time_ns() # Start timer
     # Constructing ballot
     pyBallot: Ballot = await vote(voter_ballot.v, voter_ballot.lv_list, voter_ballot.election_id, VOTER_ID)
-    e_time_vote.append(time.process_time_ns() - s_time_vote) # Append to timer
-    print("e-time-vote:", e_time_vote)
-    print(f"{PINK}Ballot vote time (avg):", round(sum(e_time_vote)/len(e_time_vote)/1000000,3), "ms") # Last result printed is the average of all
     # Sending ballot to voting-server
     print(f"{GREEN}Sending ballot to Voting Server")
     image_response = await send_ballot_to_VS(pyBallot) # Image response in format: {"image": image_filename.jpg}

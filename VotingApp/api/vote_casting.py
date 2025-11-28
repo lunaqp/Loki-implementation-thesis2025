@@ -4,9 +4,10 @@ import httpx
 import base64
 from petlib.ec import EcPt, Bn
 from modelsVA import Ballot
-from coloursVA import RED, GREEN
+from coloursVA import RED, GREEN, PINK
 import fetch_functions_va as ff
 import os
+import time
 
 VS_API_URL = os.environ.get("VS_API_URL")
 
@@ -44,7 +45,7 @@ async def fetch_data(voter_id, election_id):
 
 async def vote(v, lv_list, election_id, voter_id):
     GENERATOR, ORDER, pk_TS, pk_VS, cbr_length, last_ballot, previous_last_ballot, candidates, public_key, usk = await fetch_data(voter_id, election_id)
-
+    s_time_vote = time.process_time_ns() # Performance testing: Start timer for voting
     secret_usk = Secret(value=usk)
     R1_r_v = Secret(value=ORDER.random())
     R1_r_lv = Secret(value=ORDER.random())
@@ -95,6 +96,8 @@ async def vote(v, lv_list, election_id, voter_id):
 
     #prove the statement
     nizk = full_stmt.prove(sec_dict.update({R1_r_v: R1_r_v.value, R1_lv: R1_lv.value, R1_r_lv: R1_r_lv.value, R1_r_lid: R1_r_lid.value, secret_usk: secret_usk.value}))
+    e_time_vote = time.process_time_ns() - s_time_vote # Performance testing: Stop timer for vote casting
+    print(f"{PINK}Ballot vote time:", e_time_vote/1000000, "ms")
     pyBallot = constructBallot(voter_id, public_key, ct_v_new, ct_lv_new, ct_lid_new, nizk, election_id)
     
     return pyBallot

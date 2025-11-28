@@ -13,7 +13,7 @@ from fetch_functions import fetch_electiondates_from_bb
 from epochGeneration import generate_timestamps, assign_images_for_timestamps
 import time
 
-e_time_obf = []
+
 
 tz = pytz.timezone('Europe/Copenhagen')
 current_time = datetime.now(tz)
@@ -84,8 +84,7 @@ async def timestamp_management(voter_id, election_id, start, end):
             print(f"{YELLOW}Final obfuscation ballot sent to bb for voter {voter_id}.")
         except Exception as e:
             print(f"{RED}Error creating/sending final obfuscation ballot for voter {voter_id}: {e}")
-        print(f"{PINK}Ballot obfuscation time (avg):", round(sum(e_time_obf)/len(e_time_obf)/1000000,3), "ms")
-    
+
 async def cast_vote(voter_id, election_id):
     try:
         async with duckdb_lock: # lock is acquired to check if access should be allowed, lock while accessing ressource and is then released before returning  
@@ -98,9 +97,7 @@ async def cast_vote(voter_id, election_id):
         
         # Check DuckDB table "PendingVotes" to see if a voter-cast ballot has been received from the Voting App
         if not row or all(x is None for x in row):
-            s_time_obf = time.process_time_ns() # Start timer before obfuscation
             obf_ballot = await obfuscate(voter_id, election_id)
-            e_time_obf.append(time.process_time_ns() - s_time_obf) # Append time taken to the timer array after obfuscation
             await send_ballot_to_bb(obf_ballot)
         else:
             public_key, ct_v, ct_lv, ct_lid, proof = row

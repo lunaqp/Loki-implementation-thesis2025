@@ -3,8 +3,8 @@ from zksk import Secret, base
 from petlib.ec import EcPt
 from statement import stmt
 import base64
-import json
-from coloursVA import GREEN, ORANGE, BOLD
+import time
+from coloursVA import GREEN, ORANGE, BOLD, PINK
 import fetch_functions_va as ff
 
 async def verify_proof(election_id, voter_id, pyballot: Ballot):
@@ -20,6 +20,7 @@ async def verify_proof(election_id, voter_id, pyballot: Ballot):
     previous_last_ballot = convert_to_ecpt(previous_last_ballot_b64, GROUP)
 
     upk = EcPt.from_binary(base64.b64decode(pyballot.upk), GROUP) # Recreating voter public key as EcPt object
+    s_time_verify = time.process_time_ns() # Performance testing: Start timer for ballot
 
     ctv = last_ballot[0]
     ctlv = last_ballot[1]
@@ -35,6 +36,9 @@ async def verify_proof(election_id, voter_id, pyballot: Ballot):
                 (Secret(), Secret(), Secret(), Secret(), Secret(), Secret()), len(candidates))
     
     statement_verified = stmt_c.verify(proof_current)
+
+    e_time_verify = time.process_time_ns() - s_time_verify
+    print(f"{PINK}Ballot verification time:", e_time_verify/1000000, "ms")
 
     if not statement_verified: 
         print(f"{ORANGE}verification failed")
