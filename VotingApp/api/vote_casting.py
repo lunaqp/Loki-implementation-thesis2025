@@ -95,7 +95,6 @@ async def vote(v, lv_list, election_id, voter_id):
 
     #prove the statement
     nizk = full_stmt.prove(sec_dict.update({R1_r_v: R1_r_v.value, R1_lv: R1_lv.value, R1_r_lv: R1_r_lv.value, R1_r_lid: R1_r_lid.value, secret_usk: secret_usk.value}))
-    print("nizk_proof from voting:", nizk)
     pyBallot = constructBallot(voter_id, public_key, ct_v_new, ct_lv_new, ct_lid_new, nizk, election_id)
     
     return pyBallot

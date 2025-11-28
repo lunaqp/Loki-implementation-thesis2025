@@ -21,6 +21,7 @@ async def verify_tally(election_id):
             for j in range(voters):
                 c0+=last_ballots_ctvs[j][i][0]
                 c1+=last_ballots_ctvs[j][i][1]
+            print(f"votes: {votes} \n c0: {c0} \n c1: {c1} \n secret:  {Secret()}")
             stmt.append(stmt_tally(GENERATOR, ORDER, votes, c0, c1, Secret()))
 
         for i in range(candidates):

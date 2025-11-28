@@ -72,14 +72,6 @@ const Confirmation = () => {
     }
   };
 
-  // Simulation a waiting period for ballot to be appended to BB and then verified from there.
-  // useEffect(() => {
-  //   const timer = setTimeout(() => {
-  //     setBallotVerified(true);
-  //   }, 1000 * 60 * 3);
-  //   return () => clearTimeout(timer);
-  // }, []);
-
   return (
     <PageTemplate
       progress={6}

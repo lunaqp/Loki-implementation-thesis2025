@@ -12,13 +12,7 @@ const MemorableInformation = () => {
   const nextRoute = `/${electionId}/Confirmation`;
   const prevRoute = `/${electionId}/CandidateSelection`;
   const [showPopUp, setShowPopUp] = useState(false);
-  const {
-    setImageFilename,
-    imageFilename,
-    electionName,
-    clearFlow,
-    startTimeout,
-  } = useApp();
+  const { imageFilename, electionName, clearFlow } = useApp();
   const navigate = useNavigate();
 
   const navigateToMypage = () => {

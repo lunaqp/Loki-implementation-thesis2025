@@ -21,7 +21,7 @@ async def handle_election(election_id):
 
     # Wait until election is over
     await asyncio.sleep(remaining_time.total_seconds()) # Adding slight delay to ensure voting server wraps up last obfuscation ballot for each voter.
-    grace_period = 5 # seconds
+    grace_period = 10 # seconds
     print(f"{PURPLE}Election {election_id} has concluded, giving grace period of {grace_period} seconds before tallying begins")
     await asyncio.sleep(grace_period)
 
@@ -63,7 +63,8 @@ async def tally(election_id):
                 break
 
         print(f"{PURPLE}Votes for Candidate", candidates[i],":", votes_for_candidate[i])
-
+        
+        print(f"votes: {j} \n c0: {c0} \n c1: {c1} \n secret:  {sk}")
         #constructing the statement for the ZK proof
         stmt.append(stmt_tally(GENERATOR, ORDER, j, c0, c1, sk))
 

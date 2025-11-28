@@ -21,6 +21,11 @@ services:
       # RA_API_URL: http://172.30.213.140:8002
       # VS_API_URL: http://172.30.213.140:8004
 
+      # Luna home network:
+      # BB_API_URL: http://192.168.0.120:8001
+      # RA_API_URL: http://192.168.0.120:8002
+      # VS_API_URL: http://192.168.0.120:8004
+
       DUCKDB_PATH: /duckdb/voter-keys.duckdb
       VOTER_ID: ${VOTER_ID}
 
