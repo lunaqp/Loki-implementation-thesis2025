@@ -205,11 +205,13 @@ def round_seconds_timestamps(ts: datetime) -> datetime:
 
 async def create_timestamps(ballot0list, election_id):
     try:
+        s_time_timestamp_generation = time.process_time_ns()
         voter_timestamps = []
-
         tasks = [generate_timestamps_for_voter(election_id, ballot.voterid) for ballot in ballot0list]
         voter_timestamps = await asyncio.gather(*tasks) # asterisk unpacks the list of generated timestamps for each voter
         await save_timestamps_to_db(election_id, voter_timestamps)
+        e_time_timestamp_generation = time.process_time_ns() - s_time_timestamp_generation
+        print(f"{PINK}Time taking for voter timestamp generation: {e_time_timestamp_generation}")
     except Exception as e:
         print("error creating timestamps", str(e))
        

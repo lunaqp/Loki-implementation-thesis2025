@@ -40,6 +40,7 @@ async def tally(election_id):
     sk_TS = fetch_ts_secret_key()
     last_ballots_ctvs_b64: list = await fetch_last_ballot_ctvs_from_bb(election_id)
     last_ballots_ctvs = convert_to_ecpt(last_ballots_ctvs_b64, GROUP)
+    s_time_tallying = time.process_time_ns()
     sk=Secret(value=sk_TS)
     stmt, nizk=[], []
     votes_for_candidate=[0]*candidates_length
@@ -69,6 +70,8 @@ async def tally(election_id):
         nizk.append(stmt[-1].prove({sk: sk.value}))
 
     print(f"{PURPLE}Abstention votes:", voters_length-sum(votes_for_candidate)) 
+    e_time_tallying = time.process_time_ns() - s_time_tallying
+    print(f"{PINK} Tallying time: {e_time_tallying}")
 
     # serialising and base64 encoding NIZK proof:
     proofs_bin = [base.NIZK.serialize(c_proof) for c_proof in nizk]
