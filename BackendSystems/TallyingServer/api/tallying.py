@@ -61,7 +61,6 @@ async def tally(election_id):
 
         print(f"{PURPLE}Votes for Candidate", candidates[i],":", votes_for_candidate[i])
         
-        print(f"votes: {j} \n c0: {c0} \n c1: {c1} \n secret:  {sk}")
         #constructing the statement for the ZK proof
         stmt.append(stmt_tally(GENERATOR, ORDER, j, c0, c1, sk))
 

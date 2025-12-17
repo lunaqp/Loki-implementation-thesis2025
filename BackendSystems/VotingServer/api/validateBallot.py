@@ -173,7 +173,7 @@ async def obfuscate(voter_id, election_id):
     nizk = full_stmt.prove({r_v: r_v.value, r_lv: r_lv.value, r_lid: r_lid.value, sk: sk.value})
 
     e_time_obf.append(time.process_time_ns() - s_time_obf) # Performance: Append time taken to the timer array after obfuscation
-    print("e_time_obf:", e_time_obf)
+    # print("e_time_obf:", e_time_obf)
     print(f"{PINK}Ballot obfuscation time (avg):", round(sum(e_time_obf)/len(e_time_obf)/1000000,3), "ms")
     
     pyBallot: Ballot = construct_ballot(voter_id, upk, ct_v_new, ct_lv_new, ct_lid_new, nizk, election_id)
