@@ -18,12 +18,10 @@ do {
     Write-Host "---------- Choose an option ----------"  -ForegroundColor Yellow
     Write-Host "1: Load election 1"
     Write-Host "2: Load election 2"
-    Write-Host "3: Load election 3"
-    Write-Host "4: Load usability test"
-    Write-Host "5: Rerun application from scratch"
-    Write-Host "6: Exit (closes and removes Docker images)"
+    Write-Host "3: Rerun application from scratch"
+    Write-Host "4: Exit (closes and removes Docker images)"
 
-    $choice = Read-Host "Enter your choice (1-6)"
+    $choice = Read-Host "Enter your choice (1-4)"
 
     switch ($choice) {
         '1' {
@@ -35,27 +33,19 @@ do {
             Invoke-RestMethod -Uri "http://localhost:8002/elections/load-file?name=election2.json" -Method Post  
         }
         '3' {
-            Write-Host "Loading election 3..." -ForegroundColor Green
-            Invoke-RestMethod -Uri "http://localhost:8002/elections/load-file?name=election3.json" -Method Post 
-        }
-        '4' {
-            Write-Host "Loading performance test for 16 candidates..." -ForegroundColor Green
-            Invoke-RestMethod -Uri "http://localhost:8002/elections/load-file?name=candidates16.json" -Method Post  
-        }
-        '5' {
             Write-Host "Rerun docker"  -ForegroundColor Green
             docker compose down
             ./run_backendsystems.ps1
         }
-        '6' {
+        '4' {
             Write-Host "Exiting. Closing and removing Docker images..." -ForegroundColor Green
             docker compose down
             exit
         }
 
         default {
-            Write-Host "Invalid selection. Choose a number from 1-6"  -ForegroundColor Red
+            Write-Host "Invalid selection. Choose a number from 1-4"  -ForegroundColor Red
         }
     }
 
-} while ($choice -ne '6')
+} while ($choice -ne '4')

@@ -14,11 +14,10 @@ def assign_images_for_timestamps(length: int): #assigns imgs, returns list of le
 
 # Generating the total amount of votes for a single voter based on a discrete uniform distribution
 def generate_voteamount():
-
     generator = np.random.default_rng(seed=None)
 
     # Discrete uniform distribution from 900-1100. Size=None means that a single value is returned.
-    voteamount = generator.integers(low=12, high=20, size=None, dtype=np.int64, endpoint=True) # endpoint=true makes both low and high inclusive.
+    voteamount = generator.integers(low=180, high=200, size=None, dtype=np.int64, endpoint=True) # endpoint=true makes both low and high inclusive.
     return voteamount
 
 def generate_epochs(election_duration_secs, voteamount):
