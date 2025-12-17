@@ -101,11 +101,11 @@ const Confirmation = () => {
           {ballotVerified !== null &&
             (ballotVerified ? (
               <VerificationText color="green">
-                Ballot succesfully verified
+                Ballot successfully verified
               </VerificationText>
             ) : (
               <VerificationText color="red">
-                Ballot verification unsuccessful.{" "}
+                Ballot verification unsuccessful{" "}
               </VerificationText>
             ))}
 

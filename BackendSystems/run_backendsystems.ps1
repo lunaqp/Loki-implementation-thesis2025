@@ -39,8 +39,8 @@ do {
             Invoke-RestMethod -Uri "http://localhost:8002/elections/load-file?name=election3.json" -Method Post 
         }
         '4' {
-            Write-Host "Loading performance test for 2 candidates..." -ForegroundColor Green
-            Invoke-RestMethod -Uri "http://localhost:8002/elections/load-file?name=candidates2.json" -Method Post  
+            Write-Host "Loading performance test for 16 candidates..." -ForegroundColor Green
+            Invoke-RestMethod -Uri "http://localhost:8002/elections/load-file?name=candidates16.json" -Method Post  
         }
         '5' {
             Write-Host "Rerun docker"  -ForegroundColor Green

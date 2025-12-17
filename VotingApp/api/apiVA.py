@@ -110,8 +110,11 @@ async def fetch_elections_for_voter(
 # Sending ballot to Voting Server after receiving it in the Voting App frontend.
 @app.post("/api/send-ballot")
 async def send_ballot(voter_ballot: VoterCastBallot):
+    s_time_vote_incl_network = time.process_time_ns() # Performance testing: Start timer for voting including network calls
     # Constructing ballot
     pyBallot: Ballot = await vote(voter_ballot.v, voter_ballot.lv_list, voter_ballot.election_id, VOTER_ID)
+    e_time_vote_incl_network = time.process_time_ns() - s_time_vote_incl_network
+    print(f"{PINK}Ballot vote time including network calls:", e_time_vote_incl_network/1000000, "ms")
     # Sending ballot to voting-server
     print(f"{GREEN}Sending ballot to Voting Server")
     image_response = await send_ballot_to_VS(pyBallot) # Image response in format: {"image": image_filename.jpg}
@@ -169,6 +172,9 @@ async def verify_ballot(
     ballot: Ballot = await fetch_ballot_from_bb(election_id, VOTER_ID, image_filename)
     if ballot == None:
         return {"status": "pending"}
+    s_time_verify_incl_network = time.process_time_ns() # Performance testing: Start timer for ballot verification including network calls
     ballot_verified: bool = await verify_proof(election_id, VOTER_ID, ballot)
+    e_time_verify_incl_network = time.process_time_ns() - s_time_verify_incl_network
+    print(f"{PINK}Ballot verification time including network calls:", e_time_verify_incl_network/1000000, "ms")
 
     return {"status": ballot_verified}

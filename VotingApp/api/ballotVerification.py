@@ -46,7 +46,7 @@ async def verify_proof(election_id, voter_id, pyballot: Ballot):
     else:
         print(f"{BOLD}{GREEN}Ballot succesfully verified")
 
-    return stmt_c.verify(proof_current)
+    return statement_verified
 
 
 def convert_to_ecpt(ballot, GROUP):

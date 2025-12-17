@@ -13,7 +13,7 @@ from fetch_functions import fetch_electiondates_from_bb
 from epochGeneration import generate_timestamps, assign_images_for_timestamps
 import time
 
-
+e_time_obf_incl_network = []
 
 tz = pytz.timezone('Europe/Copenhagen')
 current_time = datetime.now(tz)
@@ -42,7 +42,6 @@ async def prepare_election(payload: BallotPayload):
             imagepath = image_path
         )
         await send_ballot0_to_bb(pyBallot)
-    
     # After sending ballot 0 we create an asynchronous task for handling vote-casting to each voters CBR.
     start, end = await fetch_electiondates_from_bb(payload.electionid)
     for ballot in payload.ballot0list:
@@ -78,6 +77,7 @@ async def timestamp_management(voter_id, election_id, start, end):
     
     if current_time > end:
         print(f"{PURPLE}election over for election {election_id}")
+        print(f"{PINK}Ballot obfuscation time including network calls (avg):", round(sum(e_time_obf_incl_network)/len(e_time_obf_incl_network)/1000000,3), "ms")
         try: 
             last_obf_ballot = await obfuscate(voter_id, election_id)
             await send_ballot_to_bb(last_obf_ballot)
@@ -97,7 +97,9 @@ async def cast_vote(voter_id, election_id):
         
         # Check DuckDB table "PendingVotes" to see if a voter-cast ballot has been received from the Voting App
         if not row or all(x is None for x in row):
+            s_time_obf_incl_network = time.process_time_ns()
             obf_ballot = await obfuscate(voter_id, election_id)
+            e_time_obf_incl_network.append(time.process_time_ns() - s_time_obf_incl_network)
             await send_ballot_to_bb(obf_ballot)
         else:
             public_key, ct_v, ct_lv, ct_lid, proof = row
@@ -205,21 +207,18 @@ def round_seconds_timestamps(ts: datetime) -> datetime:
 
 async def create_timestamps(ballot0list, election_id):
     try:
-        s_time_timestamp_generation = time.process_time_ns()
+        start, end = await fetch_electiondates_from_bb(election_id)
         voter_timestamps = []
-        tasks = [generate_timestamps_for_voter(election_id, ballot.voterid) for ballot in ballot0list]
+        tasks = [generate_timestamps_for_voter(election_id, ballot.voterid, start, end) for ballot in ballot0list]
         voter_timestamps = await asyncio.gather(*tasks) # asterisk unpacks the list of generated timestamps for each voter
         await save_timestamps_to_db(election_id, voter_timestamps)
-        e_time_timestamp_generation = time.process_time_ns() - s_time_timestamp_generation
-        print(f"{PINK}Time taking for voter timestamp generation: {e_time_timestamp_generation}")
     except Exception as e:
         print("error creating timestamps", str(e))
        
 
-async def generate_timestamps_for_voter(election_id, voter_id):
+async def generate_timestamps_for_voter(election_id, voter_id, start, end):
     try:
-        timestamps = await generate_timestamps(election_id) # returns array of timestamps.
-        _, end = await fetch_electiondates_from_bb(election_id)
+        timestamps = await generate_timestamps(start, end) # returns array of timestamps.
         last_timestamp = end.timestamp() + 60
         timestamps.append(last_timestamp)
         return (voter_id, timestamps)

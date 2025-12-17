@@ -18,7 +18,7 @@ def generate_voteamount():
     generator = np.random.default_rng(seed=None)
 
     # Discrete uniform distribution from 900-1100. Size=None means that a single value is returned.
-    voteamount = generator.integers(low=18, high=20, size=None, dtype=np.int64, endpoint=True) # endpoint=true makes both low and high inclusive.
+    voteamount = generator.integers(low=12, high=20, size=None, dtype=np.int64, endpoint=True) # endpoint=true makes both low and high inclusive.
     return voteamount
 
 def generate_epochs(election_duration_secs, voteamount):
@@ -42,9 +42,8 @@ def generate_epochs(election_duration_secs, voteamount):
     return epoch_array
 
 # Generate timestamps for entire election for one voter
-async def generate_timestamps(election_id):
+async def generate_timestamps(start, end):
     # Calculate duration of election
-    start, end = await fetch_electiondates_from_bb(election_id) # fetches startdate from database.
     first_timestamp = start.timestamp()
     election_duration = end-start
     election_duration_secs = election_duration.total_seconds() # calculating election duration in seconds.
