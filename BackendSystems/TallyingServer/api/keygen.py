@@ -1,3 +1,8 @@
+"""
+This module generates the public and private keypair for the Tallying Server.
+After generation the private key is saved in an internal JSON-file while
+the public key is sent to the Bulletin Board.
+"""
 import httpx
 import base64
 import os
@@ -30,7 +35,6 @@ async def keygen():
         json.dump(data, file)
 
     print(f"{BLUE}Secret key saved to {SECRET_KEY_PATH}")
-
     
     return public_key
 

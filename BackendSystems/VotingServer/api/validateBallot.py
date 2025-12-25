@@ -8,7 +8,7 @@ import base64
 from hashVS import hash_ballot
 import json
 from coloursVS import GREEN, ORANGE, YELLOW, PINK, BOLD
-import fetch_functions as ff
+import fetchFunctions as ff
 import time
 
 e_time_obf = []

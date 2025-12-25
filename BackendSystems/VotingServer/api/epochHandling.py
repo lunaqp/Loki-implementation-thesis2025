@@ -9,7 +9,7 @@ import json
 import pytz
 from coloursVS import RED, CYAN, GREEN, PURPLE, YELLOW, PINK
 from lock import duckdb_lock
-from fetch_functions import fetch_electiondates_from_bb
+from fetchFunctions import fetch_electiondates_from_bb
 from epochGeneration import generate_timestamps, assign_images_for_timestamps
 import time
 
