@@ -57,8 +57,8 @@ class IndexImage(BaseModel):
     timestamp: datetime     # Timestamp for ballot at certain CBR index.
     
 class IndexImageCBR(BaseModel):
-    """Container for CBR images and timestamps for a given voter."""
-    cbrimages: List[IndexImage]     # List of CBR images and timestamps for a given voter.
+    """Container for tuples of CBR indices, images, and timestamps for a given voter."""
+    cbrimages: List[IndexImage]     # List of CBR indices, images, and timestamps for a given voter.
 
 class CandidateResult(BaseModel):
     """Result for a single candiate.

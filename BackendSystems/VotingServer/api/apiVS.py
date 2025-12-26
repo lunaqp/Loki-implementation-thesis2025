@@ -43,8 +43,7 @@ app = FastAPI(lifespan=lifespan)
 
 @app.get("/health")
 def health():
-    """Return status response indicating the service is running.
-    """
+    """Return status response indicating the service is running."""
     return {"ok": True}
 
 @app.get("/vs_resp")
