@@ -1,3 +1,13 @@
+"""BB fetch functions for the Tallying Server.
+
+This module contains network calls used by the tallying logic:
+- Fetch ElGamal parameters from BB and convert them into petlib types.
+- Fetch election artifacts (voters, candidates, ciphertexts, dates) from BB.
+- Fetch TS secret key from local storage.
+
+All fetch functions use ``httpx.AsyncClient`` and raise FastAPI ``HTTPException``.
+"""
+
 from coloursTS import RED
 from datetime import datetime
 from fastapi import HTTPException
@@ -10,6 +20,14 @@ from petlib.ec import EcGroup, EcPt, EcGroup
 from modelsTS import ElGamalParams
 
 async def fetch_elgamal_params():
+    """Fetch ElGamal parameters from the Bulletin Board.
+    
+    Returns:
+        (GROUP, GENERATOR, ORDER) converted into petlib types.
+
+    HTTPException:
+        If BB cannot be reached or returns malformed data.
+    """
     async with httpx.AsyncClient() as client:
         try:
             resp = await client.get("http://bb_api:8000/elgamalparams")
@@ -32,6 +50,17 @@ async def fetch_elgamal_params():
 
 
 async def fetch_last_ballot_ctvs_from_bb(election_id):
+    """Fetch the last ciphertext vote (ctv) from BB per voter in election.
+
+    Args:
+    election_id: Election identifier.
+
+    Returns:
+        list: The value of ``last_ballot_ctvs`` returned by BB.
+
+    HTTPException:
+        If BB request fails.
+    """
     try:
         async with httpx.AsyncClient() as client:
             response = await client.get(f"http://bb_api:8000/fetch_last_ballot_ctvs?election_id={election_id}")
@@ -47,6 +76,17 @@ async def fetch_last_ballot_ctvs_from_bb(election_id):
     
 
 async def fetch_candidates_from_bb(election_id):
+    """Fetch candidates for an election from BB.
+
+    Args:
+        election_id: Election identifier.
+
+    Returns:
+        list[int]: Candidate id list.
+
+    HTTPException:
+        If BB request fails.
+    """
     try:
         async with httpx.AsyncClient() as client:
             response = await client.get(f"http://bb_api:8000/candidates?election_id={election_id}")
@@ -65,6 +105,17 @@ async def fetch_candidates_from_bb(election_id):
 
 
 async def fetch_voters_from_bb(election_id):
+    """Fetch voter ids for an election from BB.
+
+    Args:
+        election_id: Election identifier.
+
+    Returns:
+        list[int]: Voter id list.
+
+    HTTPException<.
+        If BB request fails.
+    """
     try:
         async with httpx.AsyncClient() as client:
             response = await client.get(f"http://bb_api:8000/voters?election_id={election_id}")
@@ -81,6 +132,17 @@ async def fetch_voters_from_bb(election_id):
 
 
 async def fetch_electiondates_from_bb(election_id):
+    """Fetch election start/end datetimes from BB.
+
+    Args:
+        election_id: Election identifier.
+
+    Returns:
+        tuple[datetime, datetime]: (election_start, election_end) parsed from ISO-8601 strings.
+
+    HTTPException:
+        If BB request fails or returns invalid timestamps.
+    """
     payload = {"electionid": election_id}
     try:
         async with httpx.AsyncClient() as client:
@@ -95,7 +157,13 @@ async def fetch_electiondates_from_bb(election_id):
         print(f"{RED}Error fetching election start date: {e}")
 
 
-def fetch_ts_secret_key():    
+def fetch_ts_secret_key():  
+    """Fetch the TS secret key from local ``keys.json``.
+    Assumes a ``keys.json`` file adjacent to this module containing a base64-encoded ``secret_key`` field.
+
+    Returns:
+        Bn: TS secret key as a petlib big integer.
+    """
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
     SECRET_KEY_PATH = os.path.join(BASE_DIR, 'keys.json')
 

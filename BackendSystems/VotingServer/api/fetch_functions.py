@@ -1,3 +1,17 @@
+"""Voting Server fetch functions.
+
+This module provides asynchronous helpers for retrieving election data
+from the bulletin board and local state from DuckDB. 
+- Fetch election start/end timestamps.
+- Fetch ElGamal parameters and convert them to petlib types.
+- Fetch voters, candidates, and public keys.
+- Fetch ballot-related metadata.
+- Fetch image filenames from the local DuckDB.
+
+BB endpoints return binary objects (keys, ciphertexts) as base64 strings.
+Concurrency around DuckDB access is protected with ``duckdb_lock``.
+"""
+
 from datetime import datetime
 import httpx
 from coloursVS import RED
@@ -13,6 +27,17 @@ import duckdb
 from lock import duckdb_lock
 
 async def fetch_electiondates_from_bb(election_id):
+    """Fetch election start/end datetimes from BB.
+
+    Args:
+        election_id: Election identifier.
+
+    Returns:
+        tuple[datetime, datetime]: (election_start, election_end) parsed from ISO-8601 strings.
+
+    HTTPException:
+        If BB request fails or returns invalid timestamps.
+    """
     payload = {"electionid": election_id}
     try:
         async with httpx.AsyncClient() as client:
@@ -26,8 +51,15 @@ async def fetch_electiondates_from_bb(election_id):
     except Exception as e:
         print(f"{RED}Error fetching election start date: {e}")
 
-# TODO: Find a good place to store params to avoid excessive database calls.
 async def fetch_elgamal_params():
+    """Fetch ElGamal parameters from the Bulletin Board.
+    
+    Returns:
+        (GROUP, GENERATOR, ORDER) converted into petlib types.
+
+    HTTPException:
+        If BB cannot be reached or returns malformed data.
+    """
     async with httpx.AsyncClient() as client:
         try:
             resp = await client.get("http://bb_api:8000/elgamalparams")
@@ -51,6 +83,17 @@ async def fetch_elgamal_params():
 
 
 async def fetch_voters_from_bb(election_id):
+    """Fetch voter ids for an election from BB.
+
+    Args:
+        election_id: Election identifier.
+
+    Returns:
+        list[int]: Voter id list.
+
+    HTTPException<.
+        If BB request fails.
+    """
     try:
         async with httpx.AsyncClient() as client:
             response = await client.get(f"http://bb_api:8000/voters?election_id={election_id}")
@@ -66,6 +109,17 @@ async def fetch_voters_from_bb(election_id):
         raise HTTPException(status_code=500, detail=f"{RED}Error fetching voters from BB: {str(e)}")     
 
 async def fetch_candidates_from_bb(election_id):
+    """Fetch candidates for an election from BB.
+
+    Args:
+        election_id: Election identifier.
+
+    Returns:
+        list[int]: Candidate id list.
+
+    HTTPException:
+        If BB request fails.
+    """
     try:
         async with httpx.AsyncClient() as client:
             response = await client.get(f"http://bb_api:8000/candidates?election_id={election_id}")
@@ -83,6 +137,14 @@ async def fetch_candidates_from_bb(election_id):
         raise HTTPException(status_code=500, detail=f"{RED}Error fetching candidates from BB: {str(e)}")     
 
 async def fetch_public_keys_from_bb():
+    """Fetch TS and VS public keys from BB.
+
+    Returns:
+        tuple[EcPt, EcPt]: (public_key_ts, public_key_vs) as petlib EC points.
+
+    HTTPException:
+        If parameters/keys cannot be fetched or decoded.
+    """
     GROUP, _, _ = await fetch_elgamal_params()
     try:
         async with httpx.AsyncClient() as client:
@@ -100,6 +162,18 @@ async def fetch_public_keys_from_bb():
         print(f"{RED}Error fetching public keys for TS and VS {e}")
 
 async def fetch_voter_public_key_from_bb(voter_id, election_id):
+    """Fetch a voter's public key from BB.
+
+    Args:
+        voter_id: Voter identifier.
+        election_id: Election identifier.
+
+    Returns:
+        bytes: Raw public key bytes decoded from base64.
+
+    HTTPException:
+        If BB request fails.
+    """
     try:
         async with httpx.AsyncClient() as client:
             response = await client.get(f"http://bb_api:8000/voter-public-key?election_id={election_id}&voter_id={voter_id}")
@@ -114,6 +188,17 @@ async def fetch_voter_public_key_from_bb(voter_id, election_id):
         raise HTTPException(status_code=500, detail=f"{RED}Error fetching public key for voter:  {str(e)}")     
 
 async def fetch_ballot_hash_from_bb(election_id):
+    """Fetch all ballot hashes for an election from BB.
+
+    Args:
+        election_id: Election identifier.
+
+    Returns:
+        list: List of ballot hashes.
+
+    HTTPException:
+        If BB request fails.
+    """
     try:
         async with httpx.AsyncClient() as client:
             response = await client.get(f"http://bb_api:8000/fetch-ballot-hashes?election_id={election_id}")
@@ -128,6 +213,18 @@ async def fetch_ballot_hash_from_bb(election_id):
         raise HTTPException(status_code=500, detail=f"{RED}Error fetching list of all ballot hashes:  {str(e)}")     
 
 async def fetch_last_and_previouslast_ballot_from_bb(election_id, voter_id):
+    """Fetch the last and previous-to-last ballot for a voter from BB.
+
+    Args:
+        election_id: Election identifier.
+        voter_id: Voter identifier.
+
+    Returns:
+        tuple[object, object]: (last_ballot_b64, previous_last_ballot_b64) as provided by BB.
+
+    HTTPException:
+        If BB request fails.
+    """
     try:
         async with httpx.AsyncClient() as client:
             response = await client.get(f"http://bb_api:8000/last_previous_last_ballot?election_id={election_id}&voter_id={voter_id}")
@@ -144,6 +241,18 @@ async def fetch_last_and_previouslast_ballot_from_bb(election_id, voter_id):
 
 
 async def fetch_cbr_length_from_bb(voter_id, election_id):
+    """Fetch the current CBR length for a voter in an election from BB.
+
+    Args:
+        voter_id: Voter identifier.
+        election_id: Election identifier.
+
+    Returns:
+        int: CBR length as returned by BB.
+
+    HTTPException:
+        If BB request fails.
+    """
     try:
         async with httpx.AsyncClient() as client:
             response = await client.get(f"http://bb_api:8000/cbr_length?election_id={election_id}&voter_id={voter_id}")
@@ -157,6 +266,19 @@ async def fetch_cbr_length_from_bb(voter_id, election_id):
         raise HTTPException(status_code=500, detail=f"{RED}Error fetching previous ballots from BB: {str(e)}")    
 
 async def fetch_image_filename(election_id, voter_id):
+    """Fetch the next unprocessed image filename for a voter from VS DuckDB.
+
+    This queries the VS-local database for the oldest unprocessed timestamp entry.
+
+    Args:
+        election_id: Election identifier.
+        voter_id: Voter identifier.
+
+    Returns:
+        str | None: Image path/filename if available; otherwise ``None``.
+
+    Access is protected by ``duckdb_lock`` to avoid concurrent DuckDB usage.
+    """
     try:
         async with duckdb_lock: # lock is acquired to check if access should be allowed, lock while accessing ressource and is then released before returning  
             conn = duckdb.connect("/duckdb/voter-data.duckdb")
@@ -173,6 +295,17 @@ async def fetch_image_filename(election_id, voter_id):
 
 
 async def fetch_electiondates_from_bb(election_id):
+    """Fetch election start/end datetimes from BB.
+
+    Args:
+        election_id: Election identifier.
+
+    Returns:
+        tuple[datetime, datetime]: (election_start, election_end) parsed from ISO-8601 strings.
+
+    HTTPException:
+        If BB request fails or returns invalid timestamps.
+    """
     payload = {"electionid": election_id}
     try:
         async with httpx.AsyncClient() as client:
