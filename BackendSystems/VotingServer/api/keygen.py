@@ -1,9 +1,14 @@
+"""
+This module generates the public and private keypair for the Voting Server.
+After generation the private key is saved in an internal JSON-file while
+the public key is sent to the Bulletin Board.
+"""
 import httpx
 import base64
 import os
 import json
 from coloursVS import BLUE
-from fetch_functions import fetch_elgamal_params
+from fetchFunctions import fetch_elgamal_params
 
 async def keygen():
     """

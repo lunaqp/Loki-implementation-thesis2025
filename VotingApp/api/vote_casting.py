@@ -9,11 +9,11 @@ import fetch_functions_va as ff
 import os
 import time
 
-VS_API_URL = os.environ.get("VS_API_URL")
+VS_API_URL = os.environ.get("VS_API_URL") # Fetch VS address from environment variable.
 
 def bin_to_int(lst, size):
     b=[0]*size
-    #the new bit is set to 1
+    # The new bit is set to 1 to indicate the ballot is voter-cast.
     b[-1]=1
     for i in lst:
         b[i]=1  
@@ -22,6 +22,18 @@ def bin_to_int(lst, size):
 
 
 async def fetch_data(voter_id, election_id):
+    """
+    Fetch all cryptographic and election-related data required for
+    encrypting a ballot, creating the NIZK proof of correct ballot
+    construction, and simulating relevant relations.
+
+    Args:
+        election_id: Identifier of the election.
+        voter_id: Identifier of the voter.
+
+    Returns:
+        tuple: (GENERATOR, ORDER, pk_TS, pk_VS, cbr_length, last_ballot, previous_last_ballot, candidates, public_key, usk)
+    """
     GROUP, GENERATOR, ORDER = await ff.fetch_elgamal_params()
     pk_TS, pk_VS = await ff.fetch_public_keys_from_bb()
     cbr_length = await ff.fetch_cbr_length_from_bb(voter_id, election_id)
@@ -39,7 +51,7 @@ async def fetch_data(voter_id, election_id):
 
     candidates: list = await ff.fetch_candidates_from_bb(election_id)
     usk_bin, public_key = ff.fetch_keys(voter_id, election_id)
-    usk = Bn.from_binary(usk_bin)
+    usk = Bn.from_binary(usk_bin) # Recreate voter's secret key as petlib Bn object.
 
     return(GENERATOR, ORDER, pk_TS, pk_VS, cbr_length, last_ballot, previous_last_ballot, candidates, public_key, usk)
 
@@ -157,6 +169,19 @@ async def send_ballot_to_VS(pyBallot:Ballot):
 
 
 def enc(g, pk, m, r):
+    """Encryption of a message
+
+    Args:
+        g (EcPt): group generator
+        pk (EcPt): public key of the receiver
+        m (Bn) or (int): message to be encrypted
+        r (Bn) : randomness
+    
+    Returns:
+        (c0,c1) (EcPt, EcPt): ciphertext of encrypted message (c0, c1),
+                              where c0 = r*g and c1 = m*g + r*pk
+    """
+    # Elliptic Curve Elgamal results in g**m * pk**r becoming m*g + r*pk
     c0 = r*g
     c1 = m*g + r*pk
 
@@ -164,6 +189,16 @@ def enc(g, pk, m, r):
 
 
 def dec(ct, sk):
+    """Decryption of a ciphertext
+
+    Args:
+        ct (EcPt, EcPt): ciphertext of encrypted message (c0, c1),
+                        where c0 = r*g and c1 = m*g + r*pk
+        sk (Bn): secret key / decryption key
+    
+    Returns:
+        message (EcPt): decrypted message, m, on the form m*g
+    """
     c0, c1 = ct
     message = (c1 + (-sk*c0))
 
@@ -171,6 +206,21 @@ def dec(ct, sk):
 
 
 def re_enc(g, pk, ct, r):
+    """Re-Encryption of a ciphertext
+
+    Args:
+        g (EcPt): group generator
+        pk (EcPt): public key of the receiver
+        ct (EcPt, EcPt): ciphertext of encrypted message (c0, c1),
+                         where c0 = r*g and c1 = m*g + r*pk
+        r (Bn): randomness
+    
+    Returns:
+        (c0Prime, c1Prime) (EcPt, EcPt): ciphertext (c0Prime, c1Prime)
+                                         of re-encrypted ciphertext (c0, c1),
+                                         where c0 = r*g and c1 = m*g + r*pk and,
+                                         c0Prime = c0 + r*g and c1Prime = c1 + r*pk
+    """
     c0, c1 = ct
     c0Prime = c0 + r*g
     c1Prime = c1 + r*pk
