@@ -7,6 +7,28 @@ YELLOW="\033[1;33m"
 RED="\033[0;31m"
 NC="\033[0m" # No Color
 
+# Checking if db.env file exists and creating it if needed
+ENV_DIR="./docker/env"
+ENV_FILE="./docker/env/db.env"
+
+if [[ ! -f "./docker/env/db.env" ]]; then
+    echo -e "${YELLOW}db.env not found. Creating it...${NC}"
+
+    # Create directory if it does not exist
+    mkdir -p "./docker/env"
+
+    # Create db.env file with required content
+    cat > "./docker/env/db.env" <<'EOF'
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=postgres
+POSTGRES_DB=appdb
+POSTGRES_HOST=db
+POSTGRES_PORT=5432
+EOF
+else
+    echo -e "${GREEN}db.env already exists. Proceeding...${NC}"
+fi
+
 # Closing and removing docker images
 echo -e "${GREEN}Closing and removing Docker images...${NC}"
 docker compose down

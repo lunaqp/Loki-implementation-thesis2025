@@ -54,7 +54,7 @@ def generate_voteamount():
     generator = np.random.default_rng(seed=None)
 
     # Discrete uniform distribution (inclusive of both low and high). Size=None ensures that a single value is returned.
-    voteamount = generator.integers(low=18, high=20, size=None, dtype=np.int64, endpoint=True) # endpoint=true makes both low and high inclusive.
+    voteamount = generator.integers(low=180, high=200, size=None, dtype=np.int64, endpoint=True) # endpoint=true makes both low and high inclusive.
     return voteamount
 
 def generate_epochs(election_duration_secs, voteamount):
