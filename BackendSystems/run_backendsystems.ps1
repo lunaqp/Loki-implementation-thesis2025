@@ -1,3 +1,24 @@
+if (-not (Test-Path "./docker/env/db.env")) {
+    Write-Host "db.env not found. Creating it..." -ForegroundColor Yellow
+
+    # Create directory if it does not exist
+    if (-not (Test-Path "./docker/env")) {
+        New-Item -ItemType Directory -Path "./docker/env" | Out-Null
+    }
+
+    # Create db.env file with required content
+    @"
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=postgres
+POSTGRES_DB=appdb
+POSTGRES_HOST=db
+POSTGRES_PORT=5432
+"@ | Set-Content -Path "./docker/env/db.env" -Encoding UTF8
+}
+else {
+    Write-Host "db.env already exists. Proceeding..." -ForegroundColor Green
+}
+
 # Closing and removing docker images
 Write-Host "Closing and removing Docker images..." -ForegroundColor Green
 docker compose down

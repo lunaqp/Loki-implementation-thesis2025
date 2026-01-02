@@ -13,7 +13,7 @@ from petlib.ec import EcPt
 from statement import stmt
 import base64
 import time
-from coloursVA import GREEN, ORANGE, BOLD, PINK
+from coloursVA import GREEN, ORANGE, BOLD, PINK, RED
 import fetch_functions_va as ff
 
 async def verify_proof(election_id, voter_id, pyballot: Ballot):
@@ -54,10 +54,14 @@ async def verify_proof(election_id, voter_id, pyballot: Ballot):
     # last previous ballot from voter's CBR if it exists, otherwise the last ballot is also the last previous ballot
     ctv2 = previous_last_ballot[0]
 
-    stmt_c = stmt((GENERATOR, pk_TS, pk_VS, upk, ctv_current, ctlv_current, ctlid_current, ct_i, c0, c1, ctv, ctv2), 
-                (Secret(), Secret(), Secret(), Secret(), Secret(), Secret()), len(candidates))
-    
-    statement_verified = stmt_c.verify(proof_current)
+    try:
+        stmt_c = stmt((GENERATOR, pk_TS, pk_VS, upk, ctv_current, ctlv_current, ctlid_current, ct_i, c0, c1, ctv, ctv2), 
+                    (Secret(), Secret(), Secret(), Secret(), Secret(), Secret()), len(candidates))
+        
+        statement_verified = stmt_c.verify(proof_current)
+    except Exception as e:
+        print(f"{RED} Unable to verify ballot: {e}")
+        statement_verified = False
 
     e_time_verify = time.process_time_ns() - s_time_verify # Performance testing
     print(f"{PINK}Ballot verification time:", e_time_verify/1000000, "ms")
