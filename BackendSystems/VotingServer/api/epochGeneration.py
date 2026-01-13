@@ -58,38 +58,25 @@ def generate_voteamount():
     return voteamount
 
 def generate_epochs(election_duration_secs, voteamount):
-    """
-    Generate time intervals (epochs) between ballots on CBR for a voter.
-
-    Epochs are sampled from a normal (Gaussian) distribution that has a
-    center calculated based on election-duration and voteamount to ensure
-    a mean that ideally spans the entire election duration when summed.
-    Intervals are filtered to ensure realistic spacing between ballots.
-
-    Args:
-        election_duration_secs (float): Total election duration in seconds.
-        voteamount (int): Number of initial ballots for the voter.
-
-    Returns:
-        numpy.ndarray: An array of epoch durations (in seconds).
-    """
     # Parameters for generating a gaussian/normal distribution
     center = election_duration_secs/voteamount # Center of curve found by determining the average needed epoch length to take up the whole of the election duration.
     spread = (center * 2) / 6 # Spread of curve/standard deviation chosen so ~99.7% of values fall within [0, 2 * center] (three standard deviations from mean).
     epoch_array = np.array([])
+  
+    generator = np.random.default_rng(seed=None) # Generator for creating normal distribution.
+    samples = generator.normal(center, spread, size=voteamount) # Continue sampling until total election duration is covered.
 
-    # Generator for creating normal distribution.
-    generator = np.random.default_rng(seed=None)
+    # Loop to ensure we only keep values over 5 seconds and less than twice the mean/center.
+    for interval in samples:
+        if interval < 5:
+            interval = 5
+        if interval > center * 2:
+            interval = center * 2
+        epoch_array = np.append(epoch_array, interval)
     
-    # Continue sampling until total election duration is covered
-    while np.sum(epoch_array) < election_duration_secs:
-        samples = generator.normal(center, spread, size=voteamount+100) # + 100 to create a buffer in case some values fall outside of the three standard deviations.
-
-        # Loop to ensure we only keep values over 5 seconds and less than twice the mean/center.
-        for interval in samples:
-            if interval >= 5 and interval < center * 2: # minimum time of 5 seconds to ensure certain amount of time between timestamps.
-                epoch_array = np.append(epoch_array, interval)
-        
+    scaling_factor = election_duration_secs / np.sum(epoch_array) # Calculating a scaling factor to ensure the sampled epochs add up to total election amount (intended total divided by sampled total).
+    epoch_array *= scaling_factor # Scales values to modify array in place.
+    # Should we re-sample if the scaling factor is either too large or too small? What would probability be of reaching such a scaling factor?
     return epoch_array
 
 async def generate_timestamps(start, end):

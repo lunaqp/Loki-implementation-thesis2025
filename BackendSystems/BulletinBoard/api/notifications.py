@@ -5,6 +5,7 @@ services: Tallying Server (TS), Voting Server (VS), and
 Registration Authority (RA), about important events in the setup phase.
 """
 import httpx
+import asyncio
 from fastapi import HTTPException
 from coloursBB import BLUE, RED
 
@@ -41,10 +42,20 @@ async def notify_ra_public_key_saved(service):
         HTTPException: If the RA cannot be contacted/the request fails.
     """
     async with httpx.AsyncClient() as client:
-        try:
-            resp = await client.post("http://ra_api:8000/key_ready", json={
-                "service": service,
-                "status": "ok"})
-            print(f"{BLUE}Notification sent to RA for {service} key:", resp.status_code, resp.text) # Should error handling be based on response code as well as exceptions?
-        except Exception as e:
-            raise HTTPException(status_code=502, detail=f"{RED}Unable to send keys to RA: {e}")
+        for attempt in range(2):
+            try:
+                resp = await client.post("http://ra_api:8000/key_ready", json={
+                    "service": service,
+                    "status": "ok"})
+               
+                resp.raise_for_status()
+                print(f"{BLUE}Notification sent to RA for {service} key:", resp.status_code, resp.text) # Should error handling be based on response code as well as exceptions?
+                return
+            
+            except Exception as e:
+                if attempt == 1:
+                    raise HTTPException(
+                        status_code=502,
+                        detail=f"{RED}Unable to send keys to RA: {e}",
+                    )
+                await asyncio.sleep(1) 
