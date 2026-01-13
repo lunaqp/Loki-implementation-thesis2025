@@ -15,7 +15,7 @@ i
         full_stmt (tuple): the statement for the ZK proofs in Vote and Obfuscate
     
     """
-    g, pk_T, pk_vs, upk, ct_v, ct_lv, ct_lid, ct_i, c0, c1, ct_bar_v, ct_bar_vv = public_params
+    g, pk_T, pk_vs, upk, ct_v, ct_lv, ct_lid, ct_i, c0, c1, ct_bar_v, ct_bar_vv = public_params #ct_v = new, ct_bar_v = only ciphertext for ct_v for last ballot, ct_bar_vv = previous last
     r_v, lv, r_lv, r_lid, sk_id, sk_vs = private_params
     R1_range_stmt0, R1_range_stmt1, R1_enc_stmt = [], [], [] 
 
@@ -35,9 +35,9 @@ i
         #encryption of 1
         R1_range_stmt1.append(DLRep(ct_v[i][0], r_v*g) & DLRep(ct_v[i][1] - g, r_v*pk_T))
 
-    #(ii) proves that the sum of all encrypted votes is either 0 or 1 
+    #(ii) proves that the sum of all encrypted votes is either 0 or 1, because a voter can only cast a vote for one cand.
     elements_c0, elements_c1 = list(map(lambda x: x[0], ct_v)), list(map(lambda x: x[1], ct_v))
-    product_c0, product_c1 = reduce(lambda x, y: x + y, elements_c0), reduce(lambda x, y: x + y, elements_c1)
+    product_c0, product_c1 = reduce(lambda x, y: x + y, elements_c0), reduce(lambda x, y: x + y, elements_c1) #summing ciphertexts for c0 and c1 individually
     exp1, exp2= candidates*g, candidates*pk_T
     #encryption of 0
     R1_enc_sum_stmt0 = DLRep(product_c0, exp1*r_v) & DLRep(product_c1, exp2*r_v)
@@ -59,7 +59,7 @@ i
     #statement for a vote for abstention (0 0 ... 0) 
     R1_enc_stmt.append(R1_enc_sum_stmt0 & reduce(lambda x, y: x & y, R1_range_stmt0[:])) 
 
-    R1_enc_stmt = reduce(lambda x, y: x | y, R1_enc_stmt) 
+    R1_enc_stmt = reduce(lambda x, y: x | y, R1_enc_stmt) #Reduce: check true/false
 
     #PROOF OF ENCRYPTION   ct_lv = Enc(pk_vs, lv, r_lv) 
     R1_enc_stmt2 = DLRep(ct_lv[0], r_lv*g) & DLRep(ct_lv[1], lv*g + r_lv*pk_vs)
@@ -71,7 +71,7 @@ i
     R1_know_stmt = DLRep(upk, sk_id * g)
 
     #RELATION 1 STATEMENT
-    R1_stmt1 = R1_enc_stmt  & R1_enc_stmt2 & R1_reenc_stmt & R1_know_stmt 
+    R1_stmt1 = R1_enc_stmt  & R1_enc_stmt2 & R1_reenc_stmt & R1_know_stmt #stmt: all votes enc. as 0 or 1 and sums to 0 or 1, stmt2: correct enc. of lv, reenc_stmt: correct reenc. of lid, know_stmt: sk knowlegde.
 
     #----------
     #RELATION 2 
@@ -81,7 +81,7 @@ i
     R2_reenc_stmt1 = [0]*candidates
     for i in range(candidates):
         R2_reenc_stmt1[i] = DLRep(ct_v[i][0], one*ct_bar_v[i][0] + r_v*g) & DLRep(ct_v[i][1], one*ct_bar_v[i][1] + r_v*pk_T)
-    R2_result_stmt1 = reduce(lambda x, y: x & y, R2_reenc_stmt1)
+    R2_result_stmt1 = reduce(lambda x, y: x & y, R2_reenc_stmt1) #for each cand. we check correct reenc. and then reduce: all should be true for the statement to be true
 
     #SECOND PROOF OF RE-ENCRYPTION ct_lv = ReEnc(pk_vs, ct_i, r_lv)
     R2_reenc_stmt2 = DLRep(ct_lv[0], one*ct_i[0] + r_lv*g) & DLRep(ct_lv[1], one*ct_i[1] + r_lv*pk_vs)

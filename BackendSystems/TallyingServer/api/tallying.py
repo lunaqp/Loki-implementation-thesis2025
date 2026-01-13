@@ -71,17 +71,17 @@ async def tally(election_id):
     for i in range(candidates_length):
         c0, c1 = (0*GENERATOR), (0*GENERATOR)
 
-        #summing up all encrypted votes for a candidate
+        #summing up all encrypted votes for a candidate. sum_votes decrypt to a group element (x*GENERATOR) not an integer.
         for j in range(voters_length):
-            c0+= last_ballots_ctvs[j][i][0]
+            c0+= last_ballots_ctvs[j][i][0] #For a specific voter(j) has multiple candidates(i), each candidate has a ciphertext pair(c0,c1). We enter c0 and c1 by saying [j][i][0] 
             c1+= last_ballots_ctvs[j][i][1]
-        sum_votes=dec((c0,c1), sk_TS)
+        sum_votes=dec((c0,c1), sk_TS) #homomorphic tallying
 
-        #finding the number of votes for a candidate
-        for j in range(voters_length):
+        #finding the number of votes (interger). Bruteforcing to find x in x*GENERATOR 
+        for j in range(voters_length): # We loop through the number of voters as this is the max votes a cand. can receive.
             if sum_votes==j*GENERATOR:
-                votes_for_candidate[i]=j
-                break
+                votes_for_candidate[i]=j # We want to find j
+                break 
 
         print(f"{PURPLE}Votes for Candidate", candidates[i],":", votes_for_candidate[i])
         

@@ -35,8 +35,7 @@ async def generate_ballot0(voter_id, public_key_voter, candidates):
     """
     public_key_TS, public_key_VS = await fetch_public_keys_from_bb()
     r0 = ORDER.random()
-    x = [0]*candidates
-    ct0 = [enc(GENERATOR, public_key_TS, x[j], r0) for j in range(candidates)]
+    ct0 = [enc(GENERATOR, public_key_TS, 0, r0) for j in range(candidates)]
     ctl0 = enc(GENERATOR, public_key_VS, 0, r0)
     ctlid = ctl0 # ctlid is identical to ctlv for ballot 0 since it sets "ctl0 = ctlid = enc(pk_vs, 0, r)".
     ballot0 = (voter_id, public_key_voter, ct0, ctl0, ctlid, r0)

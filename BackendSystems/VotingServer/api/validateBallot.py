@@ -237,7 +237,7 @@ async def obfuscate(voter_id, election_id):
     previous_last_ballot = convert_to_ecpt(previous_last_ballot_b64, GROUP)
     s_time_obf = time.process_time_ns() # Performance: Start timer before obfuscation
 
-    # Generate a noise ballot
+    # randomness for noise ballot
     r_v = Secret(value=ORDER.random())
     r_lv = Secret(value=ORDER.random())
     r_lid = Secret(value=ORDER.random())

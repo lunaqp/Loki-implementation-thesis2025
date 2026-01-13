@@ -58,7 +58,7 @@ async def fetch_data(voter_id, election_id):
 async def vote(v, lv_list, election_id, voter_id):
     GENERATOR, ORDER, pk_TS, pk_VS, cbr_length, last_ballot, previous_last_ballot, candidates, public_key, usk = await fetch_data(voter_id, election_id)
     s_time_vote = time.process_time_ns() # Performance testing: Start timer for voting
-    secret_usk = Secret(value=usk)
+    secret_usk = Secret(value=usk) #A secret obj represents a secret integer in a zero knowlegde proof
     R1_r_v = Secret(value=ORDER.random())
     R1_r_lv = Secret(value=ORDER.random())
     R1_r_lid = Secret(value=ORDER.random())
@@ -68,9 +68,9 @@ async def vote(v, lv_list, election_id, voter_id):
         R1_v[i] = Secret(value=0)
     if v>0:
         #generate R1_v based on the vote otherwise abstention
-        R1_v[v-1] = Secret(value=1)
+        R1_v[v-1] = Secret(value=1) #v-1: candidate list starts at index 0 ex. if voting for c2 = index 1.
 
-    R1_lv = Secret(value=Bn.from_decimal(str(bin_to_int(lv_list, cbr_length+1))))
+    R1_lv = Secret(value=Bn.from_decimal(str(bin_to_int(lv_list, cbr_length+1))))#value = integer rep. as bn
 
     #last ballot from voter's CBR
     ct_v, ct_lv, ct_lid, _ = last_ballot
@@ -83,7 +83,7 @@ async def vote(v, lv_list, election_id, voter_id):
     ct_v_new = [enc(GENERATOR, pk_TS, R1_v[i].value, R1_r_v.value) for i in range(len(candidates))]
     ct_lv_new = enc(GENERATOR, pk_VS, R1_lv.value, R1_r_lv.value) 
     ct_lid_new = re_enc(GENERATOR, pk_VS, (ct_i[0], GENERATOR+ct_i[1]), R1_r_lid.value)
-    c0 = ct_lv[0]-ct_lid[0]
+    c0 = ct_lv[0]-ct_lid[0] #compare to pass on to statement, to be able to simulate R2 and R3
     c1 = ct_lv[1]-ct_lid[1]
 
     if v>0:
